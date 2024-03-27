@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/SuperImageAI/AIComputingNode/pkg/config"
-	"github.com/SuperImageAI/AIComputingNode/pkg/log"
-	"github.com/SuperImageAI/AIComputingNode/pkg/p2p"
-	"github.com/SuperImageAI/AIComputingNode/pkg/protocol"
-	"github.com/SuperImageAI/AIComputingNode/pkg/serve"
+	"AIComputingNode/pkg/config"
+	"AIComputingNode/pkg/log"
+	"AIComputingNode/pkg/p2p"
+	"AIComputingNode/pkg/protocol"
+	"AIComputingNode/pkg/serve"
+
 	"google.golang.org/protobuf/proto"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"

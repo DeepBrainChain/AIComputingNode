@@ -6,10 +6,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SuperImageAI/AIComputingNode/pkg/config"
-	"github.com/SuperImageAI/AIComputingNode/pkg/log"
-	"github.com/SuperImageAI/AIComputingNode/pkg/p2p"
-	"github.com/SuperImageAI/AIComputingNode/pkg/protocol"
+	"AIComputingNode/pkg/config"
+	"AIComputingNode/pkg/log"
+	"AIComputingNode/pkg/p2p"
+	"AIComputingNode/pkg/protocol"
+
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 )

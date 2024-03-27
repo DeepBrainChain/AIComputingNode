@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/SuperImageAI/AIComputingNode/pkg/p2p"
+	"AIComputingNode/pkg/p2p"
 
 	"github.com/multiformats/go-multiaddr"
 )

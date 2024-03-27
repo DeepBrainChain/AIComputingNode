@@ -10,11 +10,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/SuperImageAI/AIComputingNode/pkg/config"
-	"github.com/SuperImageAI/AIComputingNode/pkg/log"
-	"github.com/SuperImageAI/AIComputingNode/pkg/p2p"
-	ps "github.com/SuperImageAI/AIComputingNode/pkg/pubsub"
-	"github.com/SuperImageAI/AIComputingNode/pkg/serve"
+	"AIComputingNode/pkg/config"
+	"AIComputingNode/pkg/log"
+	"AIComputingNode/pkg/p2p"
+	ps "AIComputingNode/pkg/pubsub"
+	"AIComputingNode/pkg/serve"
 
 	"github.com/libp2p/go-libp2p"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
