@@ -11,13 +11,20 @@ import (
 	"github.com/multiformats/go-multiaddr"
 )
 
+var GC *Config
+
 type Config struct {
 	Bootstrap []string       `json:"Bootstrap"`
 	Addresses []string       `json:"Addresses"`
+	API       APIConfig      `Json:"API"`
 	Identity  IdentityConfig `json:"Identity"`
 	Swarm     SwarmConfig    `json:"Swarm"`
 	Routing   RoutingConfig  `json:"Routing"`
 	App       AppConfig      `json:"App"`
+}
+
+type APIConfig struct {
+	Addr string `json:"Addr"`
 }
 
 type IdentityConfig struct {
@@ -81,7 +88,12 @@ func (config Config) Validate() error {
 		}
 	}
 
-	err := config.Identity.Validate()
+	err := config.API.Validate()
+	if err != nil {
+		return err
+	}
+
+	err = config.Identity.Validate()
 	if err != nil {
 		return err
 	}
@@ -101,6 +113,13 @@ func (config Config) Validate() error {
 		return err
 	}
 
+	return nil
+}
+
+func (config APIConfig) Validate() error {
+	if config.Addr == "" {
+		return fmt.Errorf("http api address can not be empty")
+	}
 	return nil
 }
 
@@ -161,31 +180,31 @@ func LoadConfig(configPath string) (*Config, error) {
 		return nil, err
 	}
 
-	var config Config
-	err = json.Unmarshal(configFile, &config)
+	GC = &Config{}
+	err = json.Unmarshal(configFile, GC)
 	if err != nil {
 		return nil, err
 	}
 
-	if config.Swarm.ConnMgr.Type == "" {
-		config.Swarm.ConnMgr.Type = "basic"
+	if GC.Swarm.ConnMgr.Type == "" {
+		GC.Swarm.ConnMgr.Type = "basic"
 	}
 
-	if config.Swarm.ConnMgr.LowWater == 0 {
-		config.Swarm.ConnMgr.LowWater = 100
+	if GC.Swarm.ConnMgr.LowWater == 0 {
+		GC.Swarm.ConnMgr.LowWater = 100
 	}
 
-	if config.Swarm.ConnMgr.HighWater == 0 {
-		config.Swarm.ConnMgr.HighWater = 400
+	if GC.Swarm.ConnMgr.HighWater == 0 {
+		GC.Swarm.ConnMgr.HighWater = 400
 	}
 
-	if config.Routing.Type == "" {
-		config.Routing.Type = "auto"
+	if GC.Routing.Type == "" {
+		GC.Routing.Type = "auto"
 	}
 
-	if config.App.LogLevel == "" {
-		config.App.LogLevel = "info"
+	if GC.App.LogLevel == "" {
+		GC.App.LogLevel = "info"
 	}
 
-	return &config, nil
+	return GC, nil
 }

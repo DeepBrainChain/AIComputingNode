@@ -13,6 +13,8 @@ import (
 	"github.com/SuperImageAI/AIComputingNode/pkg/config"
 	"github.com/SuperImageAI/AIComputingNode/pkg/log"
 	"github.com/SuperImageAI/AIComputingNode/pkg/p2p"
+	ps "github.com/SuperImageAI/AIComputingNode/pkg/pubsub"
+	"github.com/SuperImageAI/AIComputingNode/pkg/serve"
 
 	"github.com/libp2p/go-libp2p"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -21,6 +23,8 @@ import (
 	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/libp2p/go-libp2p/core/routing"
+	drouting "github.com/libp2p/go-libp2p/p2p/discovery/routing"
+	dutil "github.com/libp2p/go-libp2p/p2p/discovery/util"
 	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
 
 	dht "github.com/libp2p/go-libp2p-kad-dht"
@@ -165,11 +169,14 @@ func main() {
 		log.Logger.Fatalf("Bootstrap the host: %v", err)
 	}
 
-	ps, err := pubsub.NewGossipSub(ctx, host)
+	routingDiscovery := drouting.NewRoutingDiscovery(kadDHT)
+	dutil.Advertise(ctx, routingDiscovery, cfg.App.TopicName)
+
+	gs, err := pubsub.NewGossipSub(ctx, host)
 	if err != nil {
 		log.Logger.Fatalf("New GossipSub: %v", err)
 	}
-	topic, err := ps.Join(cfg.App.TopicName)
+	topic, err := gs.Join(cfg.App.TopicName)
 	if err != nil {
 		log.Logger.Fatalf("Join GossipSub: %v", err)
 	}
@@ -178,7 +185,21 @@ func main() {
 	if err != nil {
 		log.Logger.Fatalf("Subscribe GossipSub: %v", err)
 	}
-	go pubsubHandler(ctx, sub)
+
+	p2p.Hio = &p2p.HostInfo{
+		Host:            host,
+		UserAgent:       "go-libp2p/79da72fb7",
+		ProtocolVersion: "ipfs/0.1.0",
+		PrivKey:         privKey,
+		Ctx:             ctx,
+		Topic:           topic,
+		RD:              routingDiscovery,
+	}
+
+	publishChan := make(chan []byte, 1024)
+	go ps.PublishToTopic(ctx, topic, publishChan)
+	go ps.PubsubHandler(ctx, sub, publishChan)
+	go serve.NewHttpServe(cfg.API.Addr, publishChan)
 
 	log.Logger.Info("listening for connections")
 
@@ -187,17 +208,4 @@ func main() {
 	// select {} // hang forever
 	<-stop
 	host.Close()
-}
-
-func pubsubHandler(ctx context.Context, sub *pubsub.Subscription) {
-	defer sub.Cancel()
-	for {
-		msg, err := sub.Next(ctx)
-		if err != nil {
-			log.Logger.Warnf("Read GossipSub: %v", err)
-			continue
-		}
-
-		log.Logger.Info(msg.ReceivedFrom, ": ", string(msg.Message.Data))
-	}
 }

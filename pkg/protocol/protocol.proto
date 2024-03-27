@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+option go_package="../protocol";
+package protocol;
+
+message MessageHeader {
+  string clientVersion = 1;
+  int64 timestamp = 2;
+  string id = 3;
+  string nodeId = 4;
+  bytes nodePubKey = 6;
+  bytes sign = 7;
+}
+
+message Message {
+  MessageHeader header = 1;
+  MesasgeType type = 2;
+  oneof body {
+    PeerIdentityRequest piReq = 3;
+    PeerIdentityResponse piRes = 4;
+  }
+}
+
+enum MesasgeType {
+  PEER_IDENTITY_REQUEST = 0;
+  PEER_IDENTITY_RESPONSE = 1;
+}
+
+message PeerIdentityRequest {
+  string nodeId = 1;
+}
+
+message PeerIdentityResponse {
+  string protocolVersion = 5; // e.g. ipfs/1.0.0
+  string agentVersion = 6; // e.g. go-ipfs/0.1.0
+  bytes publicKey = 1;
+  repeated string listenAddrs = 2;
+  repeated string protocols = 3;
+}
