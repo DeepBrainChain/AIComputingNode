@@ -3,7 +3,6 @@ package serve
 import (
 	"encoding/json"
 	"net/http"
-	"sync"
 	"time"
 
 	"AIComputingNode/pkg/config"
@@ -15,41 +14,21 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type RequestItem struct {
-	ID     string
-	Notify chan []byte
-}
-
-var RequestQueue = make([]RequestItem, 0)
-var QueueLock = sync.Mutex{}
-
-type EchoMessage struct {
-	Content string `json:"content"`
-}
-
-type EchoResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-}
-
-type PeerListResponse struct {
-	Code    int      `json:"code"`
-	Message string   `json:"message"`
-	List    []string `json:"list"`
-}
-
-type PeerRequest struct {
-	NodeID string `json:"node_id"`
-}
-
-type PeerResponse struct {
-	Code    int                  `json:"code"`
-	Message string               `json:"message"`
-	Data    p2p.IdentifyProtocol `json:"data"`
-}
-
 func generateUniqueID() string {
 	return uuid.New().String()
+}
+
+func httpStatus(code int) int {
+	switch code {
+	case 0:
+		return http.StatusOK
+	case ErrCodeParam, ErrCodeParse:
+		return http.StatusBadRequest
+	case ErrCodeProtobuf, ErrCodeTimeout, ErrCodeInternal:
+		return http.StatusInternalServerError
+	default:
+		return http.StatusInternalServerError
+	}
 }
 
 func NewHttpServe(addr string, publishChan chan<- []byte) {
@@ -87,12 +66,12 @@ func NewHttpServe(addr string, publishChan chan<- []byte) {
 		peerChan, err := p2p.Hio.FindPeers(config.GC.App.TopicName)
 		if err != nil {
 			log.Logger.Warnf("List peer message: %v", err)
-			rsp.Code = 1
+			rsp.Code = ErrCodeRendezvous
 			rsp.Message = err.Error()
 		} else {
 			for peer := range peerChan {
 				// rsp.List = append(rsp.List, peer.String())
-				rsp.List = append(rsp.List, peer.ID.String())
+				rsp.Data = append(rsp.Data, peer.ID.String())
 			}
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -104,6 +83,7 @@ func NewHttpServe(addr string, publishChan chan<- []byte) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		w.Header().Set("Content-Type", "application/json")
 
 		rsp := PeerResponse{
 			Code:    0,
@@ -112,7 +92,6 @@ func NewHttpServe(addr string, publishChan chan<- []byte) {
 
 		if msg.NodeID == config.GC.Identity.PeerID {
 			rsp.Data = p2p.Hio.GetIdentifyProtocol()
-			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(rsp)
 			return
 		}
@@ -136,9 +115,8 @@ func NewHttpServe(addr string, publishChan chan<- []byte) {
 		}
 		reqBytes, err := proto.Marshal(req)
 		if err != nil {
-			rsp.Code = 1
+			rsp.Code = ErrCodeProtobuf
 			rsp.Message = err.Error()
-			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(rsp)
 			return
 		}
@@ -157,10 +135,10 @@ func NewHttpServe(addr string, publishChan chan<- []byte) {
 		select {
 		case notifyData := <-notifyChan:
 			json.Unmarshal(notifyData, &rsp.Data)
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rsp)
 		case <-time.After(2 * time.Minute):
-			http.Error(w, "Request timeout", http.StatusRequestTimeout)
+			log.Logger.Warn("request id ", requestID, " message type PEER_IDENTITY_REQUEST timeout")
+			rsp.Code = ErrCodeTimeout
+			rsp.Message = errMsg[rsp.Code]
 			QueueLock.Lock()
 			for i, item := range RequestQueue {
 				if item.ID == requestID {
@@ -171,6 +149,7 @@ func NewHttpServe(addr string, publishChan chan<- []byte) {
 			QueueLock.Unlock()
 			close(notifyChan)
 		}
+		json.NewEncoder(w).Encode(rsp)
 	})
 	// 启动 HTTP 服务器
 	log.Logger.Info("HTTP server is running on http://localhost", addr)
