@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"AIComputingNode/pkg/p2p"
 
+	"github.com/mattn/go-isatty"
 	"github.com/multiformats/go-multiaddr"
 )
 
@@ -64,6 +66,8 @@ type RoutingConfig struct {
 
 type AppConfig struct {
 	LogLevel     string `json:"LogLevel"`
+	LogFile      string `json:"LogFile"`
+	LogOutput    string `json:"LogOutput"`
 	PreSharedKey string `json:"PreSharedKey"`
 	TopicName    string `json:"TopicName"`
 }
@@ -171,6 +175,24 @@ func (config AppConfig) Validate() error {
 	if config.TopicName == "" {
 		return fmt.Errorf("topic name can not be empty")
 	}
+	outputOptions := strings.Split(config.LogOutput, "+")
+	for _, opt := range outputOptions {
+		switch opt {
+		case "stdout":
+		case "stderr":
+			continue
+		case "file":
+			if config.LogFile == "" {
+				return fmt.Errorf("need specify a LogFile when LogOutput contained 'file'")
+			}
+			continue
+		default:
+			return fmt.Errorf("unknowned log output")
+		}
+	}
+	if pathIsTerm(config.LogFile) {
+		return fmt.Errorf("illegal log file")
+	}
 	return nil
 }
 
@@ -206,5 +228,22 @@ func LoadConfig(configPath string) (*Config, error) {
 		GC.App.LogLevel = "info"
 	}
 
+	if GC.App.LogOutput == "" {
+		GC.App.LogOutput = "stderr"
+	}
+
 	return GC, nil
+}
+
+func isTerm(f *os.File) bool {
+	return isatty.IsTerminal(f.Fd()) || isatty.IsCygwinTerminal(f.Fd())
+}
+
+func pathIsTerm(p string) bool {
+	// !!!no!!! O_CREAT, if we fail - we fail
+	f, err := os.OpenFile(p, os.O_WRONLY, 0)
+	if f != nil {
+		defer f.Close() // nolint:errcheck
+	}
+	return err == nil && isTerm(f)
 }

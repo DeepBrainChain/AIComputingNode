@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -30,9 +31,19 @@ import (
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 )
 
+var version string
+
+const ProtocolVersion string = "aicn/0.0.1"
+
 func main() {
 	configPath := flag.String("config", "", "the config file path")
+	versionFlag := flag.Bool("version", false, "show version number and exit")
 	flag.Parse()
+
+	if *versionFlag {
+		fmt.Println(version)
+		os.Exit(0)
+	}
 
 	cfg, err := config.LoadConfig(*configPath)
 	if err != nil {
@@ -43,10 +54,14 @@ func main() {
 		panic(err)
 	}
 
-	err = log.SetLogLevel(cfg.App.LogLevel)
+	err = log.InitLogging(cfg.App.LogLevel, cfg.App.LogFile, cfg.App.LogOutput)
 	if err != nil {
 		panic(err)
 	}
+
+	log.Logger.Info("################################################################")
+	log.Logger.Info("#                          START                               #")
+	log.Logger.Info("################################################################")
 
 	DefaultBootstrapPeers, err := p2p.ConvertPeers(cfg.Bootstrap)
 	if err != nil {
@@ -63,6 +78,8 @@ func main() {
 		libp2p.Identity(privKey),
 		libp2p.DefaultMuxers,
 		libp2p.DefaultSecurity,
+		libp2p.ProtocolVersion(ProtocolVersion),
+		libp2p.UserAgent(version),
 	}
 	if cfg.Swarm.ConnMgr.Type == "basic" {
 		gracePeriod, _ := time.ParseDuration(cfg.Swarm.ConnMgr.GracePeriod)
@@ -188,8 +205,8 @@ func main() {
 
 	p2p.Hio = &p2p.HostInfo{
 		Host:            host,
-		UserAgent:       "go-libp2p/79da72fb7",
-		ProtocolVersion: "ipfs/0.1.0",
+		UserAgent:       version,
+		ProtocolVersion: ProtocolVersion,
 		PrivKey:         privKey,
 		Ctx:             ctx,
 		Topic:           topic,
@@ -208,4 +225,8 @@ func main() {
 	// select {} // hang forever
 	<-stop
 	host.Close()
+
+	log.Logger.Info("################################################################")
+	log.Logger.Info("#                          OVER                                #")
+	log.Logger.Info("################################################################")
 }
