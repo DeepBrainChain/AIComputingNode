@@ -1,0 +1,83 @@
+name: Go Build and Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04, macos-latest, windows-latest]
+        go-version: [1.21.6]  # 可以指定需要的 Go 版本
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Build Program 1
+        run: |
+          go build -ldflags "-X main.version=v0.0.1" -o host-${{ runner.os }}${{ matrix.extension }} ./host/main.go
+      - name: Build Program 2
+        run: |
+          go build -o peer-key-${{ runner.os }}${{ matrix.extension }} ./tools/peer-key/main.go
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: myapp-${{ runner.os }}
+          path: |
+            host-${{ runner.os }}${{ matrix.extension }}
+            peer-key-${{ runner.os }}${{ matrix.extension }}
+    env:
+      extension: ${{ runner.os == 'Windows' && '.exe' || '' }}
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: downloaded-artifacts
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      # - name: Upload Release Asset for Program 1
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: host-${{ runner.os }}${{ runner.os == 'Windows' && '.exe' || '' }}
+      #     asset_name: host-${{ runner.os }}${{ runner.os == 'Windows' && '.exe' || '' }}
+      #     asset_content_type: application/octet-stream
+      # - name: Upload Release Asset for Program 2
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: peer-key-${{ runner.os }}${{ runner.os == 'Windows' && '.exe' || '' }}
+      #     asset_name: peer-key-${{ runner.os }}${{ runner.os == 'Windows' && '.exe' || '' }}
+      #     asset_content_type: application/octet-stream
+      - name: Upload assets
+        run: |
+          for file in downloaded-artifacts/*; do
+            if [ -f "$file" ]; then
+              echo "Uploading $file"
+              asset_name=$(basename $file)
+              github-actions upload-release-asset --repo ${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} --file $file --name $asset_name --content-type application/octet-stream --url ${{ steps.create_release.outputs.upload_url }}
+            fi
+          done
