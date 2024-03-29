@@ -12,6 +12,7 @@ Distributed Inference Computing Network for Text-to-Image Generation
   - [`Server Configuration Example`](#server-configuration-example)
 - [`Tools`](#tools)
   - [`PeerKey`](#peerkey)
+  - [`PSK`](#psk)
 - [`HTTP API`](#http-api)
 
 ## Compiling
@@ -245,16 +246,31 @@ $ host -config ./config.json [-version]
 如果命令行参数 `-peerkey` 指定的密钥文件不存在，则在此文件路径创建一个新的密钥。
 
 ```shell
-$ ./peer-key.exe -peerkey ./peer.key
+$ ./peer-key -peerkey ./peer.key
 2024/03/28 18:58:12 Generate peer key success
 2024/03/28 18:58:12 Encode private key: CAESQBOuYLpTajlQ0Xzh84i6ey0Zot24Tc2qA2yDgw7dd2vGpg53BtN+RQgJ2erx2lRgDo4BiOXy0ZFRRxIZRQ5wJ3U=
 2024/03/28 18:58:12 Encode public key: CAESIKYOdwbTfkUICdnq8dpUYA6OAYjl8tGRUUcSGUUOcCd1
 2024/03/28 18:58:12 Transform Peer ID: 12D3KooWLzae3a7n7eJSQbSgARHQizJzChS4Rtpo3gziugpV4vRz
-$ ./peer-key.exe -peerkey ./peer.key
+$ ./peer-key -peerkey ./peer.key
 2024/03/29 09:59:55 Load peer key success
 2024/03/29 09:59:55 Encode private key: CAESQBOuYLpTajlQ0Xzh84i6ey0Zot24Tc2qA2yDgw7dd2vGpg53BtN+RQgJ2erx2lRgDo4BiOXy0ZFRRxIZRQ5wJ3U=
 2024/03/29 09:59:55 Encode public key: CAESIKYOdwbTfkUICdnq8dpUYA6OAYjl8tGRUUcSGUUOcCd1
 2024/03/29 09:59:55 Transform Peer ID: 12D3KooWLzae3a7n7eJSQbSgARHQizJzChS4Rtpo3gziugpV4vRz
+```
+
+### PSK
+
+生成一个随机的 64 位字符串作为预共享密钥(Pre-Shared Key)，每次生成的都不一样。
+
+***切记: 预共享密钥不同的节点无法互相连接通信***
+
+```shell
+$ ./psk
+2024/03/29 15:09:49 Generate Pre-Shared key: 4628f17e14cb496a9a3c85d774df1d1f4147098327e006e4a01ef75c1bcbcef4
+$ ./psk
+2024/03/29 15:09:52 Generate Pre-Shared key: 20b580ada44043b9d7b78b02db10d2ae07ea777019c232203558f02da3d91922
+$ ./psk
+2024/03/29 15:09:54 Generate Pre-Shared key: a0d245d95cf60826d5d18b5cbfe6e9a9f9b119a256d76d6873b497976d5acf2e
 ```
 
 ## HTTP API
