@@ -2,6 +2,7 @@ package serve
 
 import (
 	"AIComputingNode/pkg/p2p"
+	"errors"
 	"sync"
 )
 
@@ -56,4 +57,11 @@ type PeerResponse struct {
 	Code    int                  `json:"code"`
 	Message string               `json:"message"`
 	Data    p2p.IdentifyProtocol `json:"data"`
+}
+
+func (req PeerRequest) Validate() error {
+	if req.NodeID == "" {
+		return errors.New("empty node_id")
+	}
+	return nil
 }

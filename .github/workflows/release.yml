@@ -30,17 +30,17 @@ jobs:
         uses: actions/checkout@v3
       - name: Build Program 1
         run: |
-          go build -ldflags "-X main.version=${{ github.ref_name }}" -o host-${{ runner.os }}${{ matrix.extension }} ./host/main.go
+          go build -ldflags "-X main.version=${{ github.ref_name }}" -o host-${{ runner.os }}-${{ github.ref_name }}${{ matrix.extension }} ./host/main.go
       - name: Build Program 2
         run: |
-          go build -o peer-key-${{ runner.os }}${{ matrix.extension }} ./tools/peer-key/main.go
+          go build -o peer-key-${{ runner.os }}-${{ github.ref_name }}${{ matrix.extension }} ./tools/peer-key/main.go
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: myapp-${{ runner.os }}
           path: |
-            host-${{ runner.os }}${{ matrix.extension }}
-            peer-key-${{ runner.os }}${{ matrix.extension }}
+            host-${{ runner.os }}-${{ github.ref_name }}${{ matrix.extension }}
+            peer-key-${{ runner.os }}-${{ github.ref_name }}${{ matrix.extension }}
 
   release:
     name: Create Release

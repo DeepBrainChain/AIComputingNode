@@ -51,7 +51,6 @@ func PubsubHandler(ctx context.Context, sub *pubsub.Subscription, publishChan ch
 		case protocol.MesasgeType_PEER_IDENTITY_REQUEST:
 			if piReq := pmsg.GetPiReq(); piReq != nil {
 				if piReq.GetNodeId() == config.GC.Identity.PeerID {
-					log.Logger.Info("Received Peer Identity Request")
 					idp := p2p.Hio.GetIdentifyProtocol()
 					res := protocol.Message{
 						Header: &protocol.MessageHeader{
@@ -74,8 +73,10 @@ func PubsubHandler(ctx context.Context, sub *pubsub.Subscription, publishChan ch
 					resBytes, err := proto.Marshal(&res)
 					if err != nil {
 						log.Logger.Warnf("Marshal Identity Response %v", err)
+						break
 					}
 					publishChan <- resBytes
+					log.Logger.Info("Sending Peer Identity Response")
 				} else {
 					log.Logger.Info("Gossip Peer Identity Request of ", piReq.GetNodeId())
 				}
@@ -95,6 +96,7 @@ func PubsubHandler(ctx context.Context, sub *pubsub.Subscription, publishChan ch
 				notifyData, err := json.Marshal(idp)
 				if err != nil {
 					log.Logger.Warnf("Marshal Identity Protocol %v", err)
+					break
 				}
 				serve.QueueLock.Lock()
 				for i, item := range serve.RequestQueue {
