@@ -29,14 +29,14 @@ func PubsubHandler(ctx context.Context, sub *pubsub.Subscription, publishChan ch
 	for {
 		msg, err := sub.Next(ctx)
 		if err != nil {
-			log.Logger.Warnf("Read GossipSub: %v", err)
+			log.Logger.Warnf("Read PubSub: %v", err)
 			continue
 		}
 
 		pmsg := &protocol.Message{}
 		err = proto.Unmarshal(msg.Data, pmsg)
 		if err != nil {
-			log.Logger.Warnf("Unmarshal GossipSub: %v", err)
+			log.Logger.Warnf("Unmarshal PubSub: %v", err)
 			continue
 		}
 

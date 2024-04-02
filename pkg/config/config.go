@@ -21,6 +21,7 @@ type Config struct {
 	API       APIConfig      `Json:"API"`
 	Identity  IdentityConfig `json:"Identity"`
 	Swarm     SwarmConfig    `json:"Swarm"`
+	Pubsub    PubsubConfig   `json:Pubsub`
 	Routing   RoutingConfig  `json:"Routing"`
 	App       AppConfig      `json:"App"`
 }
@@ -57,6 +58,12 @@ type SwarmConnMgrConfig struct {
 	HighWater   int    `json:"HighWater"`
 	LowWater    int    `json:"LowWater"`
 	GracePeriod string `json:"GracePeriod"`
+}
+
+type PubsubConfig struct {
+	Enabled      bool   `json:"Enabled"`
+	Router       string `json:"Router"`
+	FloodPublish bool   `json:"FloodPublish"`
 }
 
 type RoutingConfig struct {
@@ -103,6 +110,11 @@ func (config Config) Validate() error {
 	}
 
 	err = config.Swarm.Validate()
+	if err != nil {
+		return err
+	}
+
+	err = config.Pubsub.Validate()
 	if err != nil {
 		return err
 	}
@@ -155,6 +167,13 @@ func (config SwarmConnMgrConfig) Validate() error {
 		return err
 	}
 
+	return nil
+}
+
+func (config PubsubConfig) Validate() error {
+	if config.Router != "gossipsub" && config.Router != "floodsub" {
+		return fmt.Errorf("unknowned pubsub router")
+	}
 	return nil
 }
 
@@ -218,6 +237,11 @@ func LoadConfig(configPath string) (*Config, error) {
 
 	if GC.Swarm.ConnMgr.HighWater == 0 {
 		GC.Swarm.ConnMgr.HighWater = 400
+	}
+
+	GC.Pubsub.Enabled = true
+	if GC.Pubsub.Router == "" {
+		GC.Pubsub.Router = "gossipsub"
 	}
 
 	if GC.Routing.Type == "" {

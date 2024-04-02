@@ -104,6 +104,17 @@ $ host -config ./config.json [-version]
     // 该服务的速率受到严格限制，不会导致任何性能问题。
     "EnableAutoNATService": true
   },
+  // 发布订阅配置
+  "Pubsub": {
+    // 默认启用
+    "Enabled": true,
+    // 路由类型，默认 "gossipsub"
+    // "floodsub" - 采用泛洪算法，将消息发送给所有连接的对等点，效率低但非常可靠，适合节点少的小型网络。
+    // "gossipsub" - 使用网格形式和八卦图传播功能的先进算法，适合节点很多的大型网络。
+    "Router": "gossipsub",
+    // 在 "gossipsub" 中使用泛洪发布，将消息发给所有分数大于 publishThreshold 的对等点。
+    "FloodPublish": true
+  },
   // 节点路由
   "Routing": {
     // 路由类型
@@ -172,6 +183,11 @@ $ host -config ./config.json [-version]
     "EnableHolePunching": true,
     "EnableAutoNATService": true
   },
+  "Pubsub": {
+    "Enabled": true,
+    "Router": "gossipsub",
+    "FloodPublish": true
+  },
   "Routing": {
     "Type": "dhtclient",
     "ProtocolPrefix": "/DeepBrainChain"
@@ -222,6 +238,11 @@ $ host -config ./config.json [-version]
     },
     "EnableHolePunching": false,
     "EnableAutoNATService": true
+  },
+  "Pubsub": {
+    "Enabled": true,
+    "Router": "gossipsub",
+    "FloodPublish": true
   },
   "Routing": {
     "Type": "dhtserver",

@@ -121,8 +121,6 @@ func main() {
 	}
 	if cfg.Swarm.RelayClient.Enabled {
 		opts = append(opts, libp2p.EnableAutoRelayWithStaticRelays(DefaultBootstrapPeers))
-	} else {
-		opts = append(opts, libp2p.DisableRelay())
 	}
 	if cfg.Swarm.RelayService.Enabled {
 		opts = append(opts, libp2p.EnableRelayService())
@@ -189,18 +187,37 @@ func main() {
 	routingDiscovery := drouting.NewRoutingDiscovery(kadDHT)
 	dutil.Advertise(ctx, routingDiscovery, cfg.App.TopicName)
 
-	gs, err := pubsub.NewGossipSub(ctx, host)
+	psOpts := []pubsub.Option{
+		pubsub.WithDirectPeers(DefaultBootstrapPeers),
+		pubsub.WithDirectConnectTicks(30),
+		pubsub.WithDiscovery(routingDiscovery),
+	}
+	if cfg.Routing.Type == "dhtserver" || cfg.Swarm.RelayService.Enabled {
+		psOpts = append(psOpts, pubsub.WithPeerExchange(true))
+	} else {
+		psOpts = append(psOpts, pubsub.WithPeerExchange(false))
+	}
+	if cfg.Pubsub.FloodPublish {
+		psOpts = append(psOpts, pubsub.WithFloodPublish(true))
+	}
+	var gs *pubsub.PubSub
+
+	if cfg.Pubsub.Router == "gossipsub" {
+		gs, err = pubsub.NewGossipSub(ctx, host, psOpts...)
+	} else {
+		gs, err = pubsub.NewFloodSub(ctx, host, psOpts...)
+	}
 	if err != nil {
-		log.Logger.Fatalf("New GossipSub: %v", err)
+		log.Logger.Fatalf("New %s: %v", cfg.Pubsub.Router, err)
 	}
 	topic, err := gs.Join(cfg.App.TopicName)
 	if err != nil {
-		log.Logger.Fatalf("Join GossipSub: %v", err)
+		log.Logger.Fatalf("Join PubSub: %v", err)
 	}
 	defer topic.Close()
 	sub, err := topic.Subscribe()
 	if err != nil {
-		log.Logger.Fatalf("Subscribe GossipSub: %v", err)
+		log.Logger.Fatalf("Subscribe PubSub: %v", err)
 	}
 
 	p2p.Hio = &p2p.HostInfo{
