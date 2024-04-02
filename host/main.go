@@ -68,7 +68,9 @@ func main() {
 		log.Logger.Fatalln("Parse bootstrap: %v", err)
 	}
 
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	var kadDHT *dht.IpfsDHT
 
 	privKey, _ := p2p.PrivKeyFromString(cfg.Identity.PrivKey)
@@ -188,21 +190,21 @@ func main() {
 	dutil.Advertise(ctx, routingDiscovery, cfg.App.TopicName)
 
 	psOpts := []pubsub.Option{
-		pubsub.WithDirectPeers(DefaultBootstrapPeers),
-		pubsub.WithDirectConnectTicks(30),
-		pubsub.WithDiscovery(routingDiscovery),
-	}
-	if cfg.Routing.Type == "dhtserver" || cfg.Swarm.RelayService.Enabled {
-		psOpts = append(psOpts, pubsub.WithPeerExchange(true))
-	} else {
-		psOpts = append(psOpts, pubsub.WithPeerExchange(false))
-	}
-	if cfg.Pubsub.FloodPublish {
-		psOpts = append(psOpts, pubsub.WithFloodPublish(true))
+		// pubsub.WithDiscovery(routingDiscovery),
 	}
 	var gs *pubsub.PubSub
 
 	if cfg.Pubsub.Router == "gossipsub" {
+		psOpts = append(psOpts,
+			pubsub.WithDirectPeers(DefaultBootstrapPeers),
+			pubsub.WithDirectConnectTicks(30),
+		)
+		if cfg.Routing.Type == "dhtserver" || cfg.Swarm.RelayService.Enabled {
+			psOpts = append(psOpts, pubsub.WithPeerExchange(true))
+		}
+		if cfg.Pubsub.FloodPublish {
+			psOpts = append(psOpts, pubsub.WithFloodPublish(true))
+		}
 		gs, err = pubsub.NewGossipSub(ctx, host, psOpts...)
 	} else {
 		gs, err = pubsub.NewFloodSub(ctx, host, psOpts...)
