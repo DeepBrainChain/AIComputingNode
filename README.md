@@ -245,7 +245,7 @@ $ host -config ./config.json [-version]
   },
   "Pubsub": {
     "Enabled": true,
-    "Router": "gossipsub",
+    "Router": "floodsub",
     "FloodPublish": true
   },
   "Routing": {

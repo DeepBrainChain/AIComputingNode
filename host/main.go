@@ -37,6 +37,11 @@ var version string
 
 const ProtocolVersion string = "aicn/0.0.1"
 
+type connectionResult struct {
+	IsPublic bool // 是否是公网节点
+	Success  bool // 连接是否成功
+}
+
 func main() {
 	configPath := flag.String("config", "", "the config file path")
 	versionFlag := flag.Bool("version", false, "show version number and exit")
@@ -65,7 +70,7 @@ func main() {
 	log.Logger.Info("#                          START                               #")
 	log.Logger.Info("################################################################")
 
-	err = db.InitDb(cfg.App.Datastore)
+	err = db.InitDb(db.InitOptions{Folder: cfg.App.Datastore})
 	if err != nil {
 		log.Logger.Fatalf("Init database: %v", err)
 	}
@@ -172,7 +177,7 @@ func main() {
 		DisconnectedF: func(n network.Network, c network.Conn) {
 			log.Logger.Info("OnDisconnected remote multi-addr ", c.RemoteMultiaddr(), c.RemotePeer())
 			delete(p2p.PeerList, c.RemotePeer())
-			db.PeerDisconnected(c.RemotePeer().String(), c.RemoteMultiaddr().String())
+			// db.PeerDisconnected(c.RemotePeer().String(), c.RemoteMultiaddr().String())
 		},
 	})
 
@@ -189,38 +194,45 @@ func main() {
 		}
 	}
 
-	// 统计连接成功的公网节点的个数
-	publishConnArray := make(chan bool, len(PeersHistory))
-
 	// Let's connect to the bootstrap nodes first. They will tell us about the
 	// other nodes in the network.
 	var wg sync.WaitGroup
+	var connectionResults sync.Map
 	for _, peerinfo := range PeersHistory {
 		wg.Add(1)
 		go func(pi peer.AddrInfo) {
 			defer wg.Done()
 			ispub := p2p.IsPublicNode(pi)
+			result := connectionResult{
+				IsPublic: ispub,
+			}
 			if ispub {
 				host.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
 			}
 			if err := host.Connect(ctx, pi); err != nil {
 				log.Logger.Warnf("Connect history node %v : %v", pi, err)
-				publishConnArray <- false
+				result.Success = false
 			} else {
 				log.Logger.Info("Connection established with history node:", pi)
-				publishConnArray <- ispub
+				result.Success = true
 			}
+			connectionResults.Store(pi.ID, result)
 		}(peerinfo)
 	}
 	wg.Wait()
 
-	close(publishConnArray)
 	publishConns := 0
-	for ipcs := range publishConnArray {
-		if ipcs {
+	connectionResults.Range(func(key, value any) bool {
+		pi := key.(peer.ID)
+		result := value.(connectionResult)
+		if !result.Success {
+			db.PeerConnectFailed(pi.String())
+		}
+		if result.IsPublic && result.Success {
 			publishConns++
 		}
-	}
+		return true
+	})
 
 	if publishConns < 2 {
 		for _, peerinfo := range DefaultBootstrapPeers {

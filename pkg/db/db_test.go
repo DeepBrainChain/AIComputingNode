@@ -1,6 +1,7 @@
 package db
 
 import (
+	"os"
 	"testing"
 	"time"
 )
@@ -21,4 +22,20 @@ func TestTimeDiff(t *testing.T) {
 	t.Log("time sub", td2)
 	t.Logf("time diff %.2f days ~ %.f hours ~ %.f minutes ~ %.f seconds",
 		td2.Hours()/24, td2.Hours(), td2.Minutes(), td2.Seconds())
+}
+
+func TestLevelDB(t *testing.T) {
+	if err := InitDb(InitOptions{Folder: ".", PeersDBName: "test.db"}); err != nil {
+		t.Fatal("Init db failed", err)
+	}
+	PeerConnected("12D3KooWEJkLnXJuqiDRunRdes7JHtjr6jw2w2EUPysVMCuv4ZfJ",
+		"/ip4/8.219.75.114/tcp/6001")
+	PeerConnected("12D3KooWSpgWzEXE5GNjY6hgdAhuuBLe4d3ocqWDnVLdCa8U3cig",
+		"/ip4/122.99.183.54/tcp/6001")
+	peers := LoadPeers()
+	for key, value := range peers {
+		t.Log("load db item", key, value)
+	}
+	peersDB.Close()
+	os.RemoveAll("./test.db")
 }

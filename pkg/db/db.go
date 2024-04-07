@@ -12,18 +12,23 @@ import (
 
 var peersDB *leveldb.DB
 
-type peerInfo struct {
-	// 连接地址
-	Address string `json:"Address"`
-	// 上次连接成功的时间
-	LastConnectTime int64 `json:"LastConnectTime"`
-	// 连续失败次数
-	ConsecutiveFailures int32 `json:"ConsecutiveFailures"`
+type InitOptions struct {
+	Folder      string
+	PeersDBName string
 }
 
-func InitDb(dir string) error {
+type peerInfo struct {
+	Address             string `json:"Address"`             // 连接地址
+	LastConnectTime     int64  `json:"LastConnectTime"`     // 上次连接成功的时间
+	ConsecutiveFailures int32  `json:"ConsecutiveFailures"` // 连续失败次数
+}
+
+func InitDb(opts InitOptions) error {
+	if opts.PeersDBName == "" {
+		opts.PeersDBName = "peers.db"
+	}
 	var err error
-	peersDB, err = leveldb.OpenFile(filepath.Join(dir, "peers.db"), nil)
+	peersDB, err = leveldb.OpenFile(filepath.Join(opts.Folder, opts.PeersDBName), nil)
 	return err
 }
 
@@ -54,7 +59,7 @@ func PeerConnected(id string, addr string) {
 	updatePeer(id, pi)
 }
 
-func PeerDisconnected(id string, addr string) {
+func PeerConnectFailed(id string) {
 	value, err := peersDB.Get([]byte(id), nil)
 	if err != nil {
 		log.Logger.Warnf("Get connectiong db item failed %v", err)

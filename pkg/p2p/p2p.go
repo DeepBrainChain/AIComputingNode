@@ -107,7 +107,7 @@ func ConvertPeersFromStringArray(peers []string) ([]peer.AddrInfo, error) {
 }
 
 func ConvertPeersFromStringMap(peers map[string]string) ([]peer.AddrInfo, error) {
-	pinfos := make([]peer.AddrInfo, len(peers))
+	pinfos := make([]peer.AddrInfo, 0, len(peers))
 	for key, value := range peers {
 		pi, err := peer.Decode(key)
 		if err != nil {
