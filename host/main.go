@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"AIComputingNode/pkg/config"
+	"AIComputingNode/pkg/db"
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/p2p"
 	ps "AIComputingNode/pkg/pubsub"
@@ -20,6 +21,7 @@ import (
 	"github.com/libp2p/go-libp2p"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/libp2p/go-libp2p/core/protocol"
@@ -63,9 +65,19 @@ func main() {
 	log.Logger.Info("#                          START                               #")
 	log.Logger.Info("################################################################")
 
-	DefaultBootstrapPeers, err := p2p.ConvertPeers(cfg.Bootstrap)
+	err = db.InitDb(cfg.App.Datastore)
 	if err != nil {
-		log.Logger.Fatalln("Parse bootstrap: %v", err)
+		log.Logger.Fatalf("Init database: %v", err)
+	}
+
+	PeersHistory, err := p2p.ConvertPeersFromStringMap(db.LoadPeers())
+	if err != nil {
+		log.Logger.Fatalf("Load peer history: %v", err)
+	}
+
+	DefaultBootstrapPeers, err := p2p.ConvertPeersFromStringArray(cfg.Bootstrap)
+	if err != nil {
+		log.Logger.Fatalf("Parse bootstrap: %v", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -151,6 +163,19 @@ func main() {
 	addrs, err := peer.AddrInfoToP2pAddrs(&peerInfo)
 	log.Logger.Info("libp2p node address:", addrs) // addrs[0]
 
+	host.Network().Notify(&network.NotifyBundle{
+		ConnectedF: func(n network.Network, c network.Conn) {
+			log.Logger.Info("OnConnected remote multi-addr ", c.RemoteMultiaddr(), c.RemotePeer())
+			p2p.PeerList[c.RemotePeer()] = c.RemoteMultiaddr()
+			db.PeerConnected(c.RemotePeer().String(), c.RemoteMultiaddr().String())
+		},
+		DisconnectedF: func(n network.Network, c network.Conn) {
+			log.Logger.Info("OnDisconnected remote multi-addr ", c.RemoteMultiaddr(), c.RemotePeer())
+			delete(p2p.PeerList, c.RemotePeer())
+			db.PeerDisconnected(c.RemotePeer().String(), c.RemoteMultiaddr().String())
+		},
+	})
+
 	if cfg.Routing.Type == "none" {
 		dhtOpts := []dht.Option{
 			dht.Mode(dht.ModeClient),
@@ -164,22 +189,56 @@ func main() {
 		}
 	}
 
+	// 统计连接成功的公网节点的个数
+	publishConnArray := make(chan bool, len(PeersHistory))
+
 	// Let's connect to the bootstrap nodes first. They will tell us about the
 	// other nodes in the network.
 	var wg sync.WaitGroup
-	for _, peerinfo := range DefaultBootstrapPeers {
+	for _, peerinfo := range PeersHistory {
 		wg.Add(1)
 		go func(pi peer.AddrInfo) {
 			defer wg.Done()
-			host.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
+			ispub := p2p.IsPublicNode(pi)
+			if ispub {
+				host.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
+			}
 			if err := host.Connect(ctx, pi); err != nil {
-				log.Logger.Warnf("Connect bootstrap node %v : %v", pi, err)
+				log.Logger.Warnf("Connect history node %v : %v", pi, err)
+				publishConnArray <- false
 			} else {
-				log.Logger.Info("Connection established with bootstrap node:", pi)
+				log.Logger.Info("Connection established with history node:", pi)
+				publishConnArray <- ispub
 			}
 		}(peerinfo)
 	}
 	wg.Wait()
+
+	close(publishConnArray)
+	publishConns := 0
+	for ipcs := range publishConnArray {
+		if ipcs {
+			publishConns++
+		}
+	}
+
+	if publishConns < 2 {
+		for _, peerinfo := range DefaultBootstrapPeers {
+			wg.Add(1)
+			go func(pi peer.AddrInfo) {
+				defer wg.Done()
+				if host.Network().Connectedness(pi.ID) != network.Connected {
+					host.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
+					if err := host.Connect(ctx, pi); err != nil {
+						log.Logger.Warnf("Connect bootstrap node %v : %v", pi, err)
+					} else {
+						log.Logger.Info("Connection established with bootstrap node:", pi)
+					}
+				}
+			}(peerinfo)
+		}
+		wg.Wait()
+	}
 
 	err = kadDHT.Bootstrap(ctx)
 	if err != nil {

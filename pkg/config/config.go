@@ -21,7 +21,7 @@ type Config struct {
 	API       APIConfig      `Json:"API"`
 	Identity  IdentityConfig `json:"Identity"`
 	Swarm     SwarmConfig    `json:"Swarm"`
-	Pubsub    PubsubConfig   `json:Pubsub`
+	Pubsub    PubsubConfig   `json:"Pubsub"`
 	Routing   RoutingConfig  `json:"Routing"`
 	App       AppConfig      `json:"App"`
 }
@@ -77,6 +77,7 @@ type AppConfig struct {
 	LogOutput    string `json:"LogOutput"`
 	PreSharedKey string `json:"PreSharedKey"`
 	TopicName    string `json:"TopicName"`
+	Datastore    string `json:"Datastore"`
 }
 
 func (config Config) Validate() error {
@@ -211,6 +212,12 @@ func (config AppConfig) Validate() error {
 	}
 	if pathIsTerm(config.LogFile) {
 		return fmt.Errorf("illegal log file")
+	}
+	if config.Datastore == "" {
+		return fmt.Errorf("datastore can not be empty")
+	}
+	if s, err := os.Stat(config.Datastore); err != nil || !s.IsDir() {
+		return fmt.Errorf("datastore must be a folder that already exists")
 	}
 	return nil
 }

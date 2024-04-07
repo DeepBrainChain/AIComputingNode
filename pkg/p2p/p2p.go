@@ -10,11 +10,14 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/multiformats/go-multiaddr"
+	manet "github.com/multiformats/go-multiaddr/net"
 
 	drouting "github.com/libp2p/go-libp2p/p2p/discovery/routing"
 )
 
 var Hio *HostInfo
+
+var PeerList = make(map[peer.ID]multiaddr.Multiaddr)
 
 type HostInfo struct {
 	Host            host.Host
@@ -87,10 +90,13 @@ func MarshalPubKeyFromPrivKey(priv crypto.PrivKey) ([]byte, error) {
 	return pubKeyBytes, err
 }
 
-func ConvertPeers(peers []string) ([]peer.AddrInfo, error) {
+func ConvertPeersFromStringArray(peers []string) ([]peer.AddrInfo, error) {
 	pinfos := make([]peer.AddrInfo, len(peers))
 	for i, addr := range peers {
-		maddr := multiaddr.StringCast(addr)
+		maddr, err := multiaddr.NewMultiaddr(addr)
+		if err != nil {
+			return []peer.AddrInfo{}, err
+		}
 		p, err := peer.AddrInfoFromP2pAddr(maddr)
 		if err != nil {
 			return []peer.AddrInfo{}, err
@@ -98,4 +104,32 @@ func ConvertPeers(peers []string) ([]peer.AddrInfo, error) {
 		pinfos[i] = *p
 	}
 	return pinfos, nil
+}
+
+func ConvertPeersFromStringMap(peers map[string]string) ([]peer.AddrInfo, error) {
+	pinfos := make([]peer.AddrInfo, len(peers))
+	for key, value := range peers {
+		pi, err := peer.Decode(key)
+		if err != nil {
+			return []peer.AddrInfo{}, err
+		}
+		maddr, err := multiaddr.NewMultiaddr(value)
+		if err != nil {
+			return []peer.AddrInfo{}, err
+		}
+		pinfos = append(pinfos, peer.AddrInfo{
+			ID:    pi,
+			Addrs: []multiaddr.Multiaddr{maddr},
+		})
+	}
+	return pinfos, nil
+}
+
+func IsPublicNode(pi peer.AddrInfo) bool {
+	for _, addr := range pi.Addrs {
+		if manet.IsPublicAddr(addr) {
+			return true
+		}
+	}
+	return false
 }

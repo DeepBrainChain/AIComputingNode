@@ -141,7 +141,10 @@ $ host -config ./config.json [-version]
     "PreSharedKey": "f504f536a912a8cf7d00adacee8ed20270c5040d961d7f3da4fccbcbec0ec48a",
     // 订阅的主题名称，用于集中式的节点查询服务，例如查询网络中所有的节点 Node ID 列表。
     // 主题名称不同可能会导致别人无法查询到您部署的节点。
-    "TopicName": "SuperImageAI"
+    "TopicName": "SuperImageAI",
+    // 数据存储文件夹，将成功连接的对等点信息等持久化保存，方便节点在启动时快速重新连接到网络中。
+    // 请提前创建此文件夹，并保证本节点程序有读写权限。
+    "Datastore": "./datastore"
   }
 }
 ```
@@ -197,7 +200,8 @@ $ host -config ./config.json [-version]
     "LogFile": "./test.log",
     "LogOutput": "stderr+file",
     "PreSharedKey": "f504f536a912a8cf7d00adacee8ed20270c5040d961d7f3da4fccbcbec0ec48a",
-    "TopicName": "SuperImageAI"
+    "TopicName": "SuperImageAI",
+    "Datastore": "./datastore"
   }
 }
 ```
@@ -253,7 +257,8 @@ $ host -config ./config.json [-version]
     "LogFile": "./test.log",
     "LogOutput": "stderr+file",
     "PreSharedKey": "f504f536a912a8cf7d00adacee8ed20270c5040d961d7f3da4fccbcbec0ec48a",
-    "TopicName": "SuperImageAI"
+    "TopicName": "SuperImageAI",
+    "Datastore": "./datastore"
   }
 }
 ```
