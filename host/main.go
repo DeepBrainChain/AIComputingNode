@@ -38,8 +38,8 @@ var version string
 const ProtocolVersion string = "aicn/0.0.1"
 
 type connectionResult struct {
-	IsPublic bool // 是否是公网节点
-	Success  bool // 连接是否成功
+	IsPublic bool // Is it a public network node?
+	Success  bool // Is the connection successful?
 }
 
 func main() {

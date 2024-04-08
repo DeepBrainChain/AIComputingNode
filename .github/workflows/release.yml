@@ -20,7 +20,7 @@ jobs:
             extension: ""
           - os: windows-latest
             extension: ".exe"
-        go-version: [1.21.6]  # 可以指定需要的 Go 版本
+        go-version: [1.21.6]  # You can specify the required Go version
     steps:
       - name: Set up Go
         uses: actions/setup-go@v3

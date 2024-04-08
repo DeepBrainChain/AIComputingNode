@@ -1,22 +1,22 @@
-# 使用 VS Code 插件: `REST Client`
+# Use the VS Code plugin: `REST Client`
 
 @url = http://localhost:7801
-@nodeId = "12D3KooWGdsZztDKxSwqwtDsHY4VDEHQoFpcr1AXxsERenWvUHrz"
+@nodeId = "12D3KooWDHnZQxvtNAVX8tQ4m1ASGtzg5fqCdC6kN4YfdrwmHMoX"
 
 ###
-# 获取节点自身的 PeerInfo
+# Get the PeerInfo of the node itself
 
 GET {{url}}/api/v0/id HTTP/1.1
 Content-Type: application/json
 
 ###
-# 获取节点列表
+# Get peer node list
 
 GET {{url}}/api/v0/peers HTTP/1.1
 Content-Type: application/json
 
 ###
-# 获取节点的 PeerInfo
+# Get the PeerInfo of any node
 
 GET {{url}}/api/v0/peer HTTP/1.1
 Content-Type: application/json

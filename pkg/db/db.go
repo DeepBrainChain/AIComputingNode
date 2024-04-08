@@ -18,9 +18,9 @@ type InitOptions struct {
 }
 
 type peerInfo struct {
-	Address             string `json:"Address"`             // 连接地址
-	LastConnectTime     int64  `json:"LastConnectTime"`     // 上次连接成功的时间
-	ConsecutiveFailures int32  `json:"ConsecutiveFailures"` // 连续失败次数
+	Address             string `json:"Address"`             // connection address
+	LastConnectTime     int64  `json:"LastConnectTime"`     // Time of last successful connection
+	ConsecutiveFailures int32  `json:"ConsecutiveFailures"` // Number of consecutive failures
 }
 
 func InitDb(opts InitOptions) error {

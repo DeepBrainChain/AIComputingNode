@@ -55,10 +55,10 @@ func InitLogging(levelString string, logFile string, logOutput string) error {
 
 		logWriter := &lumberjack.Logger{
 			Filename:   logFile,
-			MaxSize:    10,   // 文件最大大小(MB)
-			MaxBackups: 30,   // 最多保留 30 个备份
-			MaxAge:     28,   // 文件最大保存天数
-			Compress:   true, // 是否压缩禁用旧文件
+			MaxSize:    10,   // Maximum file size (MB)
+			MaxBackups: 30,   // Keep up to 30 backups
+			MaxAge:     28,   // Maximum number of days to save files
+			Compress:   true, // Whether to disable compression for old files
 		}
 
 		zapCore := zapcore.NewCore(encoder, zapcore.AddSync(logWriter), zap.InfoLevel)
@@ -87,10 +87,10 @@ func InitLogging(levelString string, logFile string, logOutput string) error {
 
 	logWriter := &lumberjack.Logger{
 		Filename:   logFile,
-		MaxSize:    10,   // 文件最大大小(MB)
-		MaxBackups: 30,   // 最多保留 30 个备份
-		MaxAge:     28,   // 文件最大保存天数
-		Compress:   true, // 是否压缩禁用旧文件
+		MaxSize:    10,   // Maximum file size (MB)
+		MaxBackups: 30,   // Keep up to 30 backups
+		MaxAge:     28,   // Maximum number of days to save files
+		Compress:   true, // Whether to disable compression for old files
 	}
 
 	fileCore := zapcore.NewCore(fileEncoder, zapcore.AddSync(logWriter), zap.InfoLevel)

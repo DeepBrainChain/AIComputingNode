@@ -173,7 +173,6 @@ func NewHttpServe(pcn chan<- []byte) {
 	// })
 	http.HandleFunc("/api/v0/peers", hs.peersHandler)
 	http.HandleFunc("/api/v0/peer", hs.peerHandler)
-	// 启动 HTTP 服务器
 	log.Logger.Info("HTTP server is running on http://localhost", config.GC.API.Addr)
 	if err := http.ListenAndServe(config.GC.API.Addr, nil); err != nil {
 		log.Logger.Fatalf("Start HTTP Server: %v", err)

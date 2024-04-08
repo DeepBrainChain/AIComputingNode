@@ -7,7 +7,6 @@ import (
 )
 
 func main() {
-	// 生成 256 位密钥
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
 	if err != nil {
