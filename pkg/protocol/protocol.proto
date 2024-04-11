@@ -18,12 +18,16 @@ message Message {
   oneof body {
     PeerIdentityRequest piReq = 3;
     PeerIdentityResponse piRes = 4;
+    ImageGenerationRequest igReq = 5;
+    ImageGenerationResponse igRes = 6;
   }
 }
 
 enum MesasgeType {
   PEER_IDENTITY_REQUEST = 0;
   PEER_IDENTITY_RESPONSE = 1;
+  IMAGE_GENERATION_REQUEST = 2;
+  IMAGE_GENERATION_RESPONSE = 3;
 }
 
 message PeerIdentityRequest {
@@ -36,4 +40,18 @@ message PeerIdentityResponse {
   bytes publicKey = 1;
   repeated string listenAddrs = 2;
   repeated string protocols = 3;
+}
+
+message ImageGenerationRequest {
+  string nodeId = 1;
+  string model = 2;
+  repeated string promptWord = 3;
+}
+
+message ImageGenerationResponse {
+  int32 code = 1;
+  string message = 2;
+  string ipfsNode = 3;
+  string cid = 4;
+  string imageName = 5;
 }

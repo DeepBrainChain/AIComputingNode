@@ -261,7 +261,7 @@ func main() {
 	dutil.Advertise(ctx, routingDiscovery, cfg.App.TopicName)
 
 	psOpts := []pubsub.Option{
-		// pubsub.WithDiscovery(routingDiscovery),
+		pubsub.WithDiscovery(routingDiscovery),
 	}
 	var gs *pubsub.PubSub
 

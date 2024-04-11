@@ -21,6 +21,8 @@ const (
 	ErrCodeProtobuf   = 1003
 	ErrCodeTimeout    = 1004
 	ErrCodeRendezvous = 1005
+	ErrCodeModel      = 1006
+	ErrCodeUpload     = 1007
 	ErrCodeInternal   = 5000
 )
 
@@ -31,6 +33,8 @@ var errMsg = map[int]string{
 	ErrCodeProtobuf:   "Protobuf serialization error",
 	ErrCodeTimeout:    "Processing timeout",
 	ErrCodeRendezvous: "Rendezvous error",
+	ErrCodeModel:      "Model error",
+	ErrCodeUpload:     "Upload error",
 	ErrCodeInternal:   "Internal server error",
 }
 
@@ -59,9 +63,35 @@ type PeerResponse struct {
 	Data    p2p.IdentifyProtocol `json:"data"`
 }
 
+type ImageGenerationRequest struct {
+	NodeID     string   `json:"node_id"`
+	Model      string   `json:"model"`
+	PromptWord []string `json:"prompt_word"`
+}
+
+type ImageGenerationResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		IpfsNode  string `json:"ipfs_node"`
+		CID       string `json:"cid"`
+		ImageName string `json:"image_name"`
+	} `json:"data"`
+}
+
 func (req PeerRequest) Validate() error {
 	if req.NodeID == "" {
 		return errors.New("empty node_id")
+	}
+	return nil
+}
+
+func (req ImageGenerationRequest) Validate() error {
+	if req.NodeID == "" {
+		return errors.New("empty node_id")
+	}
+	if req.Model == "" {
+		return errors.New("empty model")
 	}
 	return nil
 }
