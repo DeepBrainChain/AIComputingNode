@@ -248,6 +248,104 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(rsp)
 }
 
+func (hs *httpService) swarmPeersHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
+		return
+	}
+	pinfos := p2p.Hio.SwarmPeers()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(pinfos)
+}
+
+func (hs *httpService) swarmAddrsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
+		return
+	}
+	pinfos := p2p.Hio.SwarmAddrs()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(pinfos)
+}
+
+func (hs *httpService) swarmConnectHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	rsp := SwarmConnectResponse{
+		Code:    0,
+		Message: "ok",
+	}
+	w.Header().Set("Content-Type", "application/json")
+
+	var req SwarmConnectRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		rsp.Code = ErrCodeParse
+		rsp.Message = errMsg[rsp.Code]
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		rsp.Code = ErrCodeParam
+		rsp.Message = err.Error()
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	if err := p2p.Hio.SwarmConnect(req.NodeAddr); err != nil {
+		rsp.Code = ErrCodeInternal
+		rsp.Message = err.Error()
+	}
+	json.NewEncoder(w).Encode(rsp)
+}
+
+func (hs *httpService) swarmDisconnectHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	rsp := SwarmConnectResponse{
+		Code:    0,
+		Message: "ok",
+	}
+	w.Header().Set("Content-Type", "application/json")
+
+	var req SwarmConnectRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		rsp.Code = ErrCodeParse
+		rsp.Message = errMsg[rsp.Code]
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		rsp.Code = ErrCodeParam
+		rsp.Message = err.Error()
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	if err := p2p.Hio.SwarmDisconnect(req.NodeAddr); err != nil {
+		rsp.Code = ErrCodeInternal
+		rsp.Message = err.Error()
+	}
+	json.NewEncoder(w).Encode(rsp)
+}
+
+func (hs *httpService) pubsubPeersHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
+		return
+	}
+	rsp := p2p.Hio.PubsubPeers()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(rsp)
+}
+
 func NewHttpServe(pcn chan<- []byte) {
 	hs := &httpService{
 		publishChan: pcn,
@@ -277,6 +375,11 @@ func NewHttpServe(pcn chan<- []byte) {
 	http.HandleFunc("/api/v0/peers", hs.peersHandler)
 	http.HandleFunc("/api/v0/peer", hs.peerHandler)
 	http.HandleFunc("/api/v0/image/gen", hs.imageGenHandler)
+	http.HandleFunc("/api/v0/swarm/peers", hs.swarmPeersHandler)
+	http.HandleFunc("/api/v0/swarm/addrs", hs.swarmAddrsHandler)
+	http.HandleFunc("/api/v0/swarm/connect", hs.swarmConnectHandler)
+	http.HandleFunc("/api/v0/swarm/disconnect", hs.swarmDisconnectHandler)
+	http.HandleFunc("/api/v0/pubsub/peers", hs.pubsubPeersHandler)
 	log.Logger.Info("HTTP server is running on http://", config.GC.API.Addr)
 	if err := http.ListenAndServe(config.GC.API.Addr, nil); err != nil {
 		log.Logger.Fatalf("Start HTTP Server: %v", err)

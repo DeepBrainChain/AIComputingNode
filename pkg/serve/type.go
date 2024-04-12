@@ -79,6 +79,15 @@ type ImageGenerationResponse struct {
 	} `json:"data"`
 }
 
+type SwarmConnectRequest struct {
+	NodeAddr string `json:"node_addr"`
+}
+
+type SwarmConnectResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
 func (req PeerRequest) Validate() error {
 	if req.NodeID == "" {
 		return errors.New("empty node_id")
@@ -92,6 +101,13 @@ func (req ImageGenerationRequest) Validate() error {
 	}
 	if req.Model == "" {
 		return errors.New("empty model")
+	}
+	return nil
+}
+
+func (req SwarmConnectRequest) Validate() error {
+	if req.NodeAddr == "" {
+		return errors.New("empty node_addr")
 	}
 	return nil
 }

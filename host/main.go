@@ -170,12 +170,12 @@ func main() {
 
 	host.Network().Notify(&network.NotifyBundle{
 		ConnectedF: func(n network.Network, c network.Conn) {
-			log.Logger.Info("OnConnected remote multi-addr ", c.RemoteMultiaddr(), c.RemotePeer())
+			log.Logger.Infof("OnConnected remote multi-addr %v %v", c.RemoteMultiaddr(), c.RemotePeer())
 			p2p.PeerList[c.RemotePeer()] = c.RemoteMultiaddr()
 			db.PeerConnected(c.RemotePeer().String(), c.RemoteMultiaddr().String())
 		},
 		DisconnectedF: func(n network.Network, c network.Conn) {
-			log.Logger.Info("OnDisconnected remote multi-addr ", c.RemoteMultiaddr(), c.RemotePeer())
+			log.Logger.Infof("OnDisconnected remote multi-addr %v %v", c.RemoteMultiaddr(), c.RemotePeer())
 			delete(p2p.PeerList, c.RemotePeer())
 			// db.PeerDisconnected(c.RemotePeer().String(), c.RemoteMultiaddr().String())
 		},
