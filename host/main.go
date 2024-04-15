@@ -194,6 +194,32 @@ func main() {
 		}
 	}
 
+	psOpts := []pubsub.Option{
+		// pubsub.WithDiscovery(routingDiscovery),
+		pubsub.WithEventTracer(&ps.Tracer{}),
+		// pubsub.WithRawTracer(&ps.RawTracer{}),
+	}
+	var gs *pubsub.PubSub
+
+	if cfg.Pubsub.Router == "gossipsub" {
+		psOpts = append(psOpts,
+			pubsub.WithDirectPeers(DefaultBootstrapPeers),
+			pubsub.WithDirectConnectTicks(30),
+		)
+		if cfg.Routing.Type == "dhtserver" || cfg.Swarm.RelayService.Enabled {
+			psOpts = append(psOpts, pubsub.WithPeerExchange(true))
+		}
+		if cfg.Pubsub.FloodPublish {
+			psOpts = append(psOpts, pubsub.WithFloodPublish(true))
+		}
+		gs, err = pubsub.NewGossipSub(ctx, host, psOpts...)
+	} else {
+		gs, err = pubsub.NewFloodSub(ctx, host, psOpts...)
+	}
+	if err != nil {
+		log.Logger.Fatalf("New %s: %v", cfg.Pubsub.Router, err)
+	}
+
 	// Let's connect to the bootstrap nodes first. They will tell us about the
 	// other nodes in the network.
 	var wg sync.WaitGroup
@@ -234,7 +260,7 @@ func main() {
 		return true
 	})
 
-	if publishConns < 2 {
+	if publishConns < 4 {
 		for _, peerinfo := range DefaultBootstrapPeers {
 			wg.Add(1)
 			go func(pi peer.AddrInfo) {
@@ -260,29 +286,6 @@ func main() {
 	routingDiscovery := drouting.NewRoutingDiscovery(kadDHT)
 	dutil.Advertise(ctx, routingDiscovery, cfg.App.TopicName)
 
-	psOpts := []pubsub.Option{
-		pubsub.WithDiscovery(routingDiscovery),
-	}
-	var gs *pubsub.PubSub
-
-	if cfg.Pubsub.Router == "gossipsub" {
-		psOpts = append(psOpts,
-			pubsub.WithDirectPeers(DefaultBootstrapPeers),
-			pubsub.WithDirectConnectTicks(30),
-		)
-		if cfg.Routing.Type == "dhtserver" || cfg.Swarm.RelayService.Enabled {
-			psOpts = append(psOpts, pubsub.WithPeerExchange(true))
-		}
-		if cfg.Pubsub.FloodPublish {
-			psOpts = append(psOpts, pubsub.WithFloodPublish(true))
-		}
-		gs, err = pubsub.NewGossipSub(ctx, host, psOpts...)
-	} else {
-		gs, err = pubsub.NewFloodSub(ctx, host, psOpts...)
-	}
-	if err != nil {
-		log.Logger.Fatalf("New %s: %v", cfg.Pubsub.Router, err)
-	}
 	topic, err := gs.Join(cfg.App.TopicName)
 	if err != nil {
 		log.Logger.Fatalf("Join PubSub: %v", err)

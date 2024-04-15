@@ -39,12 +39,12 @@ type HostInfo struct {
 }
 
 type IdentifyProtocol struct {
-	ID              string
-	ProtocolVersion string
-	AgentVersion    string
-	PublicKey       string
-	Addresses       []string
-	Protocols       []string
+	ID              string   `json:"peer_id"`
+	ProtocolVersion string   `json:"protocol_version"`
+	AgentVersion    string   `json:"agent_version"`
+	PublicKey       string   `json:"public_key"`
+	Addresses       []string `json:"addresses"`
+	Protocols       []string `json:"protocols"`
 }
 
 type SwarmPeerInfo struct {
