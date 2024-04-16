@@ -69,6 +69,47 @@ func (hs *httpService) peersHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(rsp)
 }
 
+func (hs *httpService) handleRequest(w http.ResponseWriter, r *http.Request, req *protocol.Message, rsp Response) {
+	requestID := req.Header.Id
+	reqBytes, err := proto.Marshal(req)
+	if err != nil {
+		rsp.SetCode(ErrCodeProtobuf)
+		rsp.SetMessage(err.Error())
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	notifyChan := make(chan []byte, 1024)
+	requestItem := RequestItem{
+		ID:     requestID,
+		Notify: notifyChan,
+	}
+	QueueLock.Lock()
+	RequestQueue = append(RequestQueue, requestItem)
+	QueueLock.Unlock()
+
+	hs.publishChan <- reqBytes
+
+	select {
+	case notifyData := <-notifyChan:
+		json.Unmarshal(notifyData, &rsp)
+	case <-time.After(2 * time.Minute):
+		log.Logger.Warnf("request id %s message type %s timeout", requestID, req.Type)
+		rsp.SetCode(ErrCodeTimeout)
+		rsp.SetMessage(errMsg[ErrCodeTimeout])
+		QueueLock.Lock()
+		for i, item := range RequestQueue {
+			if item.ID == requestID {
+				RequestQueue = append(RequestQueue[:i], RequestQueue[i+1:]...)
+				break
+			}
+		}
+		QueueLock.Unlock()
+		close(notifyChan)
+	}
+	json.NewEncoder(w).Encode(rsp)
+}
+
 func (hs *httpService) peerHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
@@ -108,53 +149,22 @@ func (hs *httpService) peerHandler(w http.ResponseWriter, r *http.Request) {
 			Timestamp:     time.Now().Unix(),
 			Id:            requestID,
 			NodeId:        config.GC.Identity.PeerID,
+			Receiver:      msg.NodeID,
 			NodePubKey:    []byte(""),
 			Sign:          []byte(""),
 		},
-		Type: *protocol.MesasgeType_PEER_IDENTITY_REQUEST.Enum(),
-		Body: &protocol.Message_PiReq{
-			PiReq: &protocol.PeerIdentityRequest{
-				NodeId: msg.NodeID,
+		Type: *protocol.MessageType_PEER_IDENTITY.Enum(),
+		Body: &protocol.Message_Pi{
+			Pi: &protocol.PeerIdentityBody{
+				Data: &protocol.PeerIdentityBody_Req{
+					Req: &protocol.PeerIdentityRequest{
+						NodeId: msg.NodeID,
+					},
+				},
 			},
 		},
 	}
-	reqBytes, err := proto.Marshal(req)
-	if err != nil {
-		rsp.Code = ErrCodeProtobuf
-		rsp.Message = err.Error()
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
-
-	notifyChan := make(chan []byte, 1024)
-	requestItem := RequestItem{
-		ID:     requestID,
-		Notify: notifyChan,
-	}
-	QueueLock.Lock()
-	RequestQueue = append(RequestQueue, requestItem)
-	QueueLock.Unlock()
-
-	hs.publishChan <- reqBytes
-
-	select {
-	case notifyData := <-notifyChan:
-		json.Unmarshal(notifyData, &rsp.Data)
-	case <-time.After(2 * time.Minute):
-		log.Logger.Warn("request id ", requestID, " message type PEER_IDENTITY_REQUEST timeout")
-		rsp.Code = ErrCodeTimeout
-		rsp.Message = errMsg[rsp.Code]
-		QueueLock.Lock()
-		for i, item := range RequestQueue {
-			if item.ID == requestID {
-				RequestQueue = append(RequestQueue[:i], RequestQueue[i+1:]...)
-				break
-			}
-		}
-		QueueLock.Unlock()
-		close(notifyChan)
-	}
-	json.NewEncoder(w).Encode(rsp)
+	hs.handleRequest(w, r, req, &rsp)
 }
 
 func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
@@ -197,55 +207,24 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 			Timestamp:     time.Now().Unix(),
 			Id:            requestID,
 			NodeId:        config.GC.Identity.PeerID,
+			Receiver:      msg.NodeID,
 			NodePubKey:    []byte(""),
 			Sign:          []byte(""),
 		},
-		Type: *protocol.MesasgeType_IMAGE_GENERATION_REQUEST.Enum(),
-		Body: &protocol.Message_IgReq{
-			IgReq: &protocol.ImageGenerationRequest{
-				NodeId:     msg.NodeID,
-				Model:      msg.Model,
-				PromptWord: msg.PromptWord,
+		Type: *protocol.MessageType_IMAGE_GENERATION.Enum(),
+		Body: &protocol.Message_Ig{
+			Ig: &protocol.ImageGenerationBody{
+				Data: &protocol.ImageGenerationBody_Req{
+					Req: &protocol.ImageGenerationRequest{
+						NodeId:     msg.NodeID,
+						Model:      msg.Model,
+						PromptWord: msg.PromptWord,
+					},
+				},
 			},
 		},
 	}
-	reqBytes, err := proto.Marshal(req)
-	if err != nil {
-		rsp.Code = ErrCodeProtobuf
-		rsp.Message = err.Error()
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
-
-	notifyChan := make(chan []byte, 1024)
-	requestItem := RequestItem{
-		ID:     requestID,
-		Notify: notifyChan,
-	}
-	QueueLock.Lock()
-	RequestQueue = append(RequestQueue, requestItem)
-	QueueLock.Unlock()
-
-	hs.publishChan <- reqBytes
-
-	select {
-	case notifyData := <-notifyChan:
-		json.Unmarshal(notifyData, &rsp)
-	case <-time.After(2 * time.Minute):
-		log.Logger.Warn("request id ", requestID, " message type ", req.Type.String(), " timeout")
-		rsp.Code = ErrCodeTimeout
-		rsp.Message = errMsg[rsp.Code]
-		QueueLock.Lock()
-		for i, item := range RequestQueue {
-			if item.ID == requestID {
-				RequestQueue = append(RequestQueue[:i], RequestQueue[i+1:]...)
-				break
-			}
-		}
-		QueueLock.Unlock()
-		close(notifyChan)
-	}
-	json.NewEncoder(w).Encode(rsp)
+	hs.handleRequest(w, r, req, &rsp)
 }
 
 func (hs *httpService) swarmPeersHandler(w http.ResponseWriter, r *http.Request) {

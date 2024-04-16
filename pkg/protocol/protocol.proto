@@ -8,26 +8,35 @@ message MessageHeader {
   int64 timestamp = 2;
   string id = 3;
   string nodeId = 4;
+  string receiver = 5;
   bytes nodePubKey = 6;
   bytes sign = 7;
 }
 
 message Message {
   MessageHeader header = 1;
-  MesasgeType type = 2;
+  MessageType type = 2;
   oneof body {
-    PeerIdentityRequest piReq = 3;
-    PeerIdentityResponse piRes = 4;
-    ImageGenerationRequest igReq = 5;
-    ImageGenerationResponse igRes = 6;
+    PeerIdentityBody pi = 3;
+    ImageGenerationBody ig = 4;
+    UnsupportedBody unsupported = 100;
   }
 }
 
-enum MesasgeType {
-  PEER_IDENTITY_REQUEST = 0;
-  PEER_IDENTITY_RESPONSE = 1;
-  IMAGE_GENERATION_REQUEST = 2;
-  IMAGE_GENERATION_RESPONSE = 3;
+enum MessageType {
+  PEER_IDENTITY = 0;
+  IMAGE_GENERATION = 1;
+}
+
+message UnsupportedBody {
+  string message = 1;
+}
+
+message PeerIdentityBody {
+  oneof data {
+    PeerIdentityRequest req = 1;
+    PeerIdentityResponse res = 2;
+  }
 }
 
 message PeerIdentityRequest {
@@ -40,6 +49,13 @@ message PeerIdentityResponse {
   bytes publicKey = 1;
   repeated string listenAddrs = 2;
   repeated string protocols = 3;
+}
+
+message ImageGenerationBody {
+  oneof data {
+    ImageGenerationRequest req = 1;
+    ImageGenerationResponse res = 2;
+  }
 }
 
 message ImageGenerationRequest {
