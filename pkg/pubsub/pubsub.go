@@ -77,7 +77,6 @@ func PubsubHandler(ctx context.Context, sub *pubsub.Subscription, publishChan ch
 										Res: &protocol.PeerIdentityResponse{
 											ProtocolVersion: idp.ProtocolVersion,
 											AgentVersion:    idp.AgentVersion,
-											PublicKey:       []byte(idp.PublicKey),
 											ListenAddrs:     idp.Addresses,
 											Protocols:       idp.Protocols,
 										},
@@ -103,7 +102,6 @@ func PubsubHandler(ctx context.Context, sub *pubsub.Subscription, publishChan ch
 							ID:              pmsg.Header.NodeId,
 							ProtocolVersion: piRes.ProtocolVersion,
 							AgentVersion:    piRes.AgentVersion,
-							PublicKey:       string(piRes.PublicKey),
 							Addresses:       piRes.ListenAddrs,
 							Protocols:       piRes.Protocols,
 						},

@@ -2,7 +2,6 @@ package p2p
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -42,7 +41,6 @@ type IdentifyProtocol struct {
 	ID              string   `json:"peer_id"`
 	ProtocolVersion string   `json:"protocol_version"`
 	AgentVersion    string   `json:"agent_version"`
-	PublicKey       string   `json:"public_key"`
 	Addresses       []string `json:"addresses"`
 	Protocols       []string `json:"protocols"`
 }
@@ -65,9 +63,6 @@ func (hio *HostInfo) GetIdentifyProtocol() IdentifyProtocol {
 		ID:              hio.Host.ID().String(),
 		ProtocolVersion: hio.ProtocolVersion,
 		AgentVersion:    hio.UserAgent,
-	}
-	if pubKeyBytes, err := MarshalPubKeyFromPrivKey(hio.PrivKey); err == nil {
-		id.PublicKey = hex.EncodeToString(pubKeyBytes)
 	}
 	for _, addr := range hio.Host.Addrs() {
 		id.Addresses = append(id.Addresses, addr.String())
