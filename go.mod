@@ -3,6 +3,7 @@ module AIComputingNode
 go 1.21.6
 
 require (
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
 	github.com/google/uuid v1.6.0
 	github.com/ipfs/boxo v0.18.0
 	github.com/ipfs/go-cid v0.4.1
@@ -29,7 +30,6 @@ require (
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/crackcomm/go-gitignore v0.0.0-20231225121904-e25f5bc08668 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/elastic/gosigar v0.14.2 // indirect
 	github.com/facebookgo/atomicfile v0.0.0-20151019160806-2de1f203e7d5 // indirect

@@ -19,7 +19,7 @@ func main() {
 
 	privKey, pubKey, err := LoadPeerKey(*peerKeyPath)
 	if err != nil {
-		privKey, pubKey, err = crypto.GenerateKeyPair(crypto.Ed25519, -1)
+		privKey, pubKey, err = crypto.GenerateKeyPair(crypto.Secp256k1, -1)
 		if err != nil {
 			log.Fatalf("Generate peer key: %v", err)
 		}

@@ -302,8 +302,9 @@ func main() {
 		ProtocolVersion: ProtocolVersion,
 		PrivKey:         privKey,
 		Ctx:             ctx,
-		Topic:           topic,
+		Dht:             kadDHT,
 		RD:              routingDiscovery,
+		Topic:           topic,
 	}
 
 	publishChan := make(chan []byte, 1024)

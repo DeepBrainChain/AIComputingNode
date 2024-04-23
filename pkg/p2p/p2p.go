@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	dht "github.com/libp2p/go-libp2p-kad-dht"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -33,8 +34,9 @@ type HostInfo struct {
 	PrivKey         crypto.PrivKey
 	Ctx             context.Context
 
-	Topic *pubsub.Topic
+	Dht   *dht.IpfsDHT
 	RD    *drouting.RoutingDiscovery
+	Topic *pubsub.Topic
 }
 
 type IdentifyProtocol struct {
@@ -153,6 +155,13 @@ func (hio *HostInfo) PubsubPeers() []string {
 		ids[i] = peer.String()
 	}
 	return ids
+}
+
+func (hio *HostInfo) GetPublicKey(p peer.ID) (crypto.PubKey, error) {
+	if pubKey := hio.Host.Peerstore().PubKey(p); pubKey != nil {
+		return pubKey, nil
+	}
+	return hio.Dht.GetPublicKey(hio.Ctx, p)
 }
 
 func PrivKeyFromString(pk string) (crypto.PrivKey, error) {

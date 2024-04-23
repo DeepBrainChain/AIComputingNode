@@ -142,6 +142,22 @@ func (hs *httpService) peerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pi := &protocol.PeerIdentityBody{
+		Data: &protocol.PeerIdentityBody_Req{
+			Req: &protocol.PeerIdentityRequest{
+				NodeId: msg.NodeID,
+			},
+		},
+	}
+	body, err := proto.Marshal(pi)
+	if err != nil {
+		rsp.SetCode(ErrCodeProtobuf)
+		rsp.SetMessage(err.Error())
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+	body, err = p2p.Encrypt(msg.NodeID, body)
+
 	requestID := generateUniqueID()
 	req := &protocol.Message{
 		Header: &protocol.MessageHeader{
@@ -150,19 +166,15 @@ func (hs *httpService) peerHandler(w http.ResponseWriter, r *http.Request) {
 			Id:            requestID,
 			NodeId:        config.GC.Identity.PeerID,
 			Receiver:      msg.NodeID,
-			NodePubKey:    []byte(""),
-			Sign:          []byte(""),
+			NodePubKey:    nil,
+			Sign:          nil,
 		},
-		Type: *protocol.MessageType_PEER_IDENTITY.Enum(),
-		Body: &protocol.Message_Pi{
-			Pi: &protocol.PeerIdentityBody{
-				Data: &protocol.PeerIdentityBody_Req{
-					Req: &protocol.PeerIdentityRequest{
-						NodeId: msg.NodeID,
-					},
-				},
-			},
-		},
+		Type:       *protocol.MessageType_PEER_IDENTITY.Enum(),
+		Body:       body,
+		ResultCode: 0,
+	}
+	if err == nil {
+		req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
 	}
 	hs.handleRequest(w, r, req, &rsp)
 }
@@ -200,6 +212,24 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pi := &protocol.ImageGenerationBody{
+		Data: &protocol.ImageGenerationBody_Req{
+			Req: &protocol.ImageGenerationRequest{
+				NodeId:     msg.NodeID,
+				Model:      msg.Model,
+				PromptWord: msg.PromptWord,
+			},
+		},
+	}
+	body, err := proto.Marshal(pi)
+	if err != nil {
+		rsp.SetCode(ErrCodeProtobuf)
+		rsp.SetMessage(err.Error())
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+	body, err = p2p.Encrypt(msg.NodeID, body)
+
 	requestID := generateUniqueID()
 	req := &protocol.Message{
 		Header: &protocol.MessageHeader{
@@ -208,21 +238,15 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 			Id:            requestID,
 			NodeId:        config.GC.Identity.PeerID,
 			Receiver:      msg.NodeID,
-			NodePubKey:    []byte(""),
-			Sign:          []byte(""),
+			NodePubKey:    nil,
+			Sign:          nil,
 		},
-		Type: *protocol.MessageType_IMAGE_GENERATION.Enum(),
-		Body: &protocol.Message_Ig{
-			Ig: &protocol.ImageGenerationBody{
-				Data: &protocol.ImageGenerationBody_Req{
-					Req: &protocol.ImageGenerationRequest{
-						NodeId:     msg.NodeID,
-						Model:      msg.Model,
-						PromptWord: msg.PromptWord,
-					},
-				},
-			},
-		},
+		Type:       *protocol.MessageType_IMAGE_GENERATION.Enum(),
+		Body:       body,
+		ResultCode: 0,
+	}
+	if err == nil {
+		req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
 	}
 	hs.handleRequest(w, r, req, &rsp)
 }

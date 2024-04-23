@@ -16,20 +16,14 @@ message MessageHeader {
 message Message {
   MessageHeader header = 1;
   MessageType type = 2;
-  oneof body {
-    PeerIdentityBody pi = 3;
-    ImageGenerationBody ig = 4;
-    UnsupportedBody unsupported = 100;
-  }
+  bytes body = 3;
+  int32 resultCode = 4;
+  string resultMessage = 5;
 }
 
 enum MessageType {
   PEER_IDENTITY = 0;
   IMAGE_GENERATION = 1;
-}
-
-message UnsupportedBody {
-  string message = 1;
 }
 
 message PeerIdentityBody {
@@ -65,9 +59,7 @@ message ImageGenerationRequest {
 }
 
 message ImageGenerationResponse {
-  int32 code = 1;
-  string message = 2;
-  string ipfsNode = 3;
-  string cid = 4;
-  string imageName = 5;
+  string ipfsNode = 1;
+  string cid = 2;
+  string imageName = 3;
 }
