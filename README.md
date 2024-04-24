@@ -11,8 +11,6 @@ Distributed Inference Computing Network for Text-to-Image Generation
   - [`Client Configuration Example`](#client-configuration-example)
   - [`Server Configuration Example`](#server-configuration-example)
 - [`Tools`](#tools)
-  - [`PeerKey`](#peerkey)
-  - [`PSK`](#psk)
   - [`Ipfs`](#ipfs)
 - [`HTTP API`](#http-api)
 
@@ -38,12 +36,51 @@ $ protoc -I=./pkg/protocol/ --go_out=./pkg/protocol/ ./pkg/protocol/protocol.pro
 
 ## Command Line
 
-```shell
-$ host -config ./config.json [-version]
-```
+`host [-h] [-config ./config.json] [-version] [-init mode] [-peerkey ./peer.key] [-psk]`
 
-- config: Specify the json configuration file path of the program
+- h: Show command line help
+- config: Run program using the specified configuration file
 - version: Show version number and exit
+- init: Initialize configuration in client/server mode
+- peerkey: Parse or generate a key file based on the specified file path
+- psk: Generate a random Pre-Shared Key
+
+```shell
+$ host.exe -init client
+Generate peer key success at D:\Code\AIComputingNode\host\peer.key
+Important notice: Please save this key file. You can use tools to retrieve the ID and private key in the future.
+Encode private key: CAISINAckM6QODvCrez5I0Q3RZyo9PeV4jDeB1L71AHnSU/H
+Encode public key: CAISIQNbA9ZWCwFM7X/eTUUBvwSRzTurMLkb9jg38wn5IRL4BQ==
+Transform Peer ID: 16Uiu2HAmJnGqxBqtWGkymSsy5WDKJY5A5NctcUduENADDptQFF4Y
+Create datastore directory at D:\Code\AIComputingNode\host\datastore
+Generate configuration success at D:\Code\AIComputingNode\host\client.json
+Run "host -config D:\Code\AIComputingNode\host\client.json" command to start the program
+$ 
+$ host.exe -peerkey D:\Code\AIComputingNode\host\peer.key
+Load peer key success
+Encode private key: CAISINAckM6QODvCrez5I0Q3RZyo9PeV4jDeB1L71AHnSU/H
+Encode public key: CAISIQNbA9ZWCwFM7X/eTUUBvwSRzTurMLkb9jg38wn5IRL4BQ==
+Transform Peer ID: 16Uiu2HAmJnGqxBqtWGkymSsy5WDKJY5A5NctcUduENADDptQFF4Y
+$ 
+$ host.exe -config D:\Code\AIComputingNode\host\client.json
+2024-04-24T10:44:07.065+0800	INFO	AIComputingNode	host/main.go:97	################################################################
+2024-04-24T10:44:07.077+0800	INFO	AIComputingNode	host/main.go:98	#                          START                               #
+2024-04-24T10:44:07.077+0800	INFO	AIComputingNode	host/main.go:99	################################################################
+2024-04-24T10:44:07.123+0800	INFO	dht/RtRefreshManager	rtrefresh/rt_refresh_manager.go:322	starting refreshing cpl 0 with key CIQAAAUWCEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA (routing table size was 0)
+2024-04-24T10:44:07.123+0800	WARN	dht/RtRefreshManager	rtrefresh/rt_refresh_manager.go:187	failed when refreshing routing table2 errors occurred:
+	* failed to query for self, err=failed to find any peer in table
+	* failed to refresh cpl=0, err=failed to find any peer in table
+
+
+2024-04-24T10:44:07.128+0800	INFO	AIComputingNode	host/main.go:188	Listen addresses:[/ip4/10.0.20.21/tcp/7001 /ip4/127.0.0.1/tcp/7001 /ip6/::1/tcp/7001]
+2024-04-24T10:44:07.128+0800	INFO	AIComputingNode	host/main.go:189	Node id:16Uiu2HAmJnGqxBqtWGkymSsy5WDKJY5A5NctcUduENADDptQFF4Y
+2024-04-24T10:44:07.168+0800	INFO	AIComputingNode	host/main.go:197	libp2p node address:[/ip4/10.0.20.21/tcp/7001/p2p/16Uiu2HAmJnGqxBqtWGkymSsy5WDKJY5A5NctcUduENADDptQFF4Y /ip4/127.0.0.1/tcp/7001/p2p/16Uiu2HAmJnGqxBqtWGkymSsy5WDKJY5A5NctcUduENADDptQFF4Y /ip6/::1/tcp/7001/p2p/16Uiu2HAmJnGqxBqtWGkymSsy5WDKJY5A5NctcUduENADDptQFF4Y]
+2024-04-24T10:44:07.169+0800	INFO	dht/RtRefreshManager	rtrefresh/rt_refresh_manager.go:322	starting refreshing cpl 0 with key CIQAAAIIMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA (routing table size was 0)
+2024-04-24T10:44:07.169+0800	WARN	dht/RtRefreshManager	rtrefresh/rt_refresh_manager.go:233	failed when refreshing routing table	{"error": "2 errors occurred:\n\t* failed to query for self, err=failed to find any peer in table\n\t* failed to refresh cpl=0, err=failed to find any peer in table\n\n"}
+2024-04-24T10:44:07.169+0800	INFO	AIComputingNode	pubsub/tracer.go:48	Trace event: {Type: JOIN, PeerID: 16Uiu2HAmJnGqxBqtWGkymSsy5WDKJY5A5NctcUduENADDptQFF4Y, Join{Topic: SuperImageAI}}
+2024-04-24T10:44:07.169+0800	INFO	AIComputingNode	host/main.go:343	listening for connections
+2024-04-24T10:44:07.169+0800	INFO	AIComputingNode	serve/http.go:386	HTTP server is running on http://127.0.0.1:7002
+```
 
 ## Configuration
 
@@ -289,40 +326,6 @@ $ host -config ./config.json [-version]
 ```
 
 ## Tools
-
-### PeerKey
-
-Read the key file path specified by the command line parameter `-peerkey`, parse and display the private key/public key in the key, and convert it into the corresponding PeerID.
-
-If the key file specified by the command line parameter `-peerkey` does not exist, a new key is created at this file path.
-
-```shell
-$ ./peer-key -peerkey ./peer.key
-2024/03/28 18:58:12 Generate peer key success
-2024/03/28 18:58:12 Encode private key: CAESQBOuYLpTajlQ0Xzh84i6ey0Zot24Tc2qA2yDgw7dd2vGpg53BtN+RQgJ2erx2lRgDo4BiOXy0ZFRRxIZRQ5wJ3U=
-2024/03/28 18:58:12 Encode public key: CAESIKYOdwbTfkUICdnq8dpUYA6OAYjl8tGRUUcSGUUOcCd1
-2024/03/28 18:58:12 Transform Peer ID: 12D3KooWLzae3a7n7eJSQbSgARHQizJzChS4Rtpo3gziugpV4vRz
-$ ./peer-key -peerkey ./peer.key
-2024/03/29 09:59:55 Load peer key success
-2024/03/29 09:59:55 Encode private key: CAESQBOuYLpTajlQ0Xzh84i6ey0Zot24Tc2qA2yDgw7dd2vGpg53BtN+RQgJ2erx2lRgDo4BiOXy0ZFRRxIZRQ5wJ3U=
-2024/03/29 09:59:55 Encode public key: CAESIKYOdwbTfkUICdnq8dpUYA6OAYjl8tGRUUcSGUUOcCd1
-2024/03/29 09:59:55 Transform Peer ID: 12D3KooWLzae3a7n7eJSQbSgARHQizJzChS4Rtpo3gziugpV4vRz
-```
-
-### PSK
-
-Generate a random 64-bit string as the Pre-Shared Key, which is different every time.
-
-***Remember: Nodes with different Pre-Shared Key cannot communicate with each other.***
-
-```shell
-$ ./psk
-2024/03/29 15:09:49 Generate Pre-Shared key: 4628f17e14cb496a9a3c85d774df1d1f4147098327e006e4a01ef75c1bcbcef4
-$ ./psk
-2024/03/29 15:09:52 Generate Pre-Shared key: 20b580ada44043b9d7b78b02db10d2ae07ea777019c232203558f02da3d91922
-$ ./psk
-2024/03/29 15:09:54 Generate Pre-Shared key: a0d245d95cf60826d5d18b5cbfe6e9a9f9b119a256d76d6873b497976d5acf2e
-```
 
 ### Ipfs
 

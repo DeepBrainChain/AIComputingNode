@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/hex"
 	"flag"
 	"fmt"
@@ -43,12 +44,39 @@ type connectionResult struct {
 }
 
 func main() {
-	configPath := flag.String("config", "", "the config file path")
+	configPath := flag.String("config", "", "run using the configuration file")
 	versionFlag := flag.Bool("version", false, "show version number and exit")
+	initFlag := flag.String("init", "", "initialize configuration in client/server mode")
+	peerKeyPath := flag.String("peerkey", "", "parse or generate a key file based on the specified file path")
+	pskFlag := flag.Bool("psk", false, "generate a random Pre-Shared Key")
 	flag.Parse()
 
 	if *versionFlag {
 		fmt.Println(version)
+		os.Exit(0)
+	}
+
+	if *initFlag == "client" || *initFlag == "server" {
+		config.Init(*initFlag)
+		os.Exit(0)
+	} else if *initFlag != "" {
+		fmt.Println("only supports client or server mode")
+		os.Exit(0)
+	}
+
+	if *peerKeyPath != "" {
+		config.PeerKeyParse(*peerKeyPath)
+		os.Exit(0)
+	}
+
+	if *pskFlag {
+		key := make([]byte, 32)
+		_, err := rand.Read(key)
+		if err != nil {
+			fmt.Println("Generate Pre-Shared key:", err)
+		} else {
+			fmt.Println("Generate Pre-Shared key:", hex.EncodeToString(key))
+		}
 		os.Exit(0)
 	}
 
