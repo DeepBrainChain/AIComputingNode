@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"AIComputingNode/pkg/config"
+	"AIComputingNode/pkg/hardware"
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/p2p"
 	"AIComputingNode/pkg/protocol"
@@ -111,7 +112,7 @@ func (hs *httpService) handleRequest(w http.ResponseWriter, r *http.Request, req
 }
 
 func (hs *httpService) peerHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
+	if r.Method != http.MethodPost {
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 		return
 	}
@@ -251,6 +252,81 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 	hs.handleRequest(w, r, req, &rsp)
 }
 
+func (hs *httpService) hardwareHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
+		return
+	}
+	rsp := HardwareResponse{
+		Code:    0,
+		Message: "ok",
+	}
+	w.Header().Set("Content-Type", "application/json")
+
+	var msg HardwareRequest
+	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
+		rsp.Code = ErrCodeParse
+		rsp.Message = errMsg[rsp.Code]
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	if err := msg.Validate(); err != nil {
+		rsp.Code = ErrCodeParam
+		rsp.Message = err.Error()
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	if msg.NodeID == config.GC.Identity.PeerID {
+		hd, err := hardware.GetHardwareInfo()
+		if err != nil {
+			rsp.Code = ErrCodeHardware
+			rsp.Message = err.Error()
+		} else {
+			rsp.Data = *hd
+		}
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	pi := &protocol.HardwareBody{
+		Data: &protocol.HardwareBody_Req{
+			Req: &protocol.HardwareRequest{
+				NodeId: msg.NodeID,
+			},
+		},
+	}
+	body, err := proto.Marshal(pi)
+	if err != nil {
+		rsp.SetCode(ErrCodeProtobuf)
+		rsp.SetMessage(err.Error())
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+	body, err = p2p.Encrypt(msg.NodeID, body)
+
+	requestID := generateUniqueID()
+	req := &protocol.Message{
+		Header: &protocol.MessageHeader{
+			ClientVersion: p2p.Hio.UserAgent,
+			Timestamp:     time.Now().Unix(),
+			Id:            requestID,
+			NodeId:        config.GC.Identity.PeerID,
+			Receiver:      msg.NodeID,
+			NodePubKey:    nil,
+			Sign:          nil,
+		},
+		Type:       *protocol.MessageType_HARDWARE_INFO.Enum(),
+		Body:       body,
+		ResultCode: 0,
+	}
+	if err == nil {
+		req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+	}
+	hs.handleRequest(w, r, req, &rsp)
+}
+
 func (hs *httpService) swarmPeersHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
@@ -378,6 +454,7 @@ func NewHttpServe(pcn chan<- []byte) {
 	http.HandleFunc("/api/v0/peers", hs.peersHandler)
 	http.HandleFunc("/api/v0/peer", hs.peerHandler)
 	http.HandleFunc("/api/v0/image/gen", hs.imageGenHandler)
+	http.HandleFunc("/api/v0/hardware", hs.hardwareHandler)
 	http.HandleFunc("/api/v0/swarm/peers", hs.swarmPeersHandler)
 	http.HandleFunc("/api/v0/swarm/addrs", hs.swarmAddrsHandler)
 	http.HandleFunc("/api/v0/swarm/connect", hs.swarmConnectHandler)

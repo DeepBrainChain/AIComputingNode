@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"AIComputingNode/pkg/config"
+	"AIComputingNode/pkg/hardware"
 	"AIComputingNode/pkg/ipfs"
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/p2p"
@@ -222,6 +223,135 @@ func PubsubHandler(ctx context.Context, sub *pubsub.Subscription, publishChan ch
 					notifyData, err := json.Marshal(res)
 					if err != nil {
 						log.Logger.Warnf("Marshal Image Generation Response %v", err)
+						break
+					}
+					serve.WriteAndDeleteRequestItem(pmsg.Header.Id, notifyData)
+				}
+			} else {
+				log.Logger.Warn("Message type and body do not match")
+			}
+		case protocol.MessageType_HARDWARE_INFO:
+			hi := &protocol.HardwareBody{}
+			if pmsg.ResultCode != 0 {
+				res := serve.HardwareResponse{
+					Code:    int(pmsg.ResultCode),
+					Message: pmsg.ResultMessage,
+				}
+				notifyData, err := json.Marshal(res)
+				if err != nil {
+					log.Logger.Warnf("Marshal Identity Protocol %v", err)
+					break
+				}
+				serve.WriteAndDeleteRequestItem(pmsg.Header.Id, notifyData)
+			} else if err := proto.Unmarshal(msgBody, hi); err == nil {
+				if hiReq := hi.GetReq(); hiReq != nil {
+					if hiReq.GetNodeId() == config.GC.Identity.PeerID {
+						hd, err := hardware.GetHardwareInfo()
+						var code int32 = 0
+						var msg string = "ok"
+						if err != nil {
+							code = serve.ErrCodeHardware
+							msg = err.Error()
+						}
+						hiRes := &protocol.HardwareResponse{
+							Memory: &protocol.HardwareResponse_MemoryInfo{
+								TotalPhysicalBytes: hd.Memory.TotalPhysicalBytes,
+								TotalUsableBytes:   hd.Memory.TotalUsableBytes,
+							},
+						}
+						for _, cpu := range hd.Cpu {
+							hiRes.Cpu = append(hiRes.Cpu, &protocol.HardwareResponse_CpuInfo{
+								ModelName:    cpu.ModelName,
+								TotalCores:   cpu.Cores,
+								TotalThreads: cpu.Threads,
+							})
+						}
+						for _, disk := range hd.Disk {
+							hiRes.Disk = append(hiRes.Disk, &protocol.HardwareResponse_DiskInfo{
+								DriveType:    disk.DriveType,
+								SizeBytes:    disk.SizeBytes,
+								Model:        disk.Model,
+								SerialNumber: disk.SerialNumber,
+							})
+						}
+						for _, gpu := range hd.Gpu {
+							hiRes.Gpu = append(hiRes.Gpu, &protocol.HardwareResponse_GpuInfo{
+								Vendor:  gpu.Vendor,
+								Product: gpu.Product,
+							})
+						}
+						hiBody := &protocol.HardwareBody{
+							Data: &protocol.HardwareBody_Res{
+								Res: hiRes,
+							},
+						}
+						resBody, err := proto.Marshal(hiBody)
+						if err != nil {
+							log.Logger.Warnf("Marshal Hardware Response Body %v", err)
+							break
+						}
+						resBody, err = p2p.Encrypt(pmsg.Header.NodeId, resBody)
+						res := protocol.Message{
+							Header: &protocol.MessageHeader{
+								ClientVersion: p2p.Hio.UserAgent,
+								Timestamp:     time.Now().Unix(),
+								Id:            pmsg.Header.Id,
+								NodeId:        config.GC.Identity.PeerID,
+								Receiver:      pmsg.Header.NodeId,
+							},
+							Type:          protocol.MessageType_HARDWARE_INFO,
+							Body:          resBody,
+							ResultCode:    code,
+							ResultMessage: msg,
+						}
+						if err == nil {
+							res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+						}
+						resBytes, err := proto.Marshal(&res)
+						if err != nil {
+							log.Logger.Errorf("Marshal Hardware Response %v", err)
+							break
+						}
+						publishChan <- resBytes
+						log.Logger.Info("Sending Hardware Response")
+					} else {
+						log.Logger.Warnf("Invalid node id %v in request body", hiReq.GetNodeId())
+					}
+				} else if hiRes := hi.GetRes(); hiRes != nil {
+					res := serve.HardwareResponse{
+						Code:    0,
+						Message: "ok",
+						Data: hardware.Hardware{
+							Memory: hardware.MemoryInfo{
+								TotalPhysicalBytes: hiRes.Memory.TotalPhysicalBytes,
+								TotalUsableBytes:   hiRes.Memory.TotalUsableBytes,
+							},
+						},
+					}
+					for _, cpu := range hiRes.Cpu {
+						res.Data.Cpu = append(res.Data.Cpu, hardware.CpuInfo{
+							ModelName: cpu.ModelName,
+							Cores:     cpu.TotalCores,
+							Threads:   cpu.TotalThreads,
+						})
+					}
+					for _, disk := range hiRes.Disk {
+						res.Data.Disk = append(res.Data.Disk, hardware.DiskInfo{
+							DriveType:    disk.DriveType,
+							SizeBytes:    disk.SizeBytes,
+							Model:        disk.Model,
+							SerialNumber: disk.SerialNumber,
+						})
+					}
+					for _, gpu := range hiRes.Gpu {
+						res.Data.Gpu = append(res.Data.Gpu, hardware.GpuInfo{
+							Vendor:  gpu.Vendor,
+							Product: gpu.Product,
+						})
+					}
+					notifyData, err := json.Marshal(res)
+					if err != nil {
+						log.Logger.Warnf("Marshal Identity Protocol %v", err)
 						break
 					}
 					serve.WriteAndDeleteRequestItem(pmsg.Header.Id, notifyData)

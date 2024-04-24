@@ -1,6 +1,7 @@
 package serve
 
 import (
+	"AIComputingNode/pkg/hardware"
 	"AIComputingNode/pkg/p2p"
 	"errors"
 	"sync"
@@ -26,6 +27,7 @@ const (
 	ErrCodeBuffer      = 1008
 	ErrCodePermission  = 1009
 	ErrCodeUnsupported = 1010
+	ErrCodeHardware    = 1011
 	ErrCodeInternal    = 5000
 )
 
@@ -41,6 +43,7 @@ var errMsg = map[int]string{
 	ErrCodeBuffer:      "Buffer error",
 	ErrCodePermission:  "Permission error",
 	ErrCodeUnsupported: "Unsupported function",
+	ErrCodeHardware:    "Hardware error",
 	ErrCodeInternal:    "Internal server error",
 }
 
@@ -88,6 +91,16 @@ type ImageGenerationResponse struct {
 		CID       string `json:"cid"`
 		ImageName string `json:"image_name"`
 	} `json:"data"`
+}
+
+type HardwareRequest struct {
+	NodeID string `json:"node_id"`
+}
+
+type HardwareResponse struct {
+	Code    int               `json:"code"`
+	Message string            `json:"message"`
+	Data    hardware.Hardware `json:"data"`
 }
 
 type SwarmConnectRequest struct {
@@ -140,6 +153,14 @@ func (res *ImageGenerationResponse) SetMessage(message string) {
 	res.Message = message
 }
 
+func (res *HardwareResponse) SetCode(code int) {
+	res.Code = code
+}
+
+func (res *HardwareResponse) SetMessage(message string) {
+	res.Message = message
+}
+
 func (req PeerRequest) Validate() error {
 	if req.NodeID == "" {
 		return errors.New("empty node_id")
@@ -153,6 +174,13 @@ func (req ImageGenerationRequest) Validate() error {
 	}
 	if req.Model == "" {
 		return errors.New("empty model")
+	}
+	return nil
+}
+
+func (req HardwareRequest) Validate() error {
+	if req.NodeID == "" {
+		return errors.New("empty node_id")
 	}
 	return nil
 }

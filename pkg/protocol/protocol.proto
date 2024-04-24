@@ -4,12 +4,12 @@ option go_package="../protocol";
 package protocol;
 
 message MessageHeader {
-  string clientVersion = 1;
+  string client_version = 1;
   int64 timestamp = 2;
   string id = 3;
-  string nodeId = 4;
+  string node_id = 4;
   string receiver = 5;
-  bytes nodePubKey = 6;
+  bytes node_pub_key = 6;
   bytes sign = 7;
 }
 
@@ -17,13 +17,14 @@ message Message {
   MessageHeader header = 1;
   MessageType type = 2;
   bytes body = 3;
-  int32 resultCode = 4;
-  string resultMessage = 5;
+  int32 result_code = 4;
+  string result_message = 5;
 }
 
 enum MessageType {
   PEER_IDENTITY = 0;
   IMAGE_GENERATION = 1;
+  HARDWARE_INFO = 2;
 }
 
 message PeerIdentityBody {
@@ -34,14 +35,14 @@ message PeerIdentityBody {
 }
 
 message PeerIdentityRequest {
-  string nodeId = 1;
+  string node_id = 1;
 }
 
 message PeerIdentityResponse {
-  string protocolVersion = 5; // e.g. ipfs/1.0.0
-  string agentVersion = 6; // e.g. go-ipfs/0.1.0
-  bytes publicKey = 1;
-  repeated string listenAddrs = 2;
+  string protocol_version = 5; // e.g. ipfs/1.0.0
+  string agent_version = 6; // e.g. go-ipfs/0.1.0
+  bytes public_key = 1;
+  repeated string listen_addrs = 2;
   repeated string protocols = 3;
 }
 
@@ -53,13 +54,50 @@ message ImageGenerationBody {
 }
 
 message ImageGenerationRequest {
-  string nodeId = 1;
+  string node_id = 1;
   string model = 2;
-  repeated string promptWord = 3;
+  repeated string prompt_word = 3;
 }
 
 message ImageGenerationResponse {
-  string ipfsNode = 1;
+  string ipfs_node = 1;
   string cid = 2;
-  string imageName = 3;
+  string image_name = 3;
+}
+
+message HardwareBody {
+  oneof data {
+    HardwareRequest req = 1;
+    HardwareResponse res = 2;
+  }
+}
+
+message HardwareRequest {
+  string node_id = 1;
+}
+
+message HardwareResponse {
+  message CpuInfo {
+    string model_name = 1;
+    uint32 total_cores = 2;
+    uint32 total_threads = 3;
+  }
+  message MemoryInfo {
+    int64 total_physical_bytes = 1;
+    int64 total_usable_bytes = 2;
+  }
+  message DiskInfo {
+    string drive_type = 1;
+    uint64 size_bytes = 2;
+    string model = 3;
+    string serial_number = 4;
+  }
+  message GpuInfo {
+    string vendor = 1;
+    string product = 2;
+  }
+  repeated CpuInfo cpu = 1;
+  MemoryInfo memory = 2;
+  repeated DiskInfo disk = 3;
+  repeated GpuInfo gpu = 4;
 }
