@@ -89,8 +89,8 @@ $ host.exe -config D:\Code\AIComputingNode\host\client.json
   // Boot node list, used for node routing and discovery functions, needs to be deployed on
   // a public network server, preferably with a domain name
   "Bootstrap": [
-    "/ip4/122.99.183.54/tcp/6001/p2p/12D3KooWSpgWzEXE5GNjY6hgdAhuuBLe4d3ocqWDnVLdCa8U3cig",
-    "/ip4/82.157.50.32/tcp/6001/p2p/12D3KooWFrTcDtocZWEvEAk2X4poyn13LzT3G7JMBRoPD73YPAoB"
+    "/ip4/122.99.183.54/tcp/6001/p2p/16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM",
+    "/ip4/82.157.50.32/tcp/6001/p2p/16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
   ],
   // Listening address for node connection communication
   "Addresses": [
@@ -109,9 +109,9 @@ $ host.exe -config D:\Code\AIComputingNode\host\client.json
   // PeerID and PrivKey match.
   "Identity": {
     // Node ID of the node
-    "PeerID": "12D3KooWLzae3a7n7eJSQbSgARHQizJzChS4Rtpo3gziugpV4vRz",
+    "PeerID": "16Uiu2HAmJnGqxBqtWGkymSsy5WDKJY5A5NctcUduENADDptQFF4Y",
     // Node’s private key
-    "PrivKey": "CAESQBOuYLpTajlQ0Xzh84i6ey0Zot24Tc2qA2yDgw7dd2vGpg53BtN+RQgJ2erx2lRgDo4BiOXy0ZFRRxIZRQ5wJ3U="
+    "PrivKey": "CAISINAckM6QODvCrez5I0Q3RZyo9PeV4jDeB1L71AHnSU/H"
   },
   // Configure node connection parameters
   "Swarm": {
@@ -216,8 +216,8 @@ $ host.exe -config D:\Code\AIComputingNode\host\client.json
 ```json
 {
   "Bootstrap": [
-    "/ip4/122.99.183.54/tcp/6001/p2p/12D3KooWSpgWzEXE5GNjY6hgdAhuuBLe4d3ocqWDnVLdCa8U3cig",
-    "/ip4/82.157.50.32/tcp/6001/p2p/12D3KooWFrTcDtocZWEvEAk2X4poyn13LzT3G7JMBRoPD73YPAoB"
+    "/ip4/122.99.183.54/tcp/6001/p2p/16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM",
+    "/ip4/82.157.50.32/tcp/6001/p2p/16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
   ],
   "Addresses": [
     "/ip4/0.0.0.0/tcp/6001",
@@ -227,8 +227,8 @@ $ host.exe -config D:\Code\AIComputingNode\host\client.json
     "Addr": ":6000"
   },
   "Identity": {
-    "PeerID": "12D3KooWLzae3a7n7eJSQbSgARHQizJzChS4Rtpo3gziugpV4vRz",
-    "PrivKey": "CAESQBOuYLpTajlQ0Xzh84i6ey0Zot24Tc2qA2yDgw7dd2vGpg53BtN+RQgJ2erx2lRgDo4BiOXy0ZFRRxIZRQ5wJ3U="
+    "PeerID": "16Uiu2HAmJnGqxBqtWGkymSsy5WDKJY5A5NctcUduENADDptQFF4Y",
+    "PrivKey": "CAISINAckM6QODvCrez5I0Q3RZyo9PeV4jDeB1L71AHnSU/H"
   },
   "Swarm": {
     "ConnMgr": {
@@ -273,8 +273,8 @@ $ host.exe -config D:\Code\AIComputingNode\host\client.json
 ```json
 {
   "Bootstrap": [
-    "/ip4/122.99.183.54/tcp/6001/p2p/12D3KooWSpgWzEXE5GNjY6hgdAhuuBLe4d3ocqWDnVLdCa8U3cig",
-    "/ip4/82.157.50.32/tcp/6001/p2p/12D3KooWFrTcDtocZWEvEAk2X4poyn13LzT3G7JMBRoPD73YPAoB"
+    "/ip4/122.99.183.54/tcp/6001/p2p/16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM",
+    "/ip4/82.157.50.32/tcp/6001/p2p/16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
   ],
   "Addresses": [
     "/ip4/0.0.0.0/tcp/6001",
@@ -284,8 +284,8 @@ $ host.exe -config D:\Code\AIComputingNode\host\client.json
     "Addr": ":6000"
   },
   "Identity": {
-    "PeerID": "12D3KooWLzae3a7n7eJSQbSgARHQizJzChS4Rtpo3gziugpV4vRz",
-    "PrivKey": "CAESQBOuYLpTajlQ0Xzh84i6ey0Zot24Tc2qA2yDgw7dd2vGpg53BtN+RQgJ2erx2lRgDo4BiOXy0ZFRRxIZRQ5wJ3U="
+    "PeerID": "16Uiu2HAmJnGqxBqtWGkymSsy5WDKJY5A5NctcUduENADDptQFF4Y",
+    "PrivKey": "CAISINAckM6QODvCrez5I0Q3RZyo9PeV4jDeB1L71AHnSU/H"
   },
   "Swarm": {
     "ConnMgr": {
