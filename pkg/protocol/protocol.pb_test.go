@@ -8,7 +8,7 @@ import (
 )
 
 func TestMarshal(t *testing.T) {
-	var nodeId = "12D3KooWFrTcDtocZWEvEAk2X4poyn13LzT3G7JMBRoPD73YPAoB"
+	var nodeId = "16Uiu2HAmKk7Fg4WysTpEGd5q1wH2NL4wmxyQ5Nj4HhkQHyB3bDhm"
 	pi := &PeerIdentityBody{
 		Data: &PeerIdentityBody_Req{
 			Req: &PeerIdentityRequest{

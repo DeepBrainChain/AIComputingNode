@@ -28,9 +28,9 @@ func TestLevelDB(t *testing.T) {
 	if err := InitDb(InitOptions{Folder: ".", PeersDBName: "test.db"}); err != nil {
 		t.Fatal("Init db failed", err)
 	}
-	PeerConnected("12D3KooWEJkLnXJuqiDRunRdes7JHtjr6jw2w2EUPysVMCuv4ZfJ",
+	PeerConnected("16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF",
 		"/ip4/8.219.75.114/tcp/6001")
-	PeerConnected("12D3KooWSpgWzEXE5GNjY6hgdAhuuBLe4d3ocqWDnVLdCa8U3cig",
+	PeerConnected("16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM",
 		"/ip4/122.99.183.54/tcp/6001")
 	peers := LoadPeers()
 	for key, value := range peers {

@@ -2,13 +2,13 @@
 
 @url = http://localhost:7801
 @nodeAddr1 = /ip4/8.219.75.114/tcp/6001
-@nodeId1 = 12D3KooWEJkLnXJuqiDRunRdes7JHtjr6jw2w2EUPysVMCuv4ZfJ
+@nodeId1 = 16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF
 @nodeAddr2 = /ip4/122.99.183.54/tcp/6001
-@nodeId2 = 12D3KooWSpgWzEXE5GNjY6hgdAhuuBLe4d3ocqWDnVLdCa8U3cig
+@nodeId2 = 16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM
 @nodeAddr3 = /ip4/192.168.1.86/tcp/7001
-@nodeId3 = 12D3KooWDHnZQxvtNAVX8tQ4m1ASGtzg5fqCdC6kN4YfdrwmHMoX
+@nodeId3 = 16Uiu2HAmKk7Fg4WysTpEGd5q1wH2NL4wmxyQ5Nj4HhkQHyB3bDhm
 @nodeAddr4 = /ip4/10.0.20.43/tcp/7001
-@nodeId4 = 12D3KooWN7ZYLCxpr6T5FgFfXQDjoQYBT9jEucKq1ziF5dwT5Kzs
+@nodeId4 = 16Uiu2HAmDBYxgdKxeCbmn8hYiqwK3xHR9533WDdEYmpEDQ259GTe
 
 ###
 # Get the PeerInfo of the node itself
@@ -26,7 +26,7 @@ Content-Type: application/json
 # Get the PeerInfo of any node
 # @prompt node_id The node ID you want to query
 
-GET {{url}}/api/v0/peer HTTP/1.1
+POST {{url}}/api/v0/peer HTTP/1.1
 Content-Type: application/json
 
 {
@@ -48,6 +48,16 @@ Content-Type: application/json
   "prompt_word": [
     "hello", "world"
   ]
+}
+
+###
+# Get the host information of any node.
+
+POST {{url}}/api/v0/host/info HTTP/1.1
+Content-Type: application/json
+
+{
+  "node_id": "{{nodeId1}}"
 }
 
 ###
