@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"AIComputingNode/pkg/config"
-	"AIComputingNode/pkg/hardware"
+	"AIComputingNode/pkg/host"
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/p2p"
 	"AIComputingNode/pkg/protocol"
@@ -252,18 +252,18 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 	hs.handleRequest(w, r, req, &rsp)
 }
 
-func (hs *httpService) hardwareHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 		return
 	}
-	rsp := HardwareResponse{
+	rsp := HostInfoResponse{
 		Code:    0,
 		Message: "ok",
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	var msg HardwareRequest
+	var msg HostInfoRequest
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
 		rsp.Code = ErrCodeParse
 		rsp.Message = errMsg[rsp.Code]
@@ -279,9 +279,9 @@ func (hs *httpService) hardwareHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if msg.NodeID == config.GC.Identity.PeerID {
-		hd, err := hardware.GetHardwareInfo()
+		hd, err := host.GetHostInfo()
 		if err != nil {
-			rsp.Code = ErrCodeHardware
+			rsp.Code = ErrCodeHostInfo
 			rsp.Message = err.Error()
 		} else {
 			rsp.Data = *hd
@@ -290,9 +290,9 @@ func (hs *httpService) hardwareHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pi := &protocol.HardwareBody{
-		Data: &protocol.HardwareBody_Req{
-			Req: &protocol.HardwareRequest{
+	pi := &protocol.HostInfoBody{
+		Data: &protocol.HostInfoBody_Req{
+			Req: &protocol.HostInfoRequest{
 				NodeId: msg.NodeID,
 			},
 		},
@@ -317,7 +317,7 @@ func (hs *httpService) hardwareHandler(w http.ResponseWriter, r *http.Request) {
 			NodePubKey:    nil,
 			Sign:          nil,
 		},
-		Type:       *protocol.MessageType_HARDWARE_INFO.Enum(),
+		Type:       *protocol.MessageType_HOST_INFO.Enum(),
 		Body:       body,
 		ResultCode: 0,
 	}
@@ -454,7 +454,7 @@ func NewHttpServe(pcn chan<- []byte) {
 	http.HandleFunc("/api/v0/peers", hs.peersHandler)
 	http.HandleFunc("/api/v0/peer", hs.peerHandler)
 	http.HandleFunc("/api/v0/image/gen", hs.imageGenHandler)
-	http.HandleFunc("/api/v0/hardware", hs.hardwareHandler)
+	http.HandleFunc("/api/v0/host/info", hs.hostInfoHandler)
 	http.HandleFunc("/api/v0/swarm/peers", hs.swarmPeersHandler)
 	http.HandleFunc("/api/v0/swarm/addrs", hs.swarmAddrsHandler)
 	http.HandleFunc("/api/v0/swarm/connect", hs.swarmConnectHandler)

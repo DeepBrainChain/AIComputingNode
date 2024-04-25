@@ -24,7 +24,7 @@ message Message {
 enum MessageType {
   PEER_IDENTITY = 0;
   IMAGE_GENERATION = 1;
-  HARDWARE_INFO = 2;
+  HOST_INFO = 2;
 }
 
 message PeerIdentityBody {
@@ -65,18 +65,26 @@ message ImageGenerationResponse {
   string image_name = 3;
 }
 
-message HardwareBody {
+message HostInfoBody {
   oneof data {
-    HardwareRequest req = 1;
-    HardwareResponse res = 2;
+    HostInfoRequest req = 1;
+    HostInfoResponse res = 2;
   }
 }
 
-message HardwareRequest {
+message HostInfoRequest {
   string node_id = 1;
 }
 
-message HardwareResponse {
+message HostInfoResponse {
+  message OSInfo {
+    string os = 1;
+    string platform = 2;
+    string platform_family = 3;
+    string platform_version = 4;
+    string kernel_version = 5;
+    string kernel_arch = 6;
+  }
   message CpuInfo {
     string model_name = 1;
     uint32 total_cores = 2;
@@ -96,8 +104,9 @@ message HardwareResponse {
     string vendor = 1;
     string product = 2;
   }
-  repeated CpuInfo cpu = 1;
-  MemoryInfo memory = 2;
-  repeated DiskInfo disk = 3;
-  repeated GpuInfo gpu = 4;
+  OSInfo os = 1;
+  repeated CpuInfo cpu = 2;
+  MemoryInfo memory = 3;
+  repeated DiskInfo disk = 4;
+  repeated GpuInfo gpu = 5;
 }

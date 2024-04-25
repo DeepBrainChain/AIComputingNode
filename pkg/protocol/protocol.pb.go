@@ -25,7 +25,7 @@ type MessageType int32
 const (
 	MessageType_PEER_IDENTITY    MessageType = 0
 	MessageType_IMAGE_GENERATION MessageType = 1
-	MessageType_HARDWARE_INFO    MessageType = 2
+	MessageType_HOST_INFO        MessageType = 2
 )
 
 // Enum value maps for MessageType.
@@ -33,12 +33,12 @@ var (
 	MessageType_name = map[int32]string{
 		0: "PEER_IDENTITY",
 		1: "IMAGE_GENERATION",
-		2: "HARDWARE_INFO",
+		2: "HOST_INFO",
 	}
 	MessageType_value = map[string]int32{
 		"PEER_IDENTITY":    0,
 		"IMAGE_GENERATION": 1,
-		"HARDWARE_INFO":    2,
+		"HOST_INFO":        2,
 	}
 )
 
@@ -657,20 +657,20 @@ func (x *ImageGenerationResponse) GetImageName() string {
 	return ""
 }
 
-type HardwareBody struct {
+type HostInfoBody struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Data:
 	//
-	//	*HardwareBody_Req
-	//	*HardwareBody_Res
-	Data isHardwareBody_Data `protobuf_oneof:"data"`
+	//	*HostInfoBody_Req
+	//	*HostInfoBody_Res
+	Data isHostInfoBody_Data `protobuf_oneof:"data"`
 }
 
-func (x *HardwareBody) Reset() {
-	*x = HardwareBody{}
+func (x *HostInfoBody) Reset() {
+	*x = HostInfoBody{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_protocol_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -678,13 +678,13 @@ func (x *HardwareBody) Reset() {
 	}
 }
 
-func (x *HardwareBody) String() string {
+func (x *HostInfoBody) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HardwareBody) ProtoMessage() {}
+func (*HostInfoBody) ProtoMessage() {}
 
-func (x *HardwareBody) ProtoReflect() protoreflect.Message {
+func (x *HostInfoBody) ProtoReflect() protoreflect.Message {
 	mi := &file_protocol_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -696,49 +696,49 @@ func (x *HardwareBody) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HardwareBody.ProtoReflect.Descriptor instead.
-func (*HardwareBody) Descriptor() ([]byte, []int) {
+// Deprecated: Use HostInfoBody.ProtoReflect.Descriptor instead.
+func (*HostInfoBody) Descriptor() ([]byte, []int) {
 	return file_protocol_proto_rawDescGZIP(), []int{8}
 }
 
-func (m *HardwareBody) GetData() isHardwareBody_Data {
+func (m *HostInfoBody) GetData() isHostInfoBody_Data {
 	if m != nil {
 		return m.Data
 	}
 	return nil
 }
 
-func (x *HardwareBody) GetReq() *HardwareRequest {
-	if x, ok := x.GetData().(*HardwareBody_Req); ok {
+func (x *HostInfoBody) GetReq() *HostInfoRequest {
+	if x, ok := x.GetData().(*HostInfoBody_Req); ok {
 		return x.Req
 	}
 	return nil
 }
 
-func (x *HardwareBody) GetRes() *HardwareResponse {
-	if x, ok := x.GetData().(*HardwareBody_Res); ok {
+func (x *HostInfoBody) GetRes() *HostInfoResponse {
+	if x, ok := x.GetData().(*HostInfoBody_Res); ok {
 		return x.Res
 	}
 	return nil
 }
 
-type isHardwareBody_Data interface {
-	isHardwareBody_Data()
+type isHostInfoBody_Data interface {
+	isHostInfoBody_Data()
 }
 
-type HardwareBody_Req struct {
-	Req *HardwareRequest `protobuf:"bytes,1,opt,name=req,proto3,oneof"`
+type HostInfoBody_Req struct {
+	Req *HostInfoRequest `protobuf:"bytes,1,opt,name=req,proto3,oneof"`
 }
 
-type HardwareBody_Res struct {
-	Res *HardwareResponse `protobuf:"bytes,2,opt,name=res,proto3,oneof"`
+type HostInfoBody_Res struct {
+	Res *HostInfoResponse `protobuf:"bytes,2,opt,name=res,proto3,oneof"`
 }
 
-func (*HardwareBody_Req) isHardwareBody_Data() {}
+func (*HostInfoBody_Req) isHostInfoBody_Data() {}
 
-func (*HardwareBody_Res) isHardwareBody_Data() {}
+func (*HostInfoBody_Res) isHostInfoBody_Data() {}
 
-type HardwareRequest struct {
+type HostInfoRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -746,8 +746,8 @@ type HardwareRequest struct {
 	NodeId string `protobuf:"bytes,1,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
 }
 
-func (x *HardwareRequest) Reset() {
-	*x = HardwareRequest{}
+func (x *HostInfoRequest) Reset() {
+	*x = HostInfoRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_protocol_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -755,13 +755,13 @@ func (x *HardwareRequest) Reset() {
 	}
 }
 
-func (x *HardwareRequest) String() string {
+func (x *HostInfoRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HardwareRequest) ProtoMessage() {}
+func (*HostInfoRequest) ProtoMessage() {}
 
-func (x *HardwareRequest) ProtoReflect() protoreflect.Message {
+func (x *HostInfoRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_protocol_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -773,31 +773,32 @@ func (x *HardwareRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HardwareRequest.ProtoReflect.Descriptor instead.
-func (*HardwareRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use HostInfoRequest.ProtoReflect.Descriptor instead.
+func (*HostInfoRequest) Descriptor() ([]byte, []int) {
 	return file_protocol_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *HardwareRequest) GetNodeId() string {
+func (x *HostInfoRequest) GetNodeId() string {
 	if x != nil {
 		return x.NodeId
 	}
 	return ""
 }
 
-type HardwareResponse struct {
+type HostInfoResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Cpu    []*HardwareResponse_CpuInfo  `protobuf:"bytes,1,rep,name=cpu,proto3" json:"cpu,omitempty"`
-	Memory *HardwareResponse_MemoryInfo `protobuf:"bytes,2,opt,name=memory,proto3" json:"memory,omitempty"`
-	Disk   []*HardwareResponse_DiskInfo `protobuf:"bytes,3,rep,name=disk,proto3" json:"disk,omitempty"`
-	Gpu    []*HardwareResponse_GpuInfo  `protobuf:"bytes,4,rep,name=gpu,proto3" json:"gpu,omitempty"`
+	Os     *HostInfoResponse_OSInfo     `protobuf:"bytes,1,opt,name=os,proto3" json:"os,omitempty"`
+	Cpu    []*HostInfoResponse_CpuInfo  `protobuf:"bytes,2,rep,name=cpu,proto3" json:"cpu,omitempty"`
+	Memory *HostInfoResponse_MemoryInfo `protobuf:"bytes,3,opt,name=memory,proto3" json:"memory,omitempty"`
+	Disk   []*HostInfoResponse_DiskInfo `protobuf:"bytes,4,rep,name=disk,proto3" json:"disk,omitempty"`
+	Gpu    []*HostInfoResponse_GpuInfo  `protobuf:"bytes,5,rep,name=gpu,proto3" json:"gpu,omitempty"`
 }
 
-func (x *HardwareResponse) Reset() {
-	*x = HardwareResponse{}
+func (x *HostInfoResponse) Reset() {
+	*x = HostInfoResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_protocol_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -805,13 +806,13 @@ func (x *HardwareResponse) Reset() {
 	}
 }
 
-func (x *HardwareResponse) String() string {
+func (x *HostInfoResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HardwareResponse) ProtoMessage() {}
+func (*HostInfoResponse) ProtoMessage() {}
 
-func (x *HardwareResponse) ProtoReflect() protoreflect.Message {
+func (x *HostInfoResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_protocol_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -823,51 +824,61 @@ func (x *HardwareResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HardwareResponse.ProtoReflect.Descriptor instead.
-func (*HardwareResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use HostInfoResponse.ProtoReflect.Descriptor instead.
+func (*HostInfoResponse) Descriptor() ([]byte, []int) {
 	return file_protocol_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *HardwareResponse) GetCpu() []*HardwareResponse_CpuInfo {
+func (x *HostInfoResponse) GetOs() *HostInfoResponse_OSInfo {
+	if x != nil {
+		return x.Os
+	}
+	return nil
+}
+
+func (x *HostInfoResponse) GetCpu() []*HostInfoResponse_CpuInfo {
 	if x != nil {
 		return x.Cpu
 	}
 	return nil
 }
 
-func (x *HardwareResponse) GetMemory() *HardwareResponse_MemoryInfo {
+func (x *HostInfoResponse) GetMemory() *HostInfoResponse_MemoryInfo {
 	if x != nil {
 		return x.Memory
 	}
 	return nil
 }
 
-func (x *HardwareResponse) GetDisk() []*HardwareResponse_DiskInfo {
+func (x *HostInfoResponse) GetDisk() []*HostInfoResponse_DiskInfo {
 	if x != nil {
 		return x.Disk
 	}
 	return nil
 }
 
-func (x *HardwareResponse) GetGpu() []*HardwareResponse_GpuInfo {
+func (x *HostInfoResponse) GetGpu() []*HostInfoResponse_GpuInfo {
 	if x != nil {
 		return x.Gpu
 	}
 	return nil
 }
 
-type HardwareResponse_CpuInfo struct {
+type HostInfoResponse_OSInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ModelName    string `protobuf:"bytes,1,opt,name=model_name,json=modelName,proto3" json:"model_name,omitempty"`
-	TotalCores   uint32 `protobuf:"varint,2,opt,name=total_cores,json=totalCores,proto3" json:"total_cores,omitempty"`
-	TotalThreads uint32 `protobuf:"varint,3,opt,name=total_threads,json=totalThreads,proto3" json:"total_threads,omitempty"`
+	Os              string `protobuf:"bytes,1,opt,name=os,proto3" json:"os,omitempty"`
+	Platform        string `protobuf:"bytes,2,opt,name=platform,proto3" json:"platform,omitempty"`
+	PlatformFamily  string `protobuf:"bytes,3,opt,name=platform_family,json=platformFamily,proto3" json:"platform_family,omitempty"`
+	PlatformVersion string `protobuf:"bytes,4,opt,name=platform_version,json=platformVersion,proto3" json:"platform_version,omitempty"`
+	KernelVersion   string `protobuf:"bytes,5,opt,name=kernel_version,json=kernelVersion,proto3" json:"kernel_version,omitempty"`
+	KernelArch      string `protobuf:"bytes,6,opt,name=kernel_arch,json=kernelArch,proto3" json:"kernel_arch,omitempty"`
 }
 
-func (x *HardwareResponse_CpuInfo) Reset() {
-	*x = HardwareResponse_CpuInfo{}
+func (x *HostInfoResponse_OSInfo) Reset() {
+	*x = HostInfoResponse_OSInfo{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_protocol_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -875,13 +886,13 @@ func (x *HardwareResponse_CpuInfo) Reset() {
 	}
 }
 
-func (x *HardwareResponse_CpuInfo) String() string {
+func (x *HostInfoResponse_OSInfo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HardwareResponse_CpuInfo) ProtoMessage() {}
+func (*HostInfoResponse_OSInfo) ProtoMessage() {}
 
-func (x *HardwareResponse_CpuInfo) ProtoReflect() protoreflect.Message {
+func (x *HostInfoResponse_OSInfo) ProtoReflect() protoreflect.Message {
 	mi := &file_protocol_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -893,43 +904,65 @@ func (x *HardwareResponse_CpuInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HardwareResponse_CpuInfo.ProtoReflect.Descriptor instead.
-func (*HardwareResponse_CpuInfo) Descriptor() ([]byte, []int) {
+// Deprecated: Use HostInfoResponse_OSInfo.ProtoReflect.Descriptor instead.
+func (*HostInfoResponse_OSInfo) Descriptor() ([]byte, []int) {
 	return file_protocol_proto_rawDescGZIP(), []int{10, 0}
 }
 
-func (x *HardwareResponse_CpuInfo) GetModelName() string {
+func (x *HostInfoResponse_OSInfo) GetOs() string {
 	if x != nil {
-		return x.ModelName
+		return x.Os
 	}
 	return ""
 }
 
-func (x *HardwareResponse_CpuInfo) GetTotalCores() uint32 {
+func (x *HostInfoResponse_OSInfo) GetPlatform() string {
 	if x != nil {
-		return x.TotalCores
+		return x.Platform
 	}
-	return 0
+	return ""
 }
 
-func (x *HardwareResponse_CpuInfo) GetTotalThreads() uint32 {
+func (x *HostInfoResponse_OSInfo) GetPlatformFamily() string {
 	if x != nil {
-		return x.TotalThreads
+		return x.PlatformFamily
 	}
-	return 0
+	return ""
 }
 
-type HardwareResponse_MemoryInfo struct {
+func (x *HostInfoResponse_OSInfo) GetPlatformVersion() string {
+	if x != nil {
+		return x.PlatformVersion
+	}
+	return ""
+}
+
+func (x *HostInfoResponse_OSInfo) GetKernelVersion() string {
+	if x != nil {
+		return x.KernelVersion
+	}
+	return ""
+}
+
+func (x *HostInfoResponse_OSInfo) GetKernelArch() string {
+	if x != nil {
+		return x.KernelArch
+	}
+	return ""
+}
+
+type HostInfoResponse_CpuInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	TotalPhysicalBytes int64 `protobuf:"varint,1,opt,name=total_physical_bytes,json=totalPhysicalBytes,proto3" json:"total_physical_bytes,omitempty"`
-	TotalUsableBytes   int64 `protobuf:"varint,2,opt,name=total_usable_bytes,json=totalUsableBytes,proto3" json:"total_usable_bytes,omitempty"`
+	ModelName    string `protobuf:"bytes,1,opt,name=model_name,json=modelName,proto3" json:"model_name,omitempty"`
+	TotalCores   uint32 `protobuf:"varint,2,opt,name=total_cores,json=totalCores,proto3" json:"total_cores,omitempty"`
+	TotalThreads uint32 `protobuf:"varint,3,opt,name=total_threads,json=totalThreads,proto3" json:"total_threads,omitempty"`
 }
 
-func (x *HardwareResponse_MemoryInfo) Reset() {
-	*x = HardwareResponse_MemoryInfo{}
+func (x *HostInfoResponse_CpuInfo) Reset() {
+	*x = HostInfoResponse_CpuInfo{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_protocol_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -937,13 +970,13 @@ func (x *HardwareResponse_MemoryInfo) Reset() {
 	}
 }
 
-func (x *HardwareResponse_MemoryInfo) String() string {
+func (x *HostInfoResponse_CpuInfo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HardwareResponse_MemoryInfo) ProtoMessage() {}
+func (*HostInfoResponse_CpuInfo) ProtoMessage() {}
 
-func (x *HardwareResponse_MemoryInfo) ProtoReflect() protoreflect.Message {
+func (x *HostInfoResponse_CpuInfo) ProtoReflect() protoreflect.Message {
 	mi := &file_protocol_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -955,38 +988,43 @@ func (x *HardwareResponse_MemoryInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HardwareResponse_MemoryInfo.ProtoReflect.Descriptor instead.
-func (*HardwareResponse_MemoryInfo) Descriptor() ([]byte, []int) {
+// Deprecated: Use HostInfoResponse_CpuInfo.ProtoReflect.Descriptor instead.
+func (*HostInfoResponse_CpuInfo) Descriptor() ([]byte, []int) {
 	return file_protocol_proto_rawDescGZIP(), []int{10, 1}
 }
 
-func (x *HardwareResponse_MemoryInfo) GetTotalPhysicalBytes() int64 {
+func (x *HostInfoResponse_CpuInfo) GetModelName() string {
 	if x != nil {
-		return x.TotalPhysicalBytes
+		return x.ModelName
+	}
+	return ""
+}
+
+func (x *HostInfoResponse_CpuInfo) GetTotalCores() uint32 {
+	if x != nil {
+		return x.TotalCores
 	}
 	return 0
 }
 
-func (x *HardwareResponse_MemoryInfo) GetTotalUsableBytes() int64 {
+func (x *HostInfoResponse_CpuInfo) GetTotalThreads() uint32 {
 	if x != nil {
-		return x.TotalUsableBytes
+		return x.TotalThreads
 	}
 	return 0
 }
 
-type HardwareResponse_DiskInfo struct {
+type HostInfoResponse_MemoryInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	DriveType    string `protobuf:"bytes,1,opt,name=drive_type,json=driveType,proto3" json:"drive_type,omitempty"`
-	SizeBytes    uint64 `protobuf:"varint,2,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
-	Model        string `protobuf:"bytes,3,opt,name=model,proto3" json:"model,omitempty"`
-	SerialNumber string `protobuf:"bytes,4,opt,name=serial_number,json=serialNumber,proto3" json:"serial_number,omitempty"`
+	TotalPhysicalBytes int64 `protobuf:"varint,1,opt,name=total_physical_bytes,json=totalPhysicalBytes,proto3" json:"total_physical_bytes,omitempty"`
+	TotalUsableBytes   int64 `protobuf:"varint,2,opt,name=total_usable_bytes,json=totalUsableBytes,proto3" json:"total_usable_bytes,omitempty"`
 }
 
-func (x *HardwareResponse_DiskInfo) Reset() {
-	*x = HardwareResponse_DiskInfo{}
+func (x *HostInfoResponse_MemoryInfo) Reset() {
+	*x = HostInfoResponse_MemoryInfo{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_protocol_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -994,13 +1032,13 @@ func (x *HardwareResponse_DiskInfo) Reset() {
 	}
 }
 
-func (x *HardwareResponse_DiskInfo) String() string {
+func (x *HostInfoResponse_MemoryInfo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HardwareResponse_DiskInfo) ProtoMessage() {}
+func (*HostInfoResponse_MemoryInfo) ProtoMessage() {}
 
-func (x *HardwareResponse_DiskInfo) ProtoReflect() protoreflect.Message {
+func (x *HostInfoResponse_MemoryInfo) ProtoReflect() protoreflect.Message {
 	mi := &file_protocol_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1012,50 +1050,38 @@ func (x *HardwareResponse_DiskInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HardwareResponse_DiskInfo.ProtoReflect.Descriptor instead.
-func (*HardwareResponse_DiskInfo) Descriptor() ([]byte, []int) {
+// Deprecated: Use HostInfoResponse_MemoryInfo.ProtoReflect.Descriptor instead.
+func (*HostInfoResponse_MemoryInfo) Descriptor() ([]byte, []int) {
 	return file_protocol_proto_rawDescGZIP(), []int{10, 2}
 }
 
-func (x *HardwareResponse_DiskInfo) GetDriveType() string {
+func (x *HostInfoResponse_MemoryInfo) GetTotalPhysicalBytes() int64 {
 	if x != nil {
-		return x.DriveType
-	}
-	return ""
-}
-
-func (x *HardwareResponse_DiskInfo) GetSizeBytes() uint64 {
-	if x != nil {
-		return x.SizeBytes
+		return x.TotalPhysicalBytes
 	}
 	return 0
 }
 
-func (x *HardwareResponse_DiskInfo) GetModel() string {
+func (x *HostInfoResponse_MemoryInfo) GetTotalUsableBytes() int64 {
 	if x != nil {
-		return x.Model
+		return x.TotalUsableBytes
 	}
-	return ""
+	return 0
 }
 
-func (x *HardwareResponse_DiskInfo) GetSerialNumber() string {
-	if x != nil {
-		return x.SerialNumber
-	}
-	return ""
-}
-
-type HardwareResponse_GpuInfo struct {
+type HostInfoResponse_DiskInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Vendor  string `protobuf:"bytes,1,opt,name=vendor,proto3" json:"vendor,omitempty"`
-	Product string `protobuf:"bytes,2,opt,name=product,proto3" json:"product,omitempty"`
+	DriveType    string `protobuf:"bytes,1,opt,name=drive_type,json=driveType,proto3" json:"drive_type,omitempty"`
+	SizeBytes    uint64 `protobuf:"varint,2,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
+	Model        string `protobuf:"bytes,3,opt,name=model,proto3" json:"model,omitempty"`
+	SerialNumber string `protobuf:"bytes,4,opt,name=serial_number,json=serialNumber,proto3" json:"serial_number,omitempty"`
 }
 
-func (x *HardwareResponse_GpuInfo) Reset() {
-	*x = HardwareResponse_GpuInfo{}
+func (x *HostInfoResponse_DiskInfo) Reset() {
+	*x = HostInfoResponse_DiskInfo{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_protocol_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1063,13 +1089,13 @@ func (x *HardwareResponse_GpuInfo) Reset() {
 	}
 }
 
-func (x *HardwareResponse_GpuInfo) String() string {
+func (x *HostInfoResponse_DiskInfo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HardwareResponse_GpuInfo) ProtoMessage() {}
+func (*HostInfoResponse_DiskInfo) ProtoMessage() {}
 
-func (x *HardwareResponse_GpuInfo) ProtoReflect() protoreflect.Message {
+func (x *HostInfoResponse_DiskInfo) ProtoReflect() protoreflect.Message {
 	mi := &file_protocol_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1081,19 +1107,88 @@ func (x *HardwareResponse_GpuInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HardwareResponse_GpuInfo.ProtoReflect.Descriptor instead.
-func (*HardwareResponse_GpuInfo) Descriptor() ([]byte, []int) {
+// Deprecated: Use HostInfoResponse_DiskInfo.ProtoReflect.Descriptor instead.
+func (*HostInfoResponse_DiskInfo) Descriptor() ([]byte, []int) {
 	return file_protocol_proto_rawDescGZIP(), []int{10, 3}
 }
 
-func (x *HardwareResponse_GpuInfo) GetVendor() string {
+func (x *HostInfoResponse_DiskInfo) GetDriveType() string {
+	if x != nil {
+		return x.DriveType
+	}
+	return ""
+}
+
+func (x *HostInfoResponse_DiskInfo) GetSizeBytes() uint64 {
+	if x != nil {
+		return x.SizeBytes
+	}
+	return 0
+}
+
+func (x *HostInfoResponse_DiskInfo) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *HostInfoResponse_DiskInfo) GetSerialNumber() string {
+	if x != nil {
+		return x.SerialNumber
+	}
+	return ""
+}
+
+type HostInfoResponse_GpuInfo struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Vendor  string `protobuf:"bytes,1,opt,name=vendor,proto3" json:"vendor,omitempty"`
+	Product string `protobuf:"bytes,2,opt,name=product,proto3" json:"product,omitempty"`
+}
+
+func (x *HostInfoResponse_GpuInfo) Reset() {
+	*x = HostInfoResponse_GpuInfo{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_protocol_proto_msgTypes[15]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *HostInfoResponse_GpuInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HostInfoResponse_GpuInfo) ProtoMessage() {}
+
+func (x *HostInfoResponse_GpuInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_protocol_proto_msgTypes[15]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HostInfoResponse_GpuInfo.ProtoReflect.Descriptor instead.
+func (*HostInfoResponse_GpuInfo) Descriptor() ([]byte, []int) {
+	return file_protocol_proto_rawDescGZIP(), []int{10, 4}
+}
+
+func (x *HostInfoResponse_GpuInfo) GetVendor() string {
 	if x != nil {
 		return x.Vendor
 	}
 	return ""
 }
 
-func (x *HardwareResponse_GpuInfo) GetProduct() string {
+func (x *HostInfoResponse_GpuInfo) GetProduct() string {
 	if x != nil {
 		return x.Product
 	}
@@ -1176,64 +1271,80 @@ var file_protocol_proto_rawDesc = []byte{
 	0x63, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x63, 0x69, 0x64, 0x12, 0x1d,
 	0x0a, 0x0a, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x03, 0x20, 0x01,
 	0x28, 0x09, 0x52, 0x09, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x22, 0x75, 0x0a,
-	0x0c, 0x48, 0x61, 0x72, 0x64, 0x77, 0x61, 0x72, 0x65, 0x42, 0x6f, 0x64, 0x79, 0x12, 0x2d, 0x0a,
+	0x0c, 0x48, 0x6f, 0x73, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x42, 0x6f, 0x64, 0x79, 0x12, 0x2d, 0x0a,
 	0x03, 0x72, 0x65, 0x71, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x48, 0x61, 0x72, 0x64, 0x77, 0x61, 0x72, 0x65, 0x52, 0x65,
+	0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x48, 0x6f, 0x73, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x65,
 	0x71, 0x75, 0x65, 0x73, 0x74, 0x48, 0x00, 0x52, 0x03, 0x72, 0x65, 0x71, 0x12, 0x2e, 0x0a, 0x03,
 	0x72, 0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x48, 0x61, 0x72, 0x64, 0x77, 0x61, 0x72, 0x65, 0x52, 0x65, 0x73,
+	0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x48, 0x6f, 0x73, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x65, 0x73,
 	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x48, 0x00, 0x52, 0x03, 0x72, 0x65, 0x73, 0x42, 0x06, 0x0a, 0x04,
-	0x64, 0x61, 0x74, 0x61, 0x22, 0x2a, 0x0a, 0x0f, 0x48, 0x61, 0x72, 0x64, 0x77, 0x61, 0x72, 0x65,
+	0x64, 0x61, 0x74, 0x61, 0x22, 0x2a, 0x0a, 0x0f, 0x48, 0x6f, 0x73, 0x74, 0x49, 0x6e, 0x66, 0x6f,
 	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x17, 0x0a, 0x07, 0x6e, 0x6f, 0x64, 0x65, 0x5f,
 	0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x6e, 0x6f, 0x64, 0x65, 0x49, 0x64,
-	0x22, 0x97, 0x05, 0x0a, 0x10, 0x48, 0x61, 0x72, 0x64, 0x77, 0x61, 0x72, 0x65, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x34, 0x0a, 0x03, 0x63, 0x70, 0x75, 0x18, 0x01, 0x20, 0x03,
-	0x28, 0x0b, 0x32, 0x22, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x48, 0x61,
-	0x72, 0x64, 0x77, 0x61, 0x72, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e, 0x43,
-	0x70, 0x75, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x03, 0x63, 0x70, 0x75, 0x12, 0x3d, 0x0a, 0x06, 0x6d,
-	0x65, 0x6d, 0x6f, 0x72, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x25, 0x2e, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x48, 0x61, 0x72, 0x64, 0x77, 0x61, 0x72, 0x65, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e, 0x4d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x49, 0x6e,
-	0x66, 0x6f, 0x52, 0x06, 0x6d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x12, 0x37, 0x0a, 0x04, 0x64, 0x69,
-	0x73, 0x6b, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x23, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x63, 0x6f, 0x6c, 0x2e, 0x48, 0x61, 0x72, 0x64, 0x77, 0x61, 0x72, 0x65, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x2e, 0x44, 0x69, 0x73, 0x6b, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x04, 0x64,
-	0x69, 0x73, 0x6b, 0x12, 0x34, 0x0a, 0x03, 0x67, 0x70, 0x75, 0x18, 0x04, 0x20, 0x03, 0x28, 0x0b,
-	0x32, 0x22, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x48, 0x61, 0x72, 0x64,
-	0x77, 0x61, 0x72, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e, 0x47, 0x70, 0x75,
-	0x49, 0x6e, 0x66, 0x6f, 0x52, 0x03, 0x67, 0x70, 0x75, 0x1a, 0x6e, 0x0a, 0x07, 0x43, 0x70, 0x75,
-	0x49, 0x6e, 0x66, 0x6f, 0x12, 0x1d, 0x0a, 0x0a, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x5f, 0x6e, 0x61,
-	0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x4e,
-	0x61, 0x6d, 0x65, 0x12, 0x1f, 0x0a, 0x0b, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x5f, 0x63, 0x6f, 0x72,
-	0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x0a, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x43,
-	0x6f, 0x72, 0x65, 0x73, 0x12, 0x23, 0x0a, 0x0d, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x5f, 0x74, 0x68,
-	0x72, 0x65, 0x61, 0x64, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x0c, 0x74, 0x6f, 0x74,
-	0x61, 0x6c, 0x54, 0x68, 0x72, 0x65, 0x61, 0x64, 0x73, 0x1a, 0x6c, 0x0a, 0x0a, 0x4d, 0x65, 0x6d,
-	0x6f, 0x72, 0x79, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x30, 0x0a, 0x14, 0x74, 0x6f, 0x74, 0x61, 0x6c,
-	0x5f, 0x70, 0x68, 0x79, 0x73, 0x69, 0x63, 0x61, 0x6c, 0x5f, 0x62, 0x79, 0x74, 0x65, 0x73, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x12, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x50, 0x68, 0x79, 0x73,
-	0x69, 0x63, 0x61, 0x6c, 0x42, 0x79, 0x74, 0x65, 0x73, 0x12, 0x2c, 0x0a, 0x12, 0x74, 0x6f, 0x74,
-	0x61, 0x6c, 0x5f, 0x75, 0x73, 0x61, 0x62, 0x6c, 0x65, 0x5f, 0x62, 0x79, 0x74, 0x65, 0x73, 0x18,
-	0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x10, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x55, 0x73, 0x61, 0x62,
-	0x6c, 0x65, 0x42, 0x79, 0x74, 0x65, 0x73, 0x1a, 0x83, 0x01, 0x0a, 0x08, 0x44, 0x69, 0x73, 0x6b,
-	0x49, 0x6e, 0x66, 0x6f, 0x12, 0x1d, 0x0a, 0x0a, 0x64, 0x72, 0x69, 0x76, 0x65, 0x5f, 0x74, 0x79,
-	0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x64, 0x72, 0x69, 0x76, 0x65, 0x54,
-	0x79, 0x70, 0x65, 0x12, 0x1d, 0x0a, 0x0a, 0x73, 0x69, 0x7a, 0x65, 0x5f, 0x62, 0x79, 0x74, 0x65,
-	0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x09, 0x73, 0x69, 0x7a, 0x65, 0x42, 0x79, 0x74,
-	0x65, 0x73, 0x12, 0x14, 0x0a, 0x05, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x18, 0x03, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x05, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x12, 0x23, 0x0a, 0x0d, 0x73, 0x65, 0x72, 0x69,
-	0x61, 0x6c, 0x5f, 0x6e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x0c, 0x73, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x1a, 0x3b, 0x0a,
-	0x07, 0x47, 0x70, 0x75, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x16, 0x0a, 0x06, 0x76, 0x65, 0x6e, 0x64,
-	0x6f, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x76, 0x65, 0x6e, 0x64, 0x6f, 0x72,
-	0x12, 0x18, 0x0a, 0x07, 0x70, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x07, 0x70, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x74, 0x2a, 0x49, 0x0a, 0x0b, 0x4d, 0x65,
-	0x73, 0x73, 0x61, 0x67, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12, 0x11, 0x0a, 0x0d, 0x50, 0x45, 0x45,
-	0x52, 0x5f, 0x49, 0x44, 0x45, 0x4e, 0x54, 0x49, 0x54, 0x59, 0x10, 0x00, 0x12, 0x14, 0x0a, 0x10,
-	0x49, 0x4d, 0x41, 0x47, 0x45, 0x5f, 0x47, 0x45, 0x4e, 0x45, 0x52, 0x41, 0x54, 0x49, 0x4f, 0x4e,
-	0x10, 0x01, 0x12, 0x11, 0x0a, 0x0d, 0x48, 0x41, 0x52, 0x44, 0x57, 0x41, 0x52, 0x45, 0x5f, 0x49,
-	0x4e, 0x46, 0x4f, 0x10, 0x02, 0x42, 0x0d, 0x5a, 0x0b, 0x2e, 0x2e, 0x2f, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x63, 0x6f, 0x6c, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x22, 0x9d, 0x07, 0x0a, 0x10, 0x48, 0x6f, 0x73, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x31, 0x0a, 0x02, 0x6f, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x21, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x48, 0x6f, 0x73,
+	0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e, 0x4f, 0x53,
+	0x49, 0x6e, 0x66, 0x6f, 0x52, 0x02, 0x6f, 0x73, 0x12, 0x34, 0x0a, 0x03, 0x63, 0x70, 0x75, 0x18,
+	0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c,
+	0x2e, 0x48, 0x6f, 0x73, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x2e, 0x43, 0x70, 0x75, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x03, 0x63, 0x70, 0x75, 0x12, 0x3d,
+	0x0a, 0x06, 0x6d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x25,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x48, 0x6f, 0x73, 0x74, 0x49, 0x6e,
+	0x66, 0x6f, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e, 0x4d, 0x65, 0x6d, 0x6f, 0x72,
+	0x79, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x06, 0x6d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x12, 0x37, 0x0a,
+	0x04, 0x64, 0x69, 0x73, 0x6b, 0x18, 0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x23, 0x2e, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x48, 0x6f, 0x73, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e, 0x44, 0x69, 0x73, 0x6b, 0x49, 0x6e, 0x66, 0x6f,
+	0x52, 0x04, 0x64, 0x69, 0x73, 0x6b, 0x12, 0x34, 0x0a, 0x03, 0x67, 0x70, 0x75, 0x18, 0x05, 0x20,
+	0x03, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x48,
+	0x6f, 0x73, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e,
+	0x47, 0x70, 0x75, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x03, 0x67, 0x70, 0x75, 0x1a, 0xd0, 0x01, 0x0a,
+	0x06, 0x4f, 0x53, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x0e, 0x0a, 0x02, 0x6f, 0x73, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x02, 0x6f, 0x73, 0x12, 0x1a, 0x0a, 0x08, 0x70, 0x6c, 0x61, 0x74, 0x66,
+	0x6f, 0x72, 0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x70, 0x6c, 0x61, 0x74, 0x66,
+	0x6f, 0x72, 0x6d, 0x12, 0x27, 0x0a, 0x0f, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x5f,
+	0x66, 0x61, 0x6d, 0x69, 0x6c, 0x79, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e, 0x70, 0x6c,
+	0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x46, 0x61, 0x6d, 0x69, 0x6c, 0x79, 0x12, 0x29, 0x0a, 0x10,
+	0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x5f, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e,
+	0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0f, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d,
+	0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x25, 0x0a, 0x0e, 0x6b, 0x65, 0x72, 0x6e, 0x65,
+	0x6c, 0x5f, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x0d, 0x6b, 0x65, 0x72, 0x6e, 0x65, 0x6c, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x1f,
+	0x0a, 0x0b, 0x6b, 0x65, 0x72, 0x6e, 0x65, 0x6c, 0x5f, 0x61, 0x72, 0x63, 0x68, 0x18, 0x06, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x0a, 0x6b, 0x65, 0x72, 0x6e, 0x65, 0x6c, 0x41, 0x72, 0x63, 0x68, 0x1a,
+	0x6e, 0x0a, 0x07, 0x43, 0x70, 0x75, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x1d, 0x0a, 0x0a, 0x6d, 0x6f,
+	0x64, 0x65, 0x6c, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09,
+	0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x1f, 0x0a, 0x0b, 0x74, 0x6f, 0x74,
+	0x61, 0x6c, 0x5f, 0x63, 0x6f, 0x72, 0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x0a,
+	0x74, 0x6f, 0x74, 0x61, 0x6c, 0x43, 0x6f, 0x72, 0x65, 0x73, 0x12, 0x23, 0x0a, 0x0d, 0x74, 0x6f,
+	0x74, 0x61, 0x6c, 0x5f, 0x74, 0x68, 0x72, 0x65, 0x61, 0x64, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28,
+	0x0d, 0x52, 0x0c, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x54, 0x68, 0x72, 0x65, 0x61, 0x64, 0x73, 0x1a,
+	0x6c, 0x0a, 0x0a, 0x4d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x30, 0x0a,
+	0x14, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x5f, 0x70, 0x68, 0x79, 0x73, 0x69, 0x63, 0x61, 0x6c, 0x5f,
+	0x62, 0x79, 0x74, 0x65, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x12, 0x74, 0x6f, 0x74,
+	0x61, 0x6c, 0x50, 0x68, 0x79, 0x73, 0x69, 0x63, 0x61, 0x6c, 0x42, 0x79, 0x74, 0x65, 0x73, 0x12,
+	0x2c, 0x0a, 0x12, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x5f, 0x75, 0x73, 0x61, 0x62, 0x6c, 0x65, 0x5f,
+	0x62, 0x79, 0x74, 0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x10, 0x74, 0x6f, 0x74,
+	0x61, 0x6c, 0x55, 0x73, 0x61, 0x62, 0x6c, 0x65, 0x42, 0x79, 0x74, 0x65, 0x73, 0x1a, 0x83, 0x01,
+	0x0a, 0x08, 0x44, 0x69, 0x73, 0x6b, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x1d, 0x0a, 0x0a, 0x64, 0x72,
+	0x69, 0x76, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09,
+	0x64, 0x72, 0x69, 0x76, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12, 0x1d, 0x0a, 0x0a, 0x73, 0x69, 0x7a,
+	0x65, 0x5f, 0x62, 0x79, 0x74, 0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x09, 0x73,
+	0x69, 0x7a, 0x65, 0x42, 0x79, 0x74, 0x65, 0x73, 0x12, 0x14, 0x0a, 0x05, 0x6d, 0x6f, 0x64, 0x65,
+	0x6c, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x12, 0x23,
+	0x0a, 0x0d, 0x73, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x5f, 0x6e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x18,
+	0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x73, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x4e, 0x75, 0x6d,
+	0x62, 0x65, 0x72, 0x1a, 0x3b, 0x0a, 0x07, 0x47, 0x70, 0x75, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x16,
+	0x0a, 0x06, 0x76, 0x65, 0x6e, 0x64, 0x6f, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06,
+	0x76, 0x65, 0x6e, 0x64, 0x6f, 0x72, 0x12, 0x18, 0x0a, 0x07, 0x70, 0x72, 0x6f, 0x64, 0x75, 0x63,
+	0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x70, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x74,
+	0x2a, 0x45, 0x0a, 0x0b, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12,
+	0x11, 0x0a, 0x0d, 0x50, 0x45, 0x45, 0x52, 0x5f, 0x49, 0x44, 0x45, 0x4e, 0x54, 0x49, 0x54, 0x59,
+	0x10, 0x00, 0x12, 0x14, 0x0a, 0x10, 0x49, 0x4d, 0x41, 0x47, 0x45, 0x5f, 0x47, 0x45, 0x4e, 0x45,
+	0x52, 0x41, 0x54, 0x49, 0x4f, 0x4e, 0x10, 0x01, 0x12, 0x0d, 0x0a, 0x09, 0x48, 0x4f, 0x53, 0x54,
+	0x5f, 0x49, 0x4e, 0x46, 0x4f, 0x10, 0x02, 0x42, 0x0d, 0x5a, 0x0b, 0x2e, 0x2e, 0x2f, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1249,7 +1360,7 @@ func file_protocol_proto_rawDescGZIP() []byte {
 }
 
 var file_protocol_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_protocol_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_protocol_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_protocol_proto_goTypes = []interface{}{
 	(MessageType)(0),                    // 0: protocol.MessageType
 	(*MessageHeader)(nil),               // 1: protocol.MessageHeader
@@ -1260,13 +1371,14 @@ var file_protocol_proto_goTypes = []interface{}{
 	(*ImageGenerationBody)(nil),         // 6: protocol.ImageGenerationBody
 	(*ImageGenerationRequest)(nil),      // 7: protocol.ImageGenerationRequest
 	(*ImageGenerationResponse)(nil),     // 8: protocol.ImageGenerationResponse
-	(*HardwareBody)(nil),                // 9: protocol.HardwareBody
-	(*HardwareRequest)(nil),             // 10: protocol.HardwareRequest
-	(*HardwareResponse)(nil),            // 11: protocol.HardwareResponse
-	(*HardwareResponse_CpuInfo)(nil),    // 12: protocol.HardwareResponse.CpuInfo
-	(*HardwareResponse_MemoryInfo)(nil), // 13: protocol.HardwareResponse.MemoryInfo
-	(*HardwareResponse_DiskInfo)(nil),   // 14: protocol.HardwareResponse.DiskInfo
-	(*HardwareResponse_GpuInfo)(nil),    // 15: protocol.HardwareResponse.GpuInfo
+	(*HostInfoBody)(nil),                // 9: protocol.HostInfoBody
+	(*HostInfoRequest)(nil),             // 10: protocol.HostInfoRequest
+	(*HostInfoResponse)(nil),            // 11: protocol.HostInfoResponse
+	(*HostInfoResponse_OSInfo)(nil),     // 12: protocol.HostInfoResponse.OSInfo
+	(*HostInfoResponse_CpuInfo)(nil),    // 13: protocol.HostInfoResponse.CpuInfo
+	(*HostInfoResponse_MemoryInfo)(nil), // 14: protocol.HostInfoResponse.MemoryInfo
+	(*HostInfoResponse_DiskInfo)(nil),   // 15: protocol.HostInfoResponse.DiskInfo
+	(*HostInfoResponse_GpuInfo)(nil),    // 16: protocol.HostInfoResponse.GpuInfo
 }
 var file_protocol_proto_depIdxs = []int32{
 	1,  // 0: protocol.Message.header:type_name -> protocol.MessageHeader
@@ -1275,17 +1387,18 @@ var file_protocol_proto_depIdxs = []int32{
 	5,  // 3: protocol.PeerIdentityBody.res:type_name -> protocol.PeerIdentityResponse
 	7,  // 4: protocol.ImageGenerationBody.req:type_name -> protocol.ImageGenerationRequest
 	8,  // 5: protocol.ImageGenerationBody.res:type_name -> protocol.ImageGenerationResponse
-	10, // 6: protocol.HardwareBody.req:type_name -> protocol.HardwareRequest
-	11, // 7: protocol.HardwareBody.res:type_name -> protocol.HardwareResponse
-	12, // 8: protocol.HardwareResponse.cpu:type_name -> protocol.HardwareResponse.CpuInfo
-	13, // 9: protocol.HardwareResponse.memory:type_name -> protocol.HardwareResponse.MemoryInfo
-	14, // 10: protocol.HardwareResponse.disk:type_name -> protocol.HardwareResponse.DiskInfo
-	15, // 11: protocol.HardwareResponse.gpu:type_name -> protocol.HardwareResponse.GpuInfo
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	10, // 6: protocol.HostInfoBody.req:type_name -> protocol.HostInfoRequest
+	11, // 7: protocol.HostInfoBody.res:type_name -> protocol.HostInfoResponse
+	12, // 8: protocol.HostInfoResponse.os:type_name -> protocol.HostInfoResponse.OSInfo
+	13, // 9: protocol.HostInfoResponse.cpu:type_name -> protocol.HostInfoResponse.CpuInfo
+	14, // 10: protocol.HostInfoResponse.memory:type_name -> protocol.HostInfoResponse.MemoryInfo
+	15, // 11: protocol.HostInfoResponse.disk:type_name -> protocol.HostInfoResponse.DiskInfo
+	16, // 12: protocol.HostInfoResponse.gpu:type_name -> protocol.HostInfoResponse.GpuInfo
+	13, // [13:13] is the sub-list for method output_type
+	13, // [13:13] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_protocol_proto_init() }
@@ -1391,7 +1504,7 @@ func file_protocol_proto_init() {
 			}
 		}
 		file_protocol_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HardwareBody); i {
+			switch v := v.(*HostInfoBody); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1403,7 +1516,7 @@ func file_protocol_proto_init() {
 			}
 		}
 		file_protocol_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HardwareRequest); i {
+			switch v := v.(*HostInfoRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1415,7 +1528,7 @@ func file_protocol_proto_init() {
 			}
 		}
 		file_protocol_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HardwareResponse); i {
+			switch v := v.(*HostInfoResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1427,7 +1540,7 @@ func file_protocol_proto_init() {
 			}
 		}
 		file_protocol_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HardwareResponse_CpuInfo); i {
+			switch v := v.(*HostInfoResponse_OSInfo); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1439,7 +1552,7 @@ func file_protocol_proto_init() {
 			}
 		}
 		file_protocol_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HardwareResponse_MemoryInfo); i {
+			switch v := v.(*HostInfoResponse_CpuInfo); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1451,7 +1564,7 @@ func file_protocol_proto_init() {
 			}
 		}
 		file_protocol_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HardwareResponse_DiskInfo); i {
+			switch v := v.(*HostInfoResponse_MemoryInfo); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1463,7 +1576,19 @@ func file_protocol_proto_init() {
 			}
 		}
 		file_protocol_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HardwareResponse_GpuInfo); i {
+			switch v := v.(*HostInfoResponse_DiskInfo); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_protocol_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*HostInfoResponse_GpuInfo); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1484,8 +1609,8 @@ func file_protocol_proto_init() {
 		(*ImageGenerationBody_Res)(nil),
 	}
 	file_protocol_proto_msgTypes[8].OneofWrappers = []interface{}{
-		(*HardwareBody_Req)(nil),
-		(*HardwareBody_Res)(nil),
+		(*HostInfoBody_Req)(nil),
+		(*HostInfoBody_Res)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1493,7 +1618,7 @@ func file_protocol_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_protocol_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   15,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

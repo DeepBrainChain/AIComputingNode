@@ -1,12 +1,13 @@
 package main
 
 import (
-	"AIComputingNode/pkg/hardware"
+	"AIComputingNode/pkg/host"
 	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/jaypipes/ghw"
+	psutil "github.com/shirou/gopsutil/v3/host"
 )
 
 func main() {
@@ -53,14 +54,28 @@ func main() {
 		fmt.Printf(" %v\n", card)
 	}
 
-	hd, err := hardware.GetHardwareInfo()
+	hi, err := host.GetHostInfo()
 	if err != nil {
-		fmt.Printf("Error getting hardware info: %v", err)
+		fmt.Printf("Error getting host info: %v", err)
 	}
-	jsonData, err := json.MarshalIndent(hd, "", "  ")
+	jsonData, err := json.MarshalIndent(hi, "", "  ")
 	if err != nil {
-		fmt.Printf("Error marshaling hardware json: %v", err)
+		fmt.Printf("Error marshaling host json: %v", err)
 		os.Exit(1)
 	}
-	fmt.Print(string(jsonData))
+	fmt.Println(string(jsonData))
+
+	hostInfo, err := psutil.Info()
+	if err != nil {
+		fmt.Printf("Error retrieving OS info: %v\n", err)
+		return
+	}
+	fmt.Printf("OS: %s\n", hostInfo.OS)
+	fmt.Printf("Platform: %s\n", hostInfo.Platform)
+	fmt.Printf("Platform Family: %s\n", hostInfo.PlatformFamily)
+	fmt.Printf("Platform Version: %s\n", hostInfo.PlatformVersion)
+	fmt.Printf("Kernel Version: %s\n", hostInfo.KernelVersion)
+	fmt.Printf("Kernel Arch: %s\n", hostInfo.KernelArch)
+	fmt.Printf("Virtualization System: %s\n", hostInfo.VirtualizationSystem)
+	fmt.Printf("Virtualization Role: %s\n", hostInfo.VirtualizationRole)
 }

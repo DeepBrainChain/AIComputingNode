@@ -1,17 +1,28 @@
-package hardware
+package host
 
 import (
 	"AIComputingNode/pkg/log"
 
 	"github.com/jaypipes/ghw"
 	ghw_block "github.com/jaypipes/ghw/pkg/block"
+	psutil "github.com/shirou/gopsutil/v3/host"
 )
 
-type Hardware struct {
+type HostInfo struct {
+	Os     OSInfo     `json:"os"`
 	Cpu    []CpuInfo  `json:"cpu"`
 	Memory MemoryInfo `json:"memory"`
 	Disk   []DiskInfo `json:"disk"`
 	Gpu    []GpuInfo  `json:"gpu"`
+}
+
+type OSInfo struct {
+	OS              string `json:"os"`               // ex: freebsd, linux
+	Platform        string `json:"platform"`         // ex: ubuntu, linuxmint
+	PlatformFamily  string `json:"platform_family"`  // ex: debian, rhel
+	PlatformVersion string `json:"platform_version"` // version of the complete OS
+	KernelVersion   string `json:"kernel_version"`   // version of the OS kernel (if available)
+	KernelArch      string `json:"kernel_arch"`      // native cpu architecture queried at runtime, as returned by `uname -m` or empty string in case of error
 }
 
 type CpuInfo struct {
@@ -37,9 +48,25 @@ type GpuInfo struct {
 	Product string `json:"product"`
 }
 
-func GetHardwareInfo() (*Hardware, error) {
-	hd := &Hardware{}
+func GetHostInfo() (*HostInfo, error) {
 	var reterr error = nil
+
+	hostInfo, err := psutil.Info()
+	if err != nil {
+		log.Logger.Warnf("Error retrieving OS info: %v", err)
+		reterr = err
+	}
+
+	hi := &HostInfo{
+		Os: OSInfo{
+			OS:              hostInfo.OS,
+			Platform:        hostInfo.Platform,
+			PlatformFamily:  hostInfo.PlatformFamily,
+			PlatformVersion: hostInfo.PlatformVersion,
+			KernelVersion:   hostInfo.KernelVersion,
+			KernelArch:      hostInfo.KernelArch,
+		},
+	}
 
 	cpu, err := ghw.CPU()
 	if err != nil {
@@ -47,7 +74,7 @@ func GetHardwareInfo() (*Hardware, error) {
 		reterr = err
 	}
 	for _, processor := range cpu.Processors {
-		hd.Cpu = append(hd.Cpu, CpuInfo{
+		hi.Cpu = append(hi.Cpu, CpuInfo{
 			ModelName: processor.Model,
 			Cores:     processor.NumCores,
 			Threads:   processor.NumThreads,
@@ -59,8 +86,8 @@ func GetHardwareInfo() (*Hardware, error) {
 		log.Logger.Warnf("Error getting memory info: %v", err)
 		reterr = err
 	}
-	hd.Memory.TotalPhysicalBytes = memory.TotalPhysicalBytes
-	hd.Memory.TotalUsableBytes = memory.TotalUsableBytes
+	hi.Memory.TotalPhysicalBytes = memory.TotalPhysicalBytes
+	hi.Memory.TotalUsableBytes = memory.TotalUsableBytes
 
 	block, err := ghw.Block()
 	if err != nil {
@@ -69,7 +96,7 @@ func GetHardwareInfo() (*Hardware, error) {
 	}
 	for _, disk := range block.Disks {
 		if disk.StorageController != ghw_block.STORAGE_CONTROLLER_LOOP {
-			hd.Disk = append(hd.Disk, DiskInfo{
+			hi.Disk = append(hi.Disk, DiskInfo{
 				DriveType:    disk.DriveType.String(),
 				SizeBytes:    disk.SizeBytes,
 				Model:        disk.Model,
@@ -95,12 +122,12 @@ func GetHardwareInfo() (*Hardware, error) {
 			}
 		}
 		if product != "" {
-			hd.Gpu = append(hd.Gpu, GpuInfo{
+			hi.Gpu = append(hi.Gpu, GpuInfo{
 				Vendor:  vendor,
 				Product: product,
 			})
 		}
 	}
 
-	return hd, reterr
+	return hi, reterr
 }

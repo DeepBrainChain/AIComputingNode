@@ -1,7 +1,7 @@
 package serve
 
 import (
-	"AIComputingNode/pkg/hardware"
+	"AIComputingNode/pkg/host"
 	"AIComputingNode/pkg/p2p"
 	"errors"
 	"sync"
@@ -27,7 +27,7 @@ const (
 	ErrCodeBuffer      = 1008
 	ErrCodePermission  = 1009
 	ErrCodeUnsupported = 1010
-	ErrCodeHardware    = 1011
+	ErrCodeHostInfo    = 1011
 	ErrCodeInternal    = 5000
 )
 
@@ -43,7 +43,7 @@ var errMsg = map[int]string{
 	ErrCodeBuffer:      "Buffer error",
 	ErrCodePermission:  "Permission error",
 	ErrCodeUnsupported: "Unsupported function",
-	ErrCodeHardware:    "Hardware error",
+	ErrCodeHostInfo:    "Host info error",
 	ErrCodeInternal:    "Internal server error",
 }
 
@@ -93,14 +93,14 @@ type ImageGenerationResponse struct {
 	} `json:"data"`
 }
 
-type HardwareRequest struct {
+type HostInfoRequest struct {
 	NodeID string `json:"node_id"`
 }
 
-type HardwareResponse struct {
-	Code    int               `json:"code"`
-	Message string            `json:"message"`
-	Data    hardware.Hardware `json:"data"`
+type HostInfoResponse struct {
+	Code    int           `json:"code"`
+	Message string        `json:"message"`
+	Data    host.HostInfo `json:"data"`
 }
 
 type SwarmConnectRequest struct {
@@ -153,11 +153,11 @@ func (res *ImageGenerationResponse) SetMessage(message string) {
 	res.Message = message
 }
 
-func (res *HardwareResponse) SetCode(code int) {
+func (res *HostInfoResponse) SetCode(code int) {
 	res.Code = code
 }
 
-func (res *HardwareResponse) SetMessage(message string) {
+func (res *HostInfoResponse) SetMessage(message string) {
 	res.Message = message
 }
 
@@ -178,7 +178,7 @@ func (req ImageGenerationRequest) Validate() error {
 	return nil
 }
 
-func (req HardwareRequest) Validate() error {
+func (req HostInfoRequest) Validate() error {
 	if req.NodeID == "" {
 		return errors.New("empty node_id")
 	}
