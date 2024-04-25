@@ -1,7 +1,10 @@
 package hardware
 
 import (
+	"AIComputingNode/pkg/log"
+
 	"github.com/jaypipes/ghw"
+	ghw_block "github.com/jaypipes/ghw/pkg/block"
 )
 
 type Hardware struct {
@@ -36,10 +39,12 @@ type GpuInfo struct {
 
 func GetHardwareInfo() (*Hardware, error) {
 	hd := &Hardware{}
+	var reterr error = nil
 
 	cpu, err := ghw.CPU()
 	if err != nil {
-		return hd, err
+		log.Logger.Warnf("Error getting CPU info: %v", err)
+		reterr = err
 	}
 	for _, processor := range cpu.Processors {
 		hd.Cpu = append(hd.Cpu, CpuInfo{
@@ -51,27 +56,32 @@ func GetHardwareInfo() (*Hardware, error) {
 
 	memory, err := ghw.Memory()
 	if err != nil {
-		return hd, err
+		log.Logger.Warnf("Error getting memory info: %v", err)
+		reterr = err
 	}
 	hd.Memory.TotalPhysicalBytes = memory.TotalPhysicalBytes
 	hd.Memory.TotalUsableBytes = memory.TotalUsableBytes
 
 	block, err := ghw.Block()
 	if err != nil {
-		return hd, err
+		log.Logger.Warnf("Error getting block storage info: %v", err)
+		reterr = err
 	}
 	for _, disk := range block.Disks {
-		hd.Disk = append(hd.Disk, DiskInfo{
-			DriveType:    disk.DriveType.String(),
-			SizeBytes:    disk.SizeBytes,
-			Model:        disk.Model,
-			SerialNumber: disk.SerialNumber,
-		})
+		if disk.StorageController != ghw_block.STORAGE_CONTROLLER_LOOP {
+			hd.Disk = append(hd.Disk, DiskInfo{
+				DriveType:    disk.DriveType.String(),
+				SizeBytes:    disk.SizeBytes,
+				Model:        disk.Model,
+				SerialNumber: disk.SerialNumber,
+			})
+		}
 	}
 
 	gpu, err := ghw.GPU()
 	if err != nil {
-		return hd, err
+		log.Logger.Warnf("Error getting GPU info: %v", err)
+		reterr = err
 	}
 	for _, card := range gpu.GraphicsCards {
 		vendor := ""
@@ -92,5 +102,5 @@ func GetHardwareInfo() (*Hardware, error) {
 		}
 	}
 
-	return hd, nil
+	return hd, reterr
 }

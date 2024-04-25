@@ -56,7 +56,6 @@ func main() {
 	hd, err := hardware.GetHardwareInfo()
 	if err != nil {
 		fmt.Printf("Error getting hardware info: %v", err)
-		os.Exit(1)
 	}
 	jsonData, err := json.MarshalIndent(hd, "", "  ")
 	if err != nil {

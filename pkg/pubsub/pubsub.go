@@ -319,8 +319,8 @@ func PubsubHandler(ctx context.Context, sub *pubsub.Subscription, publishChan ch
 					}
 				} else if hiRes := hi.GetRes(); hiRes != nil {
 					res := serve.HardwareResponse{
-						Code:    0,
-						Message: "ok",
+						Code:    int(pmsg.ResultCode),
+						Message: pmsg.ResultMessage,
 						Data: hardware.Hardware{
 							Memory: hardware.MemoryInfo{
 								TotalPhysicalBytes: hiRes.Memory.TotalPhysicalBytes,
