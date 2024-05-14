@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"AIComputingNode/pkg/log"
-	"AIComputingNode/pkg/serve"
+	"AIComputingNode/pkg/types"
 
 	"github.com/ipfs/boxo/files"
 	"github.com/ipfs/kubo/client/rpc"
@@ -18,23 +18,23 @@ func UploadImage(ctx context.Context, addr string, filePath string) (string, int
 	maddr, err := multiaddr.NewMultiaddr(addr)
 	if err != nil {
 		log.Logger.Errorf("Failed to upload image: %v", err)
-		return "", serve.ErrCodeUpload, err
+		return "", int(types.ErrCodeUpload), err
 	}
 	node, err := rpc.NewApi(maddr)
 	if err != nil {
 		log.Logger.Errorf("Failed to create ipfs endpoint: %v", err)
-		return "", serve.ErrCodeUpload, err
+		return "", int(types.ErrCodeUpload), err
 	}
 
 	abspath, err := filepath.Abs(filePath)
 	if err != nil {
 		log.Logger.Errorf("Invalid file path: %v", err)
-		return "", serve.ErrCodeUpload, err
+		return "", int(types.ErrCodeUpload), err
 	}
 	file, err := os.Open(abspath)
 	if err != nil {
 		log.Logger.Errorf("Failed to open file: %v", err)
-		return "", serve.ErrCodeUpload, err
+		return "", int(types.ErrCodeUpload), err
 	}
 	defer file.Close()
 
@@ -44,7 +44,7 @@ func UploadImage(ctx context.Context, addr string, filePath string) (string, int
 	pip, err := node.Unixfs().Add(ctx, fn, options.Unixfs.Pin(true))
 	if err != nil {
 		log.Logger.Error("Failed to upload file: %v", err)
-		return "", serve.ErrCodeUpload, err
+		return "", int(types.ErrCodeUpload), err
 	}
 	return pip.RootCid().String(), 0, nil
 }

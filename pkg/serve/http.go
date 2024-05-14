@@ -10,6 +10,7 @@ import (
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/p2p"
 	"AIComputingNode/pkg/protocol"
+	"AIComputingNode/pkg/types"
 
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
@@ -23,13 +24,13 @@ func generateUniqueID() string {
 	return uuid.New().String()
 }
 
-func httpStatus(code int) int {
+func httpStatus(code types.ErrorCode) int {
 	switch code {
 	case 0:
 		return http.StatusOK
-	case ErrCodeParam, ErrCodeParse:
+	case types.ErrCodeParam, types.ErrCodeParse:
 		return http.StatusBadRequest
-	case ErrCodeProtobuf, ErrCodeTimeout, ErrCodeInternal:
+	case types.ErrCodeProtobuf, types.ErrCodeTimeout, types.ErrCodeInternal:
 		return http.StatusInternalServerError
 	default:
 		return http.StatusInternalServerError
@@ -58,7 +59,7 @@ func (hs *httpService) peersHandler(w http.ResponseWriter, r *http.Request) {
 	peerChan, err := p2p.Hio.FindPeers(config.GC.App.TopicName)
 	if err != nil {
 		log.Logger.Warnf("List peer message: %v", err)
-		rsp.Code = ErrCodeRendezvous
+		rsp.Code = int(types.ErrCodeRendezvous)
 		rsp.Message = err.Error()
 	} else {
 		for peer := range peerChan {
@@ -74,7 +75,7 @@ func (hs *httpService) handleRequest(w http.ResponseWriter, r *http.Request, req
 	requestID := req.Header.Id
 	reqBytes, err := proto.Marshal(req)
 	if err != nil {
-		rsp.SetCode(ErrCodeProtobuf)
+		rsp.SetCode(int(types.ErrCodeProtobuf))
 		rsp.SetMessage(err.Error())
 		json.NewEncoder(w).Encode(rsp)
 		return
@@ -96,8 +97,8 @@ func (hs *httpService) handleRequest(w http.ResponseWriter, r *http.Request, req
 		json.Unmarshal(notifyData, &rsp)
 	case <-time.After(2 * time.Minute):
 		log.Logger.Warnf("request id %s message type %s timeout", requestID, req.Type)
-		rsp.SetCode(ErrCodeTimeout)
-		rsp.SetMessage(errMsg[ErrCodeTimeout])
+		rsp.SetCode(int(types.ErrCodeTimeout))
+		rsp.SetMessage(types.ErrCodeTimeout.String())
 		QueueLock.Lock()
 		for i, item := range RequestQueue {
 			if item.ID == requestID {
@@ -124,14 +125,14 @@ func (hs *httpService) peerHandler(w http.ResponseWriter, r *http.Request) {
 
 	var msg PeerRequest
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
-		rsp.Code = ErrCodeParse
-		rsp.Message = errMsg[rsp.Code]
+		rsp.Code = int(types.ErrCodeParse)
+		rsp.Message = types.ErrCodeParse.String()
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
 
 	if err := msg.Validate(); err != nil {
-		rsp.Code = ErrCodeParam
+		rsp.Code = int(types.ErrCodeParam)
 		rsp.Message = err.Error()
 		json.NewEncoder(w).Encode(rsp)
 		return
@@ -152,7 +153,7 @@ func (hs *httpService) peerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	body, err := proto.Marshal(pi)
 	if err != nil {
-		rsp.SetCode(ErrCodeProtobuf)
+		rsp.SetCode(int(types.ErrCodeProtobuf))
 		rsp.SetMessage(err.Error())
 		json.NewEncoder(w).Encode(rsp)
 		return
@@ -193,21 +194,21 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 
 	var msg ImageGenerationRequest
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
-		rsp.Code = ErrCodeParse
-		rsp.Message = errMsg[rsp.Code]
+		rsp.Code = int(types.ErrCodeParse)
+		rsp.Message = types.ErrCodeParse.String()
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
 
 	if err := msg.Validate(); err != nil {
-		rsp.Code = ErrCodeParam
+		rsp.Code = int(types.ErrCodeParam)
 		rsp.Message = err.Error()
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
 
 	if msg.NodeID == config.GC.Identity.PeerID {
-		rsp.Code = ErrCodeParam
+		rsp.Code = int(types.ErrCodeParam)
 		rsp.Message = "Cannot be sent to the node itself"
 		json.NewEncoder(w).Encode(rsp)
 		return
@@ -224,7 +225,7 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	body, err := proto.Marshal(pi)
 	if err != nil {
-		rsp.SetCode(ErrCodeProtobuf)
+		rsp.SetCode(int(types.ErrCodeProtobuf))
 		rsp.SetMessage(err.Error())
 		json.NewEncoder(w).Encode(rsp)
 		return
@@ -265,14 +266,14 @@ func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
 
 	var msg HostInfoRequest
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
-		rsp.Code = ErrCodeParse
-		rsp.Message = errMsg[rsp.Code]
+		rsp.Code = int(types.ErrCodeParse)
+		rsp.Message = types.ErrCodeParse.String()
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
 
 	if err := msg.Validate(); err != nil {
-		rsp.Code = ErrCodeParam
+		rsp.Code = int(types.ErrCodeParam)
 		rsp.Message = err.Error()
 		json.NewEncoder(w).Encode(rsp)
 		return
@@ -281,7 +282,7 @@ func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
 	if msg.NodeID == config.GC.Identity.PeerID {
 		hd, err := host.GetHostInfo()
 		if err != nil {
-			rsp.Code = ErrCodeHostInfo
+			rsp.Code = int(types.ErrCodeHostInfo)
 			rsp.Message = err.Error()
 		} else {
 			rsp.Data = *hd
@@ -299,7 +300,7 @@ func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	body, err := proto.Marshal(pi)
 	if err != nil {
-		rsp.SetCode(ErrCodeProtobuf)
+		rsp.SetCode(int(types.ErrCodeProtobuf))
 		rsp.SetMessage(err.Error())
 		json.NewEncoder(w).Encode(rsp)
 		return
@@ -361,21 +362,21 @@ func (hs *httpService) swarmConnectHandler(w http.ResponseWriter, r *http.Reques
 
 	var req SwarmConnectRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		rsp.Code = ErrCodeParse
-		rsp.Message = errMsg[rsp.Code]
+		rsp.Code = int(types.ErrCodeParse)
+		rsp.Message = types.ErrCodeParse.String()
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
 
 	if err := req.Validate(); err != nil {
-		rsp.Code = ErrCodeParam
+		rsp.Code = int(types.ErrCodeParam)
 		rsp.Message = err.Error()
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
 
 	if err := p2p.Hio.SwarmConnect(req.NodeAddr); err != nil {
-		rsp.Code = ErrCodeInternal
+		rsp.Code = int(types.ErrCodeInternal)
 		rsp.Message = err.Error()
 	}
 	json.NewEncoder(w).Encode(rsp)
@@ -395,21 +396,21 @@ func (hs *httpService) swarmDisconnectHandler(w http.ResponseWriter, r *http.Req
 
 	var req SwarmConnectRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		rsp.Code = ErrCodeParse
-		rsp.Message = errMsg[rsp.Code]
+		rsp.Code = int(types.ErrCodeParse)
+		rsp.Message = types.ErrCodeParse.String()
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
 
 	if err := req.Validate(); err != nil {
-		rsp.Code = ErrCodeParam
+		rsp.Code = int(types.ErrCodeParam)
 		rsp.Message = err.Error()
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
 
 	if err := p2p.Hio.SwarmDisconnect(req.NodeAddr); err != nil {
-		rsp.Code = ErrCodeInternal
+		rsp.Code = int(types.ErrCodeInternal)
 		rsp.Message = err.Error()
 	}
 	json.NewEncoder(w).Encode(rsp)
