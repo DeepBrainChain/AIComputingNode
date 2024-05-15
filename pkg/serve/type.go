@@ -15,38 +15,6 @@ type RequestItem struct {
 var RequestQueue = make([]RequestItem, 0)
 var QueueLock = sync.Mutex{}
 
-// error code
-const (
-	ErrCodeParam       = 1001
-	ErrCodeParse       = 1002
-	ErrCodeProtobuf    = 1003
-	ErrCodeTimeout     = 1004
-	ErrCodeRendezvous  = 1005
-	ErrCodeModel       = 1006
-	ErrCodeUpload      = 1007
-	ErrCodeBuffer      = 1008
-	ErrCodePermission  = 1009
-	ErrCodeUnsupported = 1010
-	ErrCodeHostInfo    = 1011
-	ErrCodeInternal    = 5000
-)
-
-// error message
-var errMsg = map[int]string{
-	ErrCodeParam:       "Parameter error",
-	ErrCodeParse:       "Parsing error",
-	ErrCodeProtobuf:    "Protobuf serialization error",
-	ErrCodeTimeout:     "Processing timeout",
-	ErrCodeRendezvous:  "Rendezvous error",
-	ErrCodeModel:       "Model error",
-	ErrCodeUpload:      "Upload error",
-	ErrCodeBuffer:      "Buffer error",
-	ErrCodePermission:  "Permission error",
-	ErrCodeUnsupported: "Unsupported function",
-	ErrCodeHostInfo:    "Host info error",
-	ErrCodeInternal:    "Internal server error",
-}
-
 type Response interface {
 	SetCode(code int)
 	SetMessage(message string)
@@ -78,9 +46,9 @@ type PeerResponse struct {
 }
 
 type ImageGenerationRequest struct {
-	NodeID     string   `json:"node_id"`
-	Model      string   `json:"model"`
-	PromptWord []string `json:"prompt_word"`
+	NodeID     string `json:"node_id"`
+	Model      string `json:"model"`
+	PromptWord string `json:"prompt_word"`
 }
 
 type ImageGenerationResponse struct {

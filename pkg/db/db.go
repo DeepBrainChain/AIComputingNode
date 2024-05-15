@@ -1,6 +1,7 @@
 package db
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"path/filepath"
 	"time"
@@ -11,10 +12,12 @@ import (
 )
 
 var peersDB *leveldb.DB
+var modelsDB *leveldb.DB
 
 type InitOptions struct {
-	Folder      string
-	PeersDBName string
+	Folder       string
+	PeersDBName  string
+	ModelsDBName string
 }
 
 type peerInfo struct {
@@ -23,12 +26,30 @@ type peerInfo struct {
 	ConsecutiveFailures int32  `json:"ConsecutiveFailures"` // Number of consecutive failures
 }
 
+type ModelHistory struct {
+	TimeStamp int64  `json:"timestamp"`
+	Code      int    `json:"code"`
+	Message   string `json:"message"`
+	Model     string `json:"model"`
+	Prompt    string `json:"prompt"`
+	IpfsAddr  string `json:"ipfs_addr"`
+	Cid       string `json:"cid"`
+	ImagePath string `json:"image_path"`
+}
+
 func InitDb(opts InitOptions) error {
 	if opts.PeersDBName == "" {
 		opts.PeersDBName = "peers.db"
 	}
+	if opts.ModelsDBName == "" {
+		opts.ModelsDBName = "models.db"
+	}
 	var err error
 	peersDB, err = leveldb.OpenFile(filepath.Join(opts.Folder, opts.PeersDBName), nil)
+	if err != nil {
+		return err
+	}
+	modelsDB, err = leveldb.OpenFile(filepath.Join(opts.Folder, opts.ModelsDBName), nil)
 	return err
 }
 
@@ -95,6 +116,32 @@ func updatePeer(id string, pi peerInfo) error {
 	err = peersDB.Put([]byte(id), value, nil)
 	if err != nil {
 		log.Logger.Warnf("Update connectiong db failed %v", err)
+	}
+	return nil
+}
+
+func WriteModelHistory(timestamp int64, code int, message, model, prompt, ipfsAddr, cid, image string) error {
+	mh := ModelHistory{
+		TimeStamp: timestamp,
+		Code:      code,
+		Message:   message,
+		Model:     model,
+		Prompt:    prompt,
+		IpfsAddr:  ipfsAddr,
+		Cid:       cid,
+		ImagePath: image,
+	}
+	value, err := json.Marshal(mh)
+	if err != nil {
+		log.Logger.Warnf("Marshal failed when write model history %v", err)
+		return err
+	}
+	keyBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(keyBytes, uint64(timestamp))
+
+	if err := modelsDB.Put(keyBytes, value, nil); err != nil {
+		log.Logger.Warnf("Put model history failed %v", err)
+		return err
 	}
 	return nil
 }

@@ -56,7 +56,8 @@ message ImageGenerationBody {
 message ImageGenerationRequest {
   string node_id = 1;
   string model = 2;
-  repeated string prompt_word = 3;
+  string prompt_word = 3;
+  string ipfs_node = 4;
 }
 
 message ImageGenerationResponse {

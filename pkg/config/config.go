@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -72,12 +73,14 @@ type RoutingConfig struct {
 }
 
 type AppConfig struct {
-	LogLevel     string `json:"LogLevel"`
-	LogFile      string `json:"LogFile"`
-	LogOutput    string `json:"LogOutput"`
-	PreSharedKey string `json:"PreSharedKey"`
-	TopicName    string `json:"TopicName"`
-	Datastore    string `json:"Datastore"`
+	LogLevel       string `json:"LogLevel"`
+	LogFile        string `json:"LogFile"`
+	LogOutput      string `json:"LogOutput"`
+	PreSharedKey   string `json:"PreSharedKey"`
+	TopicName      string `json:"TopicName"`
+	Datastore      string `json:"Datastore"`
+	IpfsStorageAPI string `json:"IpfsStorageAPI"`
+	ModelAPI       string `json:"ModelAPI"`
 }
 
 func (config Config) Validate() error {
@@ -277,4 +280,12 @@ func pathIsTerm(p string) bool {
 		defer f.Close() // nolint:errcheck
 	}
 	return err == nil && isTerm(f)
+}
+
+func ValidateIpfsServer(server string) bool {
+	resp, err := http.PostForm(
+		fmt.Sprintf("%s/api/v0/id", server),
+		nil,
+	)
+	return err == nil && resp.StatusCode == 200
 }

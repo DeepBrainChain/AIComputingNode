@@ -115,12 +115,14 @@ func Init(mode string) error {
 			ProtocolPrefix: ProtocolPrefix,
 		},
 		App: AppConfig{
-			LogLevel:     "info",
-			LogFile:      filepath.Join(cwd, "host.log"),
-			LogOutput:    "file",
-			PreSharedKey: PreSharedKey,
-			TopicName:    TopicName,
-			Datastore:    dataPath,
+			LogLevel:       "info",
+			LogFile:        filepath.Join(cwd, "host.log"),
+			LogOutput:      "file",
+			PreSharedKey:   PreSharedKey,
+			TopicName:      TopicName,
+			Datastore:      dataPath,
+			IpfsStorageAPI: "",
+			ModelAPI:       "",
 		},
 	}
 	if mode == "server" {
