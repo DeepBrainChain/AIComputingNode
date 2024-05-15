@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/types"
 
 	"github.com/ipfs/boxo/files"
@@ -27,27 +26,23 @@ type history struct {
 	ImageName string `json:"image_name"`
 }
 
-func UploadImage(ctx context.Context, addr string, filePath string) (string, int, error) {
+func UploadFile(ctx context.Context, addr string, filePath string) (string, int, error) {
 	maddr, err := multiaddr.NewMultiaddr(addr)
 	if err != nil {
-		log.Logger.Errorf("Failed to upload image: %v", err)
-		return "", int(types.ErrCodeUpload), err
+		return "", int(types.ErrCodeUpload), fmt.Errorf("invalid address of ipfs node")
 	}
 	node, err := rpc.NewApi(maddr)
 	if err != nil {
-		log.Logger.Errorf("Failed to create ipfs endpoint: %v", err)
-		return "", int(types.ErrCodeUpload), err
+		return "", int(types.ErrCodeUpload), fmt.Errorf("ipfs API construct error")
 	}
 
 	abspath, err := filepath.Abs(filePath)
 	if err != nil {
-		log.Logger.Errorf("Invalid file path: %v", err)
-		return "", int(types.ErrCodeUpload), err
+		return "", int(types.ErrCodeUpload), fmt.Errorf("invalid file path")
 	}
 	file, err := os.Open(abspath)
 	if err != nil {
-		log.Logger.Errorf("Failed to open file: %v", err)
-		return "", int(types.ErrCodeUpload), err
+		return "", int(types.ErrCodeUpload), fmt.Errorf("open file failed")
 	}
 	defer file.Close()
 
@@ -56,8 +51,7 @@ func UploadImage(ctx context.Context, addr string, filePath string) (string, int
 
 	pip, err := node.Unixfs().Add(ctx, fn, options.Unixfs.Pin(true))
 	if err != nil {
-		log.Logger.Error("Failed to upload file: %v", err)
-		return "", int(types.ErrCodeUpload), err
+		return "", int(types.ErrCodeUpload), fmt.Errorf("upload failed %v", err.Error())
 	}
 	return pip.RootCid().String(), 0, nil
 }
@@ -71,21 +65,18 @@ func WriteMFSHistory(timestamp int64, ipfsServer, model, prompt, cid, image stri
 	}
 	jsonData, err := json.MarshalIndent(his, "", "  ")
 	if err != nil {
-		log.Logger.Errorf("Marshal json failed when write ipfs mfs file %v", err)
-		return err
+		return fmt.Errorf("marshal json failed")
 	}
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("file", fmt.Sprintf("%s.json", cid))
 	if err != nil {
-		log.Logger.Errorf("Create multipart failed when write ipfs mfs file %v", err)
-		return err
+		return fmt.Errorf("create multipart failed")
 	}
 	part.Write(jsonData)
 	if err := writer.Close(); err != nil {
-		log.Logger.Errorf("Close multipart failed when write ipfs mfs file %v", err)
-		return err
+		return fmt.Errorf("close multipart failed")
 	}
 
 	resp, err := http.Post(
@@ -98,18 +89,26 @@ func WriteMFSHistory(timestamp int64, ipfsServer, model, prompt, cid, image stri
 		body,
 	)
 	if err != nil {
-		log.Logger.Errorf("Send ipfs mfs write request failed %v", err)
-		return err
+		return fmt.Errorf("post ipfs mfs request failed")
 	}
 	if resp.StatusCode != 200 {
-		log.Logger.Errorf("Ipfs mfs write request result %s", &resp.Status)
 		return fmt.Errorf("http response status code %d", resp.StatusCode)
 	}
-	resBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Logger.Errorf("Read ipfs mfs write response failed %v", err)
-		return err
-	}
-	log.Logger.Infof("Write ipfs mfs file success %s", string(resBody))
+	// resBody, err := io.ReadAll(resp.Body)
+	// if err != nil {
+	// 	return fmt.Errorf("read ipfs mfs response failed")
+	// }
+	// log.Logger.Infof("Write ipfs mfs file to %s success. %s", ipfsServer, string(resBody))
 	return nil
+}
+
+func ReadMFSHistory(ipfsServer, cid string) ([]byte, error) {
+	resp, err := http.PostForm(
+		fmt.Sprintf("%s/api/v0/files/read?arg=/models/%s.json", ipfsServer, cid),
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return io.ReadAll(resp.Body)
 }

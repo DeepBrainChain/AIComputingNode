@@ -143,5 +143,7 @@ func WriteModelHistory(timestamp int64, code int, message, model, prompt, ipfsAd
 		log.Logger.Warnf("Put model history failed %v", err)
 		return err
 	}
+	log.Logger.Infof("Execute %s model with prompt %q result {%d, %s, %q} and cid %s",
+		model, prompt, code, message, image, cid)
 	return nil
 }

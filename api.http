@@ -45,9 +45,7 @@ Content-Type: application/json
 {
   "node_id": "{{nodeId1}}",
   "model": "test",
-  "prompt_word": [
-    "hello", "world"
-  ]
+  "prompt_word": "a bird flying in the sky"
 }
 
 ###

@@ -231,6 +231,12 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	body, err = p2p.Encrypt(msg.NodeID, body)
+	if err != nil {
+		rsp.Code = int(types.ErrCodeEncrypt)
+		rsp.Message = types.ErrCodeEncrypt.String()
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
 
 	requestID := generateUniqueID()
 	req := &protocol.Message{

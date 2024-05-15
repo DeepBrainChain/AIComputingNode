@@ -15,6 +15,8 @@ const (
 	ErrCodePermission
 	ErrCodeUnsupported
 	ErrCodeHostInfo
+	ErrCodeEncrypt
+	ErrCodeDecrypt
 	ErrCodeInternal ErrorCode = 5000
 )
 
@@ -31,6 +33,8 @@ var errMsg = map[ErrorCode]string{
 	ErrCodePermission:  "Permission error",
 	ErrCodeUnsupported: "Unsupported function",
 	ErrCodeHostInfo:    "Host info error",
+	ErrCodeEncrypt:     "Encrypt error",
+	ErrCodeDecrypt:     "Decrypt error",
 	ErrCodeInternal:    "Internal server error",
 }
 
