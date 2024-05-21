@@ -49,6 +49,7 @@ type ImageGenerationRequest struct {
 	NodeID     string `json:"node_id"`
 	Model      string `json:"model"`
 	PromptWord string `json:"prompt_word"`
+	IpfsNode   string `json:"ipfs_node"`
 }
 
 type ImageGenerationResponse struct {
