@@ -90,10 +90,12 @@ func handleBroadcastMessage(ctx context.Context, msg *protocol.Message, publishC
 	switch msg.Type {
 	case protocol.MessageType_PEER_IDENTITY:
 		handlePeerIdentityMessage(ctx, msg, msgBody, publishChan)
-	case protocol.MessageType_IMAGE_GENERATION:
-		handleImageGenerationMessage(ctx, msg, msgBody, publishChan)
 	case protocol.MessageType_HOST_INFO:
 		handleHostInfoMessage(ctx, msg, msgBody, publishChan)
+	case protocol.MessageType_CHAT_COMPLETION:
+		handleChatCompletionMessage(ctx, msg, msgBody, publishChan)
+	case protocol.MessageType_IMAGE_GENERATION:
+		handleImageGenerationMessage(ctx, msg, msgBody, publishChan)
 	default:
 		res := TransformErrorResponse(msg, int32(types.ErrCodeUnsupported), MsgNotSupported)
 		resBytes, err := proto.Marshal(res)
@@ -180,6 +182,91 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 			notifyData, err := json.Marshal(res)
 			if err != nil {
 				log.Logger.Errorf("Marshal Identity Protocol %v", err)
+				return
+			}
+			serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
+		}
+	} else {
+		log.Logger.Warn("Message type and body do not match")
+	}
+}
+
+func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) {
+	ccb := &protocol.ChatCompletionBody{}
+	if msg.ResultCode != 0 {
+		res := serve.ChatCompletionResponse{
+			Code:    int(msg.ResultCode),
+			Message: msg.ResultMessage,
+		}
+		notifyData, err := json.Marshal(res)
+		if err != nil {
+			log.Logger.Errorf("Marshal Chat Completion Protocol %v", err)
+			return
+		}
+		serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
+	} else if err := proto.Unmarshal(decBody, ccb); err == nil {
+		if chatReq := ccb.GetReq(); chatReq != nil {
+			if chatReq.GetNodeId() == config.GC.Identity.PeerID {
+				code, message, chatRes := handleChatCompletionRequest(ctx, chatReq)
+				igBody := &protocol.ChatCompletionBody{
+					Data: &protocol.ChatCompletionBody_Res{
+						Res: chatRes,
+					},
+				}
+				resBody, err := proto.Marshal(igBody)
+				if err != nil {
+					log.Logger.Errorf("Marshal Chat Completion Response Body %v", err)
+					return
+				}
+				resBody, err = p2p.Encrypt(msg.Header.NodeId, resBody)
+				res := protocol.Message{
+					Header: &protocol.MessageHeader{
+						ClientVersion: p2p.Hio.UserAgent,
+						Timestamp:     chatRes.Created,
+						Id:            msg.Header.Id,
+						NodeId:        config.GC.Identity.PeerID,
+						Receiver:      msg.Header.NodeId,
+					},
+					Type:          protocol.MessageType_CHAT_COMPLETION,
+					Body:          resBody,
+					ResultCode:    int32(code),
+					ResultMessage: message,
+				}
+				if err == nil {
+					res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+				}
+				resBytes, err := proto.Marshal(&res)
+				if err != nil {
+					log.Logger.Errorf("Marshal Chat Completion Response %v", err)
+					return
+				}
+				publishChan <- resBytes
+				log.Logger.Info("Sending Chat Completion Response")
+			} else {
+				log.Logger.Info("Gossip Chat Completion Request of ", chatReq.GetNodeId())
+			}
+		} else if chatRes := ccb.GetRes(); chatRes != nil {
+			res := serve.ChatCompletionResponse{
+				Code:    int(msg.ResultCode),
+				Message: msg.ResultMessage,
+			}
+			if msg.ResultCode == 0 {
+				res.Data.Created = chatRes.Created
+				for _, choice := range chatRes.Choices {
+					ccmsg := serve.ChatCompletionMessage{
+						Role:    choice.GetMessage().GetRole(),
+						Content: choice.GetMessage().GetContent(),
+					}
+					res.Data.Choices = append(res.Data.Choices, serve.ChatResponseChoice{
+						Index:        int(choice.GetIndex()),
+						Message:      ccmsg,
+						FinishReason: choice.GetFinishReason(),
+					})
+				}
+			}
+			notifyData, err := json.Marshal(res)
+			if err != nil {
+				log.Logger.Errorf("Marshal Chat Completion Response %v", err)
 				return
 			}
 			serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
@@ -365,6 +452,35 @@ func TransformErrorResponse(msg *protocol.Message, code int32, message string) *
 		ResultMessage: message,
 	}
 	return &res
+}
+
+func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompletionRequest) (int, string, *protocol.ChatCompletionResponse) {
+	chatReq := model.ChatCompletionRequest{
+		Model: req.Model,
+	}
+	for _, ccm := range req.Messages {
+		chatReq.Messages = append(chatReq.Messages, model.ChatCompletionMessage{
+			Role:    ccm.Role,
+			Content: ccm.Content,
+		})
+	}
+	chatRes := model.ChatModel(config.GC.App.ModelAPI, chatReq)
+	response := &protocol.ChatCompletionResponse{}
+	if chatRes.Code != 0 {
+		return chatRes.Code, chatRes.Message, response
+	}
+	response.Created = chatRes.Data.Created
+	for _, choice := range chatRes.Data.Choices {
+		response.Choices = append(response.Choices, &protocol.ChatCompletionResponse_ChatResponseChoice{
+			Index: int32(choice.Index),
+			Message: &protocol.ChatCompletionMessage{
+				Role:    choice.Message.Role,
+				Content: choice.Message.Content,
+			},
+			FinishReason: choice.FinishReason,
+		})
+	}
+	return chatRes.Code, chatRes.Message, response
 }
 
 func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenerationRequest) *ModelResult {

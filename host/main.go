@@ -338,7 +338,7 @@ func main() {
 	publishChan := make(chan []byte, 1024)
 	go ps.PublishToTopic(ctx, topic, publishChan)
 	go ps.PubsubHandler(ctx, sub, publishChan)
-	go serve.NewHttpServe(publishChan)
+	serve.NewHttpServe(publishChan)
 
 	log.Logger.Info("listening for connections")
 
@@ -346,6 +346,8 @@ func main() {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	// select {} // hang forever
 	<-stop
+	serve.StopHttpService()
+	kadDHT.Close()
 	host.Close()
 
 	log.Logger.Info("################################################################")

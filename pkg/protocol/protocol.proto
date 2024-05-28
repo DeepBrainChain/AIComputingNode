@@ -23,8 +23,10 @@ message Message {
 
 enum MessageType {
   PEER_IDENTITY = 0;
-  IMAGE_GENERATION = 1;
-  HOST_INFO = 2;
+  HOST_INFO = 1;
+  reserved 2 to 15;
+  CHAT_COMPLETION = 16;
+  IMAGE_GENERATION = 17;
 }
 
 message PeerIdentityBody {
@@ -64,6 +66,34 @@ message ImageGenerationResponse {
   string ipfs_node = 1;
   string cid = 2;
   string image_name = 3;
+}
+
+message ChatCompletionBody {
+  oneof data {
+    ChatCompletionRequest req = 1;
+    ChatCompletionResponse res = 2;
+  }
+}
+
+message ChatCompletionMessage {
+  string role = 1;
+  string content = 2;
+}
+
+message ChatCompletionRequest {
+  string node_id = 1;
+  string model = 2;
+  repeated ChatCompletionMessage messages = 3;
+}
+
+message ChatCompletionResponse {
+  int64 created = 1;
+  message ChatResponseChoice {
+    int32 index = 1;
+    ChatCompletionMessage message = 2;
+    string finish_reason = 3;
+  }
+  repeated ChatResponseChoice choices = 2;
 }
 
 message HostInfoBody {

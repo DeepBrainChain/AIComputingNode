@@ -62,6 +62,32 @@ type ImageGenerationResponse struct {
 	} `json:"data"`
 }
 
+type ChatCompletionMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type ChatResponseChoice struct {
+	Index        int                   `json:"index"`
+	Message      ChatCompletionMessage `json:"message"`
+	FinishReason string                `json:"finish_reason"`
+}
+
+type ChatCompletionRequest struct {
+	NodeID   string                  `json:"node_id"`
+	Model    string                  `json:"model"`
+	Messages []ChatCompletionMessage `json:"messages"`
+}
+
+type ChatCompletionResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		Created int64                `json:"created"`
+		Choices []ChatResponseChoice `json:"choices"`
+	} `json:"data"`
+}
+
 type HostInfoRequest struct {
 	NodeID string `json:"node_id"`
 }
@@ -122,6 +148,14 @@ func (res *ImageGenerationResponse) SetMessage(message string) {
 	res.Message = message
 }
 
+func (res *ChatCompletionResponse) SetCode(code int) {
+	res.Code = code
+}
+
+func (res *ChatCompletionResponse) SetMessage(message string) {
+	res.Message = message
+}
+
 func (res *HostInfoResponse) SetCode(code int) {
 	res.Code = code
 }
@@ -138,6 +172,16 @@ func (req PeerRequest) Validate() error {
 }
 
 func (req ImageGenerationRequest) Validate() error {
+	if req.NodeID == "" {
+		return errors.New("empty node_id")
+	}
+	if req.Model == "" {
+		return errors.New("empty model")
+	}
+	return nil
+}
+
+func (req ChatCompletionRequest) Validate() error {
 	if req.NodeID == "" {
 		return errors.New("empty node_id")
 	}

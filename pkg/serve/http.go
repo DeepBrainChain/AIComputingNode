@@ -1,7 +1,9 @@
 package serve
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -19,6 +21,8 @@ import (
 type httpService struct {
 	publishChan chan<- []byte
 }
+
+var httpServer *http.Server
 
 func generateUniqueID() string {
 	return uuid.New().String()
@@ -260,6 +264,92 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 	hs.handleRequest(w, r, req, &rsp)
 }
 
+func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
+		return
+	}
+	rsp := ChatCompletionResponse{
+		Code:    0,
+		Message: "ok",
+	}
+	w.Header().Set("Content-Type", "application/json")
+
+	var msg ChatCompletionRequest
+	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
+		rsp.Code = int(types.ErrCodeParse)
+		rsp.Message = types.ErrCodeParse.String()
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	if err := msg.Validate(); err != nil {
+		rsp.Code = int(types.ErrCodeParam)
+		rsp.Message = err.Error()
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	if msg.NodeID == config.GC.Identity.PeerID {
+		rsp.Code = int(types.ErrCodeParam)
+		rsp.Message = "Cannot be sent to the node itself"
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	ccms := make([]*protocol.ChatCompletionMessage, 0)
+	for _, ccm := range msg.Messages {
+		ccms = append(ccms, &protocol.ChatCompletionMessage{
+			Role:    ccm.Role,
+			Content: ccm.Content,
+		})
+	}
+
+	pi := &protocol.ChatCompletionBody{
+		Data: &protocol.ChatCompletionBody_Req{
+			Req: &protocol.ChatCompletionRequest{
+				NodeId:   msg.NodeID,
+				Model:    msg.Model,
+				Messages: ccms,
+			},
+		},
+	}
+	body, err := proto.Marshal(pi)
+	if err != nil {
+		rsp.SetCode(int(types.ErrCodeProtobuf))
+		rsp.SetMessage(err.Error())
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+	body, err = p2p.Encrypt(msg.NodeID, body)
+	if err != nil {
+		rsp.Code = int(types.ErrCodeEncrypt)
+		rsp.Message = types.ErrCodeEncrypt.String()
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	requestID := generateUniqueID()
+	req := &protocol.Message{
+		Header: &protocol.MessageHeader{
+			ClientVersion: p2p.Hio.UserAgent,
+			Timestamp:     time.Now().Unix(),
+			Id:            requestID,
+			NodeId:        config.GC.Identity.PeerID,
+			Receiver:      msg.NodeID,
+			NodePubKey:    nil,
+			Sign:          nil,
+		},
+		Type:       *protocol.MessageType_CHAT_COMPLETION.Enum(),
+		Body:       body,
+		ResultCode: 0,
+	}
+	if err == nil {
+		req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+	}
+	hs.handleRequest(w, r, req, &rsp)
+}
+
 func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
@@ -437,39 +527,39 @@ func NewHttpServe(pcn chan<- []byte) {
 	hs := &httpService{
 		publishChan: pcn,
 	}
-	http.HandleFunc("/api/v0/id", hs.idHandler)
-	// http.HandleFunc("/api/v0/echo", func(w http.ResponseWriter, r *http.Request) {
-	// 	var msg EchoMessage
-	// 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
-	// 		http.Error(w, err.Error(), http.StatusBadRequest)
-	// 		return
-	// 	}
-	// 	// ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	// 	// defer cancel()
-	// 	err := hs.Topic.Publish(hs.Ctx, []byte(msg.Content))
-	// 	rsp := EchoResponse{
-	// 		Code:    0,
-	// 		Message: "ok",
-	// 	}
-	// 	if err != nil {
-	// 		log.Logger.Warnf("Publish message: %v", err)
-	// 		rsp.Code = 1
-	// 		rsp.Message = err.Error()
-	// 	}
-	// 	w.Header().Set("Content-Type", "application/json")
-	// 	json.NewEncoder(w).Encode(rsp)
-	// })
-	http.HandleFunc("/api/v0/peers", hs.peersHandler)
-	http.HandleFunc("/api/v0/peer", hs.peerHandler)
-	http.HandleFunc("/api/v0/image/gen", hs.imageGenHandler)
-	http.HandleFunc("/api/v0/host/info", hs.hostInfoHandler)
-	http.HandleFunc("/api/v0/swarm/peers", hs.swarmPeersHandler)
-	http.HandleFunc("/api/v0/swarm/addrs", hs.swarmAddrsHandler)
-	http.HandleFunc("/api/v0/swarm/connect", hs.swarmConnectHandler)
-	http.HandleFunc("/api/v0/swarm/disconnect", hs.swarmDisconnectHandler)
-	http.HandleFunc("/api/v0/pubsub/peers", hs.pubsubPeersHandler)
-	log.Logger.Info("HTTP server is running on http://", config.GC.API.Addr)
-	if err := http.ListenAndServe(config.GC.API.Addr, nil); err != nil {
-		log.Logger.Fatalf("Start HTTP Server: %v", err)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v0/id", hs.idHandler)
+	mux.HandleFunc("/api/v0/peers", hs.peersHandler)
+	mux.HandleFunc("/api/v0/peer", hs.peerHandler)
+	mux.HandleFunc("/api/v0/image/gen", hs.imageGenHandler)
+	mux.HandleFunc("/api/v0/chat/completion", hs.chatCompletionHandler)
+	mux.HandleFunc("/api/v0/host/info", hs.hostInfoHandler)
+	mux.HandleFunc("/api/v0/swarm/peers", hs.swarmPeersHandler)
+	mux.HandleFunc("/api/v0/swarm/addrs", hs.swarmAddrsHandler)
+	mux.HandleFunc("/api/v0/swarm/connect", hs.swarmConnectHandler)
+	mux.HandleFunc("/api/v0/swarm/disconnect", hs.swarmDisconnectHandler)
+	mux.HandleFunc("/api/v0/pubsub/peers", hs.pubsubPeersHandler)
+	httpServer = &http.Server{
+		Addr:    config.GC.API.Addr,
+		Handler: mux,
+		// ReadTimeout:  20 * time.Second,
+		// WriteTimeout: 20 * time.Second,
+	}
+	go func() {
+		log.Logger.Info("HTTP server is running on http://", httpServer.Addr)
+		if err := httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			log.Logger.Fatalf("Start HTTP Server: %v", err)
+		}
+		log.Logger.Info("HTTP server is stopped")
+	}()
+}
+
+func StopHttpService() {
+	shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownRelease()
+	if err := httpServer.Shutdown(shutdownCtx); err != nil {
+		log.Logger.Fatalf("Shutdown HTTP Server: %v", err)
+	} else {
+		log.Logger.Info("HTTP server is shutdown gracefully")
 	}
 }
