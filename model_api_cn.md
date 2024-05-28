@@ -1,18 +1,18 @@
 # AI 模型接口标准文档
 
-遵循 OpenAI API 协议 [API Reference - OpenAI API](https://platform.openai.com/docs/api-reference/chat/create)
+此文档描述 AI 模型提供的 API 接口标准，提供给分布式通信节点调用。接口设计参考 OpenAI API 协议 [API Reference - OpenAI API](https://platform.openai.com/docs/api-reference/chat/create)。
 
 ## 文生文模型
 
 聊天对话，文字助理
 
 - 请求方式：POST
-- 请求 URL：https://api.openai.com/v1/chat/completions
+- 请求 URL：http://127.0.0.1:1088/v1/chat/completions
 - 请求 Body：
 ```json
 {
   // 想要请求的模型名称
-  "model": "gpt-4-turbo",
+  "model": "Llama3-8B",
   // 预设的系统助理行为模式和交替问答记录
   "messages": [
     {
@@ -34,7 +34,7 @@
   // 错误信息
   "message": "success",
   "created": 1677652288,
-  "model": "gpt-4-turbo",
+  "model": "Llama3-8B",
   // AI 模型给出的回答，最少要给出一条
   "choices": [{
     "index": 0,
@@ -48,10 +48,10 @@
 ```
 
 ```shell
-curl https://api.openai.com/v1/chat/completions \
+curl http://127.0.0.1:1088/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gpt-4-turbo",
+    "model": "Llama3-8B",
     "messages": [
       {
         "role": "system",
@@ -70,12 +70,12 @@ curl https://api.openai.com/v1/chat/completions \
 根据提示词生成图片
 
 - 请求方式：POST
-- 请求 URL：https://api.openai.com/v1/images/generations
+- 请求 URL：http://127.0.0.1:1088/v1/images/generations
 - 请求 Body：
 ```json
 {
   // 想要请求的模型名称
-  "model": "dall-e-3",
+  "model": "SuperImage",
   // 所需图像的文本描述
   "prompt": "A cute baby sea otter",
   // 要生成的图像数量，最少一个
@@ -105,10 +105,10 @@ curl https://api.openai.com/v1/chat/completions \
 ```
 
 ```shell
-curl https://api.openai.com/v1/images/generations \
+curl http://127.0.0.1:1088/v1/images/generations \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "dall-e-3",
+    "model": "SuperImage",
     "prompt": "A cute baby sea otter",
     "n": 1,
     "size": "1024x1024"
@@ -120,12 +120,12 @@ curl https://api.openai.com/v1/images/generations \
 根据提示词修改图片
 
 - 请求方式：POST
-- 请求 URL：https://api.openai.com/v1/images/edits
+- 请求 URL：http://127.0.0.1:1088/v1/images/edits
 - 请求 Body：
 ```json
 {
   // 想要请求的模型名称
-  "model": "dall-e-3",
+  "model": "SuperImage",
   // 要编辑的图片
   "image": "https://...",
   // 所需图像的文本描述
@@ -157,10 +157,10 @@ curl https://api.openai.com/v1/images/generations \
 ```
 
 ```shell
-curl https://api.openai.com/v1/images/edits \
+curl http://127.0.0.1:1088/v1/images/edits \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "dall-e-3",
+    "model": "SuperImage",
     "image": "https://...",
     "prompt": "A cute baby sea otter wearing a beret",
     "n": 1,
@@ -170,12 +170,12 @@ curl https://api.openai.com/v1/images/edits \
 
 ## 模型列表
 
-一个项目可以有多个模型，例如 OpenAI 提供了 ChatPGT 3.5 和 4 等多个模型，因此可以提供一个接口查询所有模型的信息。
+一个项目可以有多个模型，例如 DecentralGPT 提供了 Llama3 70B 和 Qwen1.5-110B 等多个模型，因此可以提供一个接口查询所有模型的信息。
 
 这个接口可能不是必要，实际部署时需要调用分布式网络通信节点的注册接口来告知运行的模型和调用的 URL。
 
 - 请求方式：GET
-- 请求 URL：https://api.openai.com/v1/models
+- 请求 URL：http://127.0.0.1:1088/v1/models
 - 返回示例：
 ```json
 {
@@ -184,11 +184,11 @@ curl https://api.openai.com/v1/images/edits \
   // AI 模型给出的回答，最少要给出一条
   "data": [
     {
-      "model": "gpt-4-turbo",
+      "model": "Llama3-8B",
       "url": "https://..."
     },
     {
-      "model": "gpt-3.5-turbo",
+      "model": "Qwen1.5-110B",
       "url": "https://..."
     }
   ]
@@ -196,5 +196,5 @@ curl https://api.openai.com/v1/images/edits \
 ```
 
 ```shell
-curl https://api.openai.com/v1/models
+curl http://127.0.0.1:1088/v1/models
 ```

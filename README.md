@@ -355,6 +355,7 @@ When we upload a file to an IPFS node (such as `/ip4/192.168.1.159/tcp/4002` in 
 
 ## HTTP API
 
+[AI model interface standard documentation](./model_api_cn.md)
 [Rest HTTP API](./api.http)
 
 Developer invites you to join team DBC in Apifox: https://app.apifox.com/invite?token=XJYVYIvuR6VDnQCKJfIqV
