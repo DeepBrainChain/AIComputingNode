@@ -25,6 +25,7 @@ type MessageType int32
 const (
 	MessageType_PEER_IDENTITY    MessageType = 0
 	MessageType_HOST_INFO        MessageType = 1
+	MessageType_AI_PROJECT       MessageType = 2
 	MessageType_CHAT_COMPLETION  MessageType = 16
 	MessageType_IMAGE_GENERATION MessageType = 17
 )
@@ -34,12 +35,14 @@ var (
 	MessageType_name = map[int32]string{
 		0:  "PEER_IDENTITY",
 		1:  "HOST_INFO",
+		2:  "AI_PROJECT",
 		16: "CHAT_COMPLETION",
 		17: "IMAGE_GENERATION",
 	}
 	MessageType_value = map[string]int32{
 		"PEER_IDENTITY":    0,
 		"HOST_INFO":        1,
+		"AI_PROJECT":       2,
 		"CHAT_COMPLETION":  16,
 		"IMAGE_GENERATION": 17,
 	}
@@ -1129,6 +1132,236 @@ func (x *HostInfoResponse) GetGpu() []*HostInfoResponse_GpuInfo {
 	return nil
 }
 
+type AIProjectBody struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Types that are assignable to Data:
+	//
+	//	*AIProjectBody_Req
+	//	*AIProjectBody_Res
+	Data isAIProjectBody_Data `protobuf_oneof:"data"`
+}
+
+func (x *AIProjectBody) Reset() {
+	*x = AIProjectBody{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_protocol_proto_msgTypes[15]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AIProjectBody) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AIProjectBody) ProtoMessage() {}
+
+func (x *AIProjectBody) ProtoReflect() protoreflect.Message {
+	mi := &file_protocol_proto_msgTypes[15]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AIProjectBody.ProtoReflect.Descriptor instead.
+func (*AIProjectBody) Descriptor() ([]byte, []int) {
+	return file_protocol_proto_rawDescGZIP(), []int{15}
+}
+
+func (m *AIProjectBody) GetData() isAIProjectBody_Data {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+func (x *AIProjectBody) GetReq() *AIProjectRequest {
+	if x, ok := x.GetData().(*AIProjectBody_Req); ok {
+		return x.Req
+	}
+	return nil
+}
+
+func (x *AIProjectBody) GetRes() *AIProjectResponse {
+	if x, ok := x.GetData().(*AIProjectBody_Res); ok {
+		return x.Res
+	}
+	return nil
+}
+
+type isAIProjectBody_Data interface {
+	isAIProjectBody_Data()
+}
+
+type AIProjectBody_Req struct {
+	Req *AIProjectRequest `protobuf:"bytes,1,opt,name=req,proto3,oneof"`
+}
+
+type AIProjectBody_Res struct {
+	Res *AIProjectResponse `protobuf:"bytes,2,opt,name=res,proto3,oneof"`
+}
+
+func (*AIProjectBody_Req) isAIProjectBody_Data() {}
+
+func (*AIProjectBody_Res) isAIProjectBody_Data() {}
+
+type AIProjectOfNode struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Project string   `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
+	Models  []string `protobuf:"bytes,2,rep,name=models,proto3" json:"models,omitempty"`
+}
+
+func (x *AIProjectOfNode) Reset() {
+	*x = AIProjectOfNode{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_protocol_proto_msgTypes[16]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AIProjectOfNode) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AIProjectOfNode) ProtoMessage() {}
+
+func (x *AIProjectOfNode) ProtoReflect() protoreflect.Message {
+	mi := &file_protocol_proto_msgTypes[16]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AIProjectOfNode.ProtoReflect.Descriptor instead.
+func (*AIProjectOfNode) Descriptor() ([]byte, []int) {
+	return file_protocol_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *AIProjectOfNode) GetProject() string {
+	if x != nil {
+		return x.Project
+	}
+	return ""
+}
+
+func (x *AIProjectOfNode) GetModels() []string {
+	if x != nil {
+		return x.Models
+	}
+	return nil
+}
+
+type AIProjectRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	NodeId string `protobuf:"bytes,1,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
+}
+
+func (x *AIProjectRequest) Reset() {
+	*x = AIProjectRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_protocol_proto_msgTypes[17]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AIProjectRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AIProjectRequest) ProtoMessage() {}
+
+func (x *AIProjectRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_protocol_proto_msgTypes[17]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AIProjectRequest.ProtoReflect.Descriptor instead.
+func (*AIProjectRequest) Descriptor() ([]byte, []int) {
+	return file_protocol_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *AIProjectRequest) GetNodeId() string {
+	if x != nil {
+		return x.NodeId
+	}
+	return ""
+}
+
+type AIProjectResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Projects []*AIProjectOfNode `protobuf:"bytes,1,rep,name=projects,proto3" json:"projects,omitempty"`
+}
+
+func (x *AIProjectResponse) Reset() {
+	*x = AIProjectResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_protocol_proto_msgTypes[18]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AIProjectResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AIProjectResponse) ProtoMessage() {}
+
+func (x *AIProjectResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_protocol_proto_msgTypes[18]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AIProjectResponse.ProtoReflect.Descriptor instead.
+func (*AIProjectResponse) Descriptor() ([]byte, []int) {
+	return file_protocol_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *AIProjectResponse) GetProjects() []*AIProjectOfNode {
+	if x != nil {
+		return x.Projects
+	}
+	return nil
+}
+
 type ChatCompletionResponse_ChatResponseChoice struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1142,7 +1375,7 @@ type ChatCompletionResponse_ChatResponseChoice struct {
 func (x *ChatCompletionResponse_ChatResponseChoice) Reset() {
 	*x = ChatCompletionResponse_ChatResponseChoice{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_protocol_proto_msgTypes[15]
+		mi := &file_protocol_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1155,7 +1388,7 @@ func (x *ChatCompletionResponse_ChatResponseChoice) String() string {
 func (*ChatCompletionResponse_ChatResponseChoice) ProtoMessage() {}
 
 func (x *ChatCompletionResponse_ChatResponseChoice) ProtoReflect() protoreflect.Message {
-	mi := &file_protocol_proto_msgTypes[15]
+	mi := &file_protocol_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1208,7 +1441,7 @@ type HostInfoResponse_OSInfo struct {
 func (x *HostInfoResponse_OSInfo) Reset() {
 	*x = HostInfoResponse_OSInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_protocol_proto_msgTypes[16]
+		mi := &file_protocol_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1221,7 +1454,7 @@ func (x *HostInfoResponse_OSInfo) String() string {
 func (*HostInfoResponse_OSInfo) ProtoMessage() {}
 
 func (x *HostInfoResponse_OSInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_protocol_proto_msgTypes[16]
+	mi := &file_protocol_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1292,7 +1525,7 @@ type HostInfoResponse_CpuInfo struct {
 func (x *HostInfoResponse_CpuInfo) Reset() {
 	*x = HostInfoResponse_CpuInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_protocol_proto_msgTypes[17]
+		mi := &file_protocol_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1305,7 +1538,7 @@ func (x *HostInfoResponse_CpuInfo) String() string {
 func (*HostInfoResponse_CpuInfo) ProtoMessage() {}
 
 func (x *HostInfoResponse_CpuInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_protocol_proto_msgTypes[17]
+	mi := &file_protocol_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1354,7 +1587,7 @@ type HostInfoResponse_MemoryInfo struct {
 func (x *HostInfoResponse_MemoryInfo) Reset() {
 	*x = HostInfoResponse_MemoryInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_protocol_proto_msgTypes[18]
+		mi := &file_protocol_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1367,7 +1600,7 @@ func (x *HostInfoResponse_MemoryInfo) String() string {
 func (*HostInfoResponse_MemoryInfo) ProtoMessage() {}
 
 func (x *HostInfoResponse_MemoryInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_protocol_proto_msgTypes[18]
+	mi := &file_protocol_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1411,7 +1644,7 @@ type HostInfoResponse_DiskInfo struct {
 func (x *HostInfoResponse_DiskInfo) Reset() {
 	*x = HostInfoResponse_DiskInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_protocol_proto_msgTypes[19]
+		mi := &file_protocol_proto_msgTypes[23]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1424,7 +1657,7 @@ func (x *HostInfoResponse_DiskInfo) String() string {
 func (*HostInfoResponse_DiskInfo) ProtoMessage() {}
 
 func (x *HostInfoResponse_DiskInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_protocol_proto_msgTypes[19]
+	mi := &file_protocol_proto_msgTypes[23]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1480,7 +1713,7 @@ type HostInfoResponse_GpuInfo struct {
 func (x *HostInfoResponse_GpuInfo) Reset() {
 	*x = HostInfoResponse_GpuInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_protocol_proto_msgTypes[20]
+		mi := &file_protocol_proto_msgTypes[24]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1493,7 +1726,7 @@ func (x *HostInfoResponse_GpuInfo) String() string {
 func (*HostInfoResponse_GpuInfo) ProtoMessage() {}
 
 func (x *HostInfoResponse_GpuInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_protocol_proto_msgTypes[20]
+	mi := &file_protocol_proto_msgTypes[24]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1707,14 +1940,35 @@ var file_protocol_proto_rawDesc = []byte{
 	0x49, 0x6e, 0x66, 0x6f, 0x12, 0x16, 0x0a, 0x06, 0x76, 0x65, 0x6e, 0x64, 0x6f, 0x72, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x76, 0x65, 0x6e, 0x64, 0x6f, 0x72, 0x12, 0x18, 0x0a, 0x07,
 	0x70, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x70,
-	0x72, 0x6f, 0x64, 0x75, 0x63, 0x74, 0x2a, 0x60, 0x0a, 0x0b, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67,
-	0x65, 0x54, 0x79, 0x70, 0x65, 0x12, 0x11, 0x0a, 0x0d, 0x50, 0x45, 0x45, 0x52, 0x5f, 0x49, 0x44,
-	0x45, 0x4e, 0x54, 0x49, 0x54, 0x59, 0x10, 0x00, 0x12, 0x0d, 0x0a, 0x09, 0x48, 0x4f, 0x53, 0x54,
-	0x5f, 0x49, 0x4e, 0x46, 0x4f, 0x10, 0x01, 0x12, 0x13, 0x0a, 0x0f, 0x43, 0x48, 0x41, 0x54, 0x5f,
-	0x43, 0x4f, 0x4d, 0x50, 0x4c, 0x45, 0x54, 0x49, 0x4f, 0x4e, 0x10, 0x10, 0x12, 0x14, 0x0a, 0x10,
-	0x49, 0x4d, 0x41, 0x47, 0x45, 0x5f, 0x47, 0x45, 0x4e, 0x45, 0x52, 0x41, 0x54, 0x49, 0x4f, 0x4e,
-	0x10, 0x11, 0x22, 0x04, 0x08, 0x02, 0x10, 0x0f, 0x42, 0x0d, 0x5a, 0x0b, 0x2e, 0x2e, 0x2f, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x72, 0x6f, 0x64, 0x75, 0x63, 0x74, 0x22, 0x78, 0x0a, 0x0d, 0x41, 0x49, 0x50, 0x72, 0x6f, 0x6a,
+	0x65, 0x63, 0x74, 0x42, 0x6f, 0x64, 0x79, 0x12, 0x2e, 0x0a, 0x03, 0x72, 0x65, 0x71, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e,
+	0x41, 0x49, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x48, 0x00, 0x52, 0x03, 0x72, 0x65, 0x71, 0x12, 0x2f, 0x0a, 0x03, 0x72, 0x65, 0x73, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e,
+	0x41, 0x49, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x48, 0x00, 0x52, 0x03, 0x72, 0x65, 0x73, 0x42, 0x06, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61,
+	0x22, 0x43, 0x0a, 0x0f, 0x41, 0x49, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x4f, 0x66, 0x4e,
+	0x6f, 0x64, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x12, 0x16, 0x0a,
+	0x06, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x09, 0x52, 0x06, 0x6d,
+	0x6f, 0x64, 0x65, 0x6c, 0x73, 0x22, 0x2b, 0x0a, 0x10, 0x41, 0x49, 0x50, 0x72, 0x6f, 0x6a, 0x65,
+	0x63, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x17, 0x0a, 0x07, 0x6e, 0x6f, 0x64,
+	0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x6e, 0x6f, 0x64, 0x65,
+	0x49, 0x64, 0x22, 0x4a, 0x0a, 0x11, 0x41, 0x49, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x35, 0x0a, 0x08, 0x70, 0x72, 0x6f, 0x6a, 0x65,
+	0x63, 0x74, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x41, 0x49, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x4f, 0x66,
+	0x4e, 0x6f, 0x64, 0x65, 0x52, 0x08, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2a, 0x70,
+	0x0a, 0x0b, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12, 0x11, 0x0a,
+	0x0d, 0x50, 0x45, 0x45, 0x52, 0x5f, 0x49, 0x44, 0x45, 0x4e, 0x54, 0x49, 0x54, 0x59, 0x10, 0x00,
+	0x12, 0x0d, 0x0a, 0x09, 0x48, 0x4f, 0x53, 0x54, 0x5f, 0x49, 0x4e, 0x46, 0x4f, 0x10, 0x01, 0x12,
+	0x0e, 0x0a, 0x0a, 0x41, 0x49, 0x5f, 0x50, 0x52, 0x4f, 0x4a, 0x45, 0x43, 0x54, 0x10, 0x02, 0x12,
+	0x13, 0x0a, 0x0f, 0x43, 0x48, 0x41, 0x54, 0x5f, 0x43, 0x4f, 0x4d, 0x50, 0x4c, 0x45, 0x54, 0x49,
+	0x4f, 0x4e, 0x10, 0x10, 0x12, 0x14, 0x0a, 0x10, 0x49, 0x4d, 0x41, 0x47, 0x45, 0x5f, 0x47, 0x45,
+	0x4e, 0x45, 0x52, 0x41, 0x54, 0x49, 0x4f, 0x4e, 0x10, 0x11, 0x22, 0x04, 0x08, 0x03, 0x10, 0x0f,
+	0x42, 0x0d, 0x5a, 0x0b, 0x2e, 0x2e, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1730,7 +1984,7 @@ func file_protocol_proto_rawDescGZIP() []byte {
 }
 
 var file_protocol_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_protocol_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_protocol_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_protocol_proto_goTypes = []interface{}{
 	(MessageType)(0),                                  // 0: protocol.MessageType
 	(*MessageHeader)(nil),                             // 1: protocol.MessageHeader
@@ -1748,12 +2002,16 @@ var file_protocol_proto_goTypes = []interface{}{
 	(*HostInfoBody)(nil),                              // 13: protocol.HostInfoBody
 	(*HostInfoRequest)(nil),                           // 14: protocol.HostInfoRequest
 	(*HostInfoResponse)(nil),                          // 15: protocol.HostInfoResponse
-	(*ChatCompletionResponse_ChatResponseChoice)(nil), // 16: protocol.ChatCompletionResponse.ChatResponseChoice
-	(*HostInfoResponse_OSInfo)(nil),                   // 17: protocol.HostInfoResponse.OSInfo
-	(*HostInfoResponse_CpuInfo)(nil),                  // 18: protocol.HostInfoResponse.CpuInfo
-	(*HostInfoResponse_MemoryInfo)(nil),               // 19: protocol.HostInfoResponse.MemoryInfo
-	(*HostInfoResponse_DiskInfo)(nil),                 // 20: protocol.HostInfoResponse.DiskInfo
-	(*HostInfoResponse_GpuInfo)(nil),                  // 21: protocol.HostInfoResponse.GpuInfo
+	(*AIProjectBody)(nil),                             // 16: protocol.AIProjectBody
+	(*AIProjectOfNode)(nil),                           // 17: protocol.AIProjectOfNode
+	(*AIProjectRequest)(nil),                          // 18: protocol.AIProjectRequest
+	(*AIProjectResponse)(nil),                         // 19: protocol.AIProjectResponse
+	(*ChatCompletionResponse_ChatResponseChoice)(nil), // 20: protocol.ChatCompletionResponse.ChatResponseChoice
+	(*HostInfoResponse_OSInfo)(nil),                   // 21: protocol.HostInfoResponse.OSInfo
+	(*HostInfoResponse_CpuInfo)(nil),                  // 22: protocol.HostInfoResponse.CpuInfo
+	(*HostInfoResponse_MemoryInfo)(nil),               // 23: protocol.HostInfoResponse.MemoryInfo
+	(*HostInfoResponse_DiskInfo)(nil),                 // 24: protocol.HostInfoResponse.DiskInfo
+	(*HostInfoResponse_GpuInfo)(nil),                  // 25: protocol.HostInfoResponse.GpuInfo
 }
 var file_protocol_proto_depIdxs = []int32{
 	1,  // 0: protocol.Message.header:type_name -> protocol.MessageHeader
@@ -1765,20 +2023,23 @@ var file_protocol_proto_depIdxs = []int32{
 	11, // 6: protocol.ChatCompletionBody.req:type_name -> protocol.ChatCompletionRequest
 	12, // 7: protocol.ChatCompletionBody.res:type_name -> protocol.ChatCompletionResponse
 	10, // 8: protocol.ChatCompletionRequest.messages:type_name -> protocol.ChatCompletionMessage
-	16, // 9: protocol.ChatCompletionResponse.choices:type_name -> protocol.ChatCompletionResponse.ChatResponseChoice
+	20, // 9: protocol.ChatCompletionResponse.choices:type_name -> protocol.ChatCompletionResponse.ChatResponseChoice
 	14, // 10: protocol.HostInfoBody.req:type_name -> protocol.HostInfoRequest
 	15, // 11: protocol.HostInfoBody.res:type_name -> protocol.HostInfoResponse
-	17, // 12: protocol.HostInfoResponse.os:type_name -> protocol.HostInfoResponse.OSInfo
-	18, // 13: protocol.HostInfoResponse.cpu:type_name -> protocol.HostInfoResponse.CpuInfo
-	19, // 14: protocol.HostInfoResponse.memory:type_name -> protocol.HostInfoResponse.MemoryInfo
-	20, // 15: protocol.HostInfoResponse.disk:type_name -> protocol.HostInfoResponse.DiskInfo
-	21, // 16: protocol.HostInfoResponse.gpu:type_name -> protocol.HostInfoResponse.GpuInfo
-	10, // 17: protocol.ChatCompletionResponse.ChatResponseChoice.message:type_name -> protocol.ChatCompletionMessage
-	18, // [18:18] is the sub-list for method output_type
-	18, // [18:18] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	21, // 12: protocol.HostInfoResponse.os:type_name -> protocol.HostInfoResponse.OSInfo
+	22, // 13: protocol.HostInfoResponse.cpu:type_name -> protocol.HostInfoResponse.CpuInfo
+	23, // 14: protocol.HostInfoResponse.memory:type_name -> protocol.HostInfoResponse.MemoryInfo
+	24, // 15: protocol.HostInfoResponse.disk:type_name -> protocol.HostInfoResponse.DiskInfo
+	25, // 16: protocol.HostInfoResponse.gpu:type_name -> protocol.HostInfoResponse.GpuInfo
+	18, // 17: protocol.AIProjectBody.req:type_name -> protocol.AIProjectRequest
+	19, // 18: protocol.AIProjectBody.res:type_name -> protocol.AIProjectResponse
+	17, // 19: protocol.AIProjectResponse.projects:type_name -> protocol.AIProjectOfNode
+	10, // 20: protocol.ChatCompletionResponse.ChatResponseChoice.message:type_name -> protocol.ChatCompletionMessage
+	21, // [21:21] is the sub-list for method output_type
+	21, // [21:21] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_protocol_proto_init() }
@@ -1968,7 +2229,7 @@ func file_protocol_proto_init() {
 			}
 		}
 		file_protocol_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ChatCompletionResponse_ChatResponseChoice); i {
+			switch v := v.(*AIProjectBody); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1980,7 +2241,7 @@ func file_protocol_proto_init() {
 			}
 		}
 		file_protocol_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HostInfoResponse_OSInfo); i {
+			switch v := v.(*AIProjectOfNode); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1992,7 +2253,7 @@ func file_protocol_proto_init() {
 			}
 		}
 		file_protocol_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HostInfoResponse_CpuInfo); i {
+			switch v := v.(*AIProjectRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2004,7 +2265,7 @@ func file_protocol_proto_init() {
 			}
 		}
 		file_protocol_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HostInfoResponse_MemoryInfo); i {
+			switch v := v.(*AIProjectResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2016,7 +2277,7 @@ func file_protocol_proto_init() {
 			}
 		}
 		file_protocol_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HostInfoResponse_DiskInfo); i {
+			switch v := v.(*ChatCompletionResponse_ChatResponseChoice); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2028,6 +2289,54 @@ func file_protocol_proto_init() {
 			}
 		}
 		file_protocol_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*HostInfoResponse_OSInfo); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_protocol_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*HostInfoResponse_CpuInfo); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_protocol_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*HostInfoResponse_MemoryInfo); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_protocol_proto_msgTypes[23].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*HostInfoResponse_DiskInfo); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_protocol_proto_msgTypes[24].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*HostInfoResponse_GpuInfo); i {
 			case 0:
 				return &v.state
@@ -2056,13 +2365,17 @@ func file_protocol_proto_init() {
 		(*HostInfoBody_Req)(nil),
 		(*HostInfoBody_Res)(nil),
 	}
+	file_protocol_proto_msgTypes[15].OneofWrappers = []interface{}{
+		(*AIProjectBody_Req)(nil),
+		(*AIProjectBody_Res)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_protocol_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   21,
+			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

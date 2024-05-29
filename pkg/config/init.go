@@ -1,7 +1,6 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -12,9 +11,9 @@ import (
 )
 
 var (
-	ProtocolPrefix string = "/DeepBrainChain"
+	ProtocolPrefix string = "/dbc"
 	PreSharedKey   string = "f504f536a912a8cf7d00adacee8ed20270c5040d961d7f3da4fccbcbec0ec48a"
-	TopicName      string = "SuperImageAI"
+	TopicName      string = "DeepBrainChain"
 )
 
 func Init(mode string) error {
@@ -122,7 +121,6 @@ func Init(mode string) error {
 			TopicName:      TopicName,
 			Datastore:      dataPath,
 			IpfsStorageAPI: "",
-			ModelAPI:       "",
 		},
 	}
 	if mode == "server" {
@@ -132,13 +130,8 @@ func Init(mode string) error {
 		config.Routing.Type = "dhtserver"
 		config.App.LogOutput = "stderr+file"
 	}
-	jsonData, err := json.MarshalIndent(config, "", "  ")
-	if err != nil {
-		fmt.Println("Marshal pretty json:", err)
-		return err
-	}
 	configPath := GetUniqueFile(cwd, mode, "json")
-	if err := os.WriteFile(configPath, jsonData, 0600); err != nil {
+	if err := config.SaveConfig(configPath); err != nil {
 		fmt.Println("Failed to save json:", err)
 		return err
 	}

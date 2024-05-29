@@ -24,7 +24,8 @@ message Message {
 enum MessageType {
   PEER_IDENTITY = 0;
   HOST_INFO = 1;
-  reserved 2 to 15;
+  AI_PROJECT = 2;
+  reserved 3 to 15;
   CHAT_COMPLETION = 16;
   IMAGE_GENERATION = 17;
 }
@@ -140,4 +141,24 @@ message HostInfoResponse {
   MemoryInfo memory = 3;
   repeated DiskInfo disk = 4;
   repeated GpuInfo gpu = 5;
+}
+
+message AIProjectBody {
+  oneof data {
+    AIProjectRequest req = 1;
+    AIProjectResponse res = 2;
+  }
+}
+
+message AIProjectOfNode {
+  string project = 1;
+  repeated string models = 2;
+}
+
+message AIProjectRequest {
+  string node_id = 1;
+}
+
+message AIProjectResponse {
+  repeated AIProjectOfNode projects = 1;
 }

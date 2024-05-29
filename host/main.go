@@ -338,7 +338,7 @@ func main() {
 	publishChan := make(chan []byte, 1024)
 	go ps.PublishToTopic(ctx, topic, publishChan)
 	go ps.PubsubHandler(ctx, sub, publishChan)
-	serve.NewHttpServe(publishChan)
+	serve.NewHttpServe(publishChan, *configPath)
 
 	log.Logger.Info("listening for connections")
 

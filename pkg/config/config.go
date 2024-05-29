@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"AIComputingNode/pkg/p2p"
+	"AIComputingNode/pkg/types"
 
 	"github.com/mattn/go-isatty"
 	"github.com/multiformats/go-multiaddr"
@@ -17,14 +18,15 @@ import (
 var GC *Config
 
 type Config struct {
-	Bootstrap []string       `json:"Bootstrap"`
-	Addresses []string       `json:"Addresses"`
-	API       APIConfig      `Json:"API"`
-	Identity  IdentityConfig `json:"Identity"`
-	Swarm     SwarmConfig    `json:"Swarm"`
-	Pubsub    PubsubConfig   `json:"Pubsub"`
-	Routing   RoutingConfig  `json:"Routing"`
-	App       AppConfig      `json:"App"`
+	Bootstrap  []string          `json:"Bootstrap"`
+	Addresses  []string          `json:"Addresses"`
+	API        APIConfig         `Json:"API"`
+	Identity   IdentityConfig    `json:"Identity"`
+	Swarm      SwarmConfig       `json:"Swarm"`
+	Pubsub     PubsubConfig      `json:"Pubsub"`
+	Routing    RoutingConfig     `json:"Routing"`
+	App        AppConfig         `json:"App"`
+	AIProjects []types.AIProject `json:"AIProjects"`
 }
 
 type APIConfig struct {
@@ -80,7 +82,6 @@ type AppConfig struct {
 	TopicName      string `json:"TopicName"`
 	Datastore      string `json:"Datastore"`
 	IpfsStorageAPI string `json:"IpfsStorageAPI"`
-	ModelAPI       string `json:"ModelAPI"`
 }
 
 func (config Config) Validate() error {
@@ -223,6 +224,44 @@ func (config AppConfig) Validate() error {
 		return fmt.Errorf("datastore must be a folder that already exists")
 	}
 	return nil
+}
+
+func (config Config) GetModelAPI(modelName string) string {
+	if modelName == "" {
+		return ""
+	}
+	for _, project := range config.AIProjects {
+		for _, model := range project.Models {
+			if model.Model == modelName {
+				return model.API
+			}
+		}
+	}
+	return ""
+}
+
+func (config Config) SaveConfig(configPath string) error {
+	jsonData, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		// fmt.Println("Marshal pretty json:", err)
+		return err
+	}
+	if err := os.WriteFile(configPath, jsonData, 0600); err != nil {
+		// fmt.Println("Failed to save json:", err)
+		return err
+	}
+	return nil
+}
+
+func (config Config) GetAIProjectsOfNode() []types.AIProjectOfNode {
+	projects := make([]types.AIProjectOfNode, len(config.AIProjects))
+	for i, project := range config.AIProjects {
+		projects[i].Project = project.Project
+		for _, model := range project.Models {
+			projects[i].Models = append(projects[i].Models, model.Model)
+		}
+	}
+	return projects
 }
 
 func LoadConfig(configPath string) (*Config, error) {

@@ -3,6 +3,7 @@ package serve
 import (
 	"AIComputingNode/pkg/host"
 	"AIComputingNode/pkg/p2p"
+	"AIComputingNode/pkg/types"
 	"errors"
 	"sync"
 )
@@ -20,11 +21,11 @@ type Response interface {
 	SetMessage(message string)
 }
 
-type EchoMessage struct {
-	Content string `json:"content"`
+type BaseRequest struct {
+	NodeID string `json:"node_id"`
 }
 
-type EchoResponse struct {
+type BaseResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
@@ -35,9 +36,7 @@ type PeerListResponse struct {
 	Data    []string `json:"data"`
 }
 
-type PeerRequest struct {
-	NodeID string `json:"node_id"`
-}
+type PeerRequest BaseRequest
 
 type PeerResponse struct {
 	Code    int                  `json:"code"`
@@ -88,9 +87,7 @@ type ChatCompletionResponse struct {
 	} `json:"data"`
 }
 
-type HostInfoRequest struct {
-	NodeID string `json:"node_id"`
-}
+type HostInfoRequest BaseRequest
 
 type HostInfoResponse struct {
 	Code    int           `json:"code"`
@@ -105,6 +102,14 @@ type SwarmConnectRequest struct {
 type SwarmConnectResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
+}
+
+type AIProjectListRequest BaseRequest
+
+type AIProjectListResponse struct {
+	Code    int                     `json:"code"`
+	Message string                  `json:"message"`
+	Data    []types.AIProjectOfNode `json:"data"`
 }
 
 func DeleteRequestItem(id string) {
@@ -130,6 +135,14 @@ func WriteAndDeleteRequestItem(id string, data []byte) {
 		}
 	}
 	QueueLock.Unlock()
+}
+
+func (res *BaseResponse) SetCode(code int) {
+	res.Code = code
+}
+
+func (res *BaseResponse) SetMessage(message string) {
+	res.Message = message
 }
 
 func (res *PeerResponse) SetCode(code int) {
@@ -164,6 +177,14 @@ func (res *HostInfoResponse) SetMessage(message string) {
 	res.Message = message
 }
 
+func (res *AIProjectListResponse) SetCode(code int) {
+	res.Code = code
+}
+
+func (res *AIProjectListResponse) SetMessage(message string) {
+	res.Message = message
+}
+
 func (req PeerRequest) Validate() error {
 	if req.NodeID == "" {
 		return errors.New("empty node_id")
@@ -192,6 +213,13 @@ func (req ChatCompletionRequest) Validate() error {
 }
 
 func (req HostInfoRequest) Validate() error {
+	if req.NodeID == "" {
+		return errors.New("empty node_id")
+	}
+	return nil
+}
+
+func (req AIProjectListRequest) Validate() error {
 	if req.NodeID == "" {
 		return errors.New("empty node_id")
 	}

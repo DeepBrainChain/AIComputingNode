@@ -3,7 +3,6 @@ package model
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -35,12 +34,12 @@ type ChatCompletionResponse struct {
 	} `json:"data"`
 }
 
-type ModelRequest struct {
+type ImageGenerationRequest struct {
 	Model  string `json:"model"`
 	Prompt string `json:"prompt"`
 }
 
-type ModelResponse struct {
+type ImageGenerationResponse struct {
 	Code     int    `json:"code"`
 	Status   string `json:"status"`
 	ImageUrl string `json:"imageUrl"`
@@ -83,11 +82,11 @@ func ChatModel(api string, chatReq ChatCompletionRequest) *ChatCompletionRespons
 
 // curl -X POST "http://127.0.0.1:8080/models/superimage" -d "{\"prompt\":\"bird\"}"
 // curl -X POST "http://127.0.0.1:8080/models" -d "{\"model\":\"superimage\",\"prompt\":\"bird\"}"
-func ExecuteModel(api, model, prompt string) (int, string, string) {
+func ImageGenerationModel(api, model, prompt string) (int, string, string) {
 	if api == "" {
 		return int(types.ErrCodeModel), "Model API configuration is empty", ""
 	}
-	req := ModelRequest{
+	req := ImageGenerationRequest{
 		Model:  model,
 		Prompt: prompt,
 	}
@@ -96,7 +95,7 @@ func ExecuteModel(api, model, prompt string) (int, string, string) {
 		return int(types.ErrCodeModel), "Marshal model request error", ""
 	}
 	resp, err := http.Post(
-		fmt.Sprintf("%s/models", api),
+		api,
 		"application/json",
 		bytes.NewBuffer(jsonData),
 	)
@@ -107,7 +106,7 @@ func ExecuteModel(api, model, prompt string) (int, string, string) {
 	if err != nil {
 		return int(types.ErrCodeModel), "Read model response error", ""
 	}
-	response := ModelResponse{}
+	response := ImageGenerationResponse{}
 	if err := json.Unmarshal(body, &response); err != nil {
 		return int(types.ErrCodeModel), "Unmarshal model response error", ""
 	}

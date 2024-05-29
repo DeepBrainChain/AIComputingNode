@@ -92,6 +92,8 @@ func handleBroadcastMessage(ctx context.Context, msg *protocol.Message, publishC
 		handlePeerIdentityMessage(ctx, msg, msgBody, publishChan)
 	case protocol.MessageType_HOST_INFO:
 		handleHostInfoMessage(ctx, msg, msgBody, publishChan)
+	case protocol.MessageType_AI_PROJECT:
+		handleAIProjectMessage(ctx, msg, msgBody, publishChan)
 	case protocol.MessageType_CHAT_COMPLETION:
 		handleChatCompletionMessage(ctx, msg, msgBody, publishChan)
 	case protocol.MessageType_IMAGE_GENERATION:
@@ -435,6 +437,78 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 	}
 }
 
+func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) {
+	aip := &protocol.AIProjectBody{}
+	if msg.ResultCode != 0 {
+		res := serve.AIProjectListResponse{
+			Code:    int(msg.ResultCode),
+			Message: msg.ResultMessage,
+		}
+		notifyData, err := json.Marshal(res)
+		if err != nil {
+			log.Logger.Errorf("Marshal AI Project Protocol %v", err)
+			return
+		}
+		serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
+	} else if err := proto.Unmarshal(decBody, aip); err == nil {
+		if aiReq := aip.GetReq(); aiReq != nil {
+			if aiReq.GetNodeId() == config.GC.Identity.PeerID {
+				projects := config.GC.GetAIProjectsOfNode()
+				aiBody := &protocol.AIProjectBody{
+					Data: &protocol.AIProjectBody_Res{
+						Res: AIProject2ProtocolMessage(projects),
+					},
+				}
+				resBody, err := proto.Marshal(aiBody)
+				if err != nil {
+					log.Logger.Warnf("Marshal AI Project Response Body %v", err)
+					return
+				}
+				resBody, err = p2p.Encrypt(msg.Header.NodeId, resBody)
+				res := protocol.Message{
+					Header: &protocol.MessageHeader{
+						ClientVersion: p2p.Hio.UserAgent,
+						Timestamp:     time.Now().Unix(),
+						Id:            msg.Header.Id,
+						NodeId:        config.GC.Identity.PeerID,
+						Receiver:      msg.Header.NodeId,
+					},
+					Type:          protocol.MessageType_AI_PROJECT,
+					Body:          resBody,
+					ResultCode:    0,
+					ResultMessage: "ok",
+				}
+				if err == nil {
+					res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+				}
+				resBytes, err := proto.Marshal(&res)
+				if err != nil {
+					log.Logger.Errorf("Marshal AI Project Response %v", err)
+					return
+				}
+				publishChan <- resBytes
+				log.Logger.Info("Sending AI Project Response")
+			} else {
+				log.Logger.Warnf("Invalid node id %v in request body", aiReq.GetNodeId())
+			}
+		} else if aiRes := aip.GetRes(); aiRes != nil {
+			res := serve.AIProjectListResponse{
+				Code:    int(msg.ResultCode),
+				Message: msg.ResultMessage,
+				Data:    ProtocolMessage2AIProject(aiRes),
+			}
+			notifyData, err := json.Marshal(res)
+			if err != nil {
+				log.Logger.Errorf("Marshal AI Project Protocol %v", err)
+				return
+			}
+			serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
+		}
+	} else {
+		log.Logger.Warn("Message type and body do not match")
+	}
+}
+
 func TransformErrorResponse(msg *protocol.Message, code int32, message string) *protocol.Message {
 	res := protocol.Message{
 		Header: &protocol.MessageHeader{
@@ -464,7 +538,7 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 			Content: ccm.Content,
 		})
 	}
-	chatRes := model.ChatModel(config.GC.App.ModelAPI, chatReq)
+	chatRes := model.ChatModel(config.GC.GetModelAPI(req.Model), chatReq)
 	response := &protocol.ChatCompletionResponse{}
 	if chatRes.Code != 0 {
 		return chatRes.Code, chatRes.Message, response
@@ -505,8 +579,8 @@ func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenera
 	}
 
 	if config.ValidateIpfsServer(res.IpfsAddr) {
-		res.Code, res.Message, res.ImageFilePath = model.ExecuteModel(
-			config.GC.App.ModelAPI, req.GetModel(), req.GetPromptWord())
+		res.Code, res.Message, res.ImageFilePath = model.ImageGenerationModel(
+			config.GC.GetModelAPI(req.GetModel()), req.GetModel(), req.GetPromptWord())
 		if res.Code == 0 {
 			log.Logger.Infof("Execute model %s with %q result %q",
 				req.GetModel(), req.GetPromptWord(), res.ImageFilePath)
@@ -637,4 +711,24 @@ func ProtocolMessage2HostInfo(res *protocol.HostInfoResponse) *host.HostInfo {
 		})
 	}
 	return hostInfo
+}
+
+func AIProject2ProtocolMessage(projs []types.AIProjectOfNode) *protocol.AIProjectResponse {
+	res := &protocol.AIProjectResponse{}
+	for _, proj := range projs {
+		res.Projects = append(res.Projects, &protocol.AIProjectOfNode{
+			Project: proj.Project,
+			Models:  proj.Models,
+		})
+	}
+	return res
+}
+
+func ProtocolMessage2AIProject(res *protocol.AIProjectResponse) []types.AIProjectOfNode {
+	projects := make([]types.AIProjectOfNode, len(res.Projects))
+	for i, project := range res.Projects {
+		projects[i].Project = project.Project
+		projects[i].Models = project.Models
+	}
+	return projects
 }
