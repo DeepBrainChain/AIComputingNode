@@ -26,10 +26,6 @@ type httpService struct {
 
 var httpServer *http.Server
 
-func generateUniqueID() string {
-	return uuid.New().String()
-}
-
 func httpStatus(code types.ErrorCode) int {
 	switch code {
 	case 0:
@@ -150,6 +146,14 @@ func (hs *httpService) peerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	requestID, err := uuid.NewRandom()
+	if err != nil {
+		rsp.Code = int(types.ErrCodeUUID)
+		rsp.Message = err.Error()
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
 	pi := &protocol.PeerIdentityBody{
 		Data: &protocol.PeerIdentityBody_Req{
 			Req: &protocol.PeerIdentityRequest{
@@ -166,12 +170,11 @@ func (hs *httpService) peerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	body, err = p2p.Encrypt(msg.NodeID, body)
 
-	requestID := generateUniqueID()
 	req := &protocol.Message{
 		Header: &protocol.MessageHeader{
 			ClientVersion: p2p.Hio.UserAgent,
 			Timestamp:     time.Now().Unix(),
-			Id:            requestID,
+			Id:            requestID.String(),
 			NodeId:        config.GC.Identity.PeerID,
 			Receiver:      msg.NodeID,
 			NodePubKey:    nil,
@@ -220,6 +223,14 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	requestID, err := uuid.NewRandom()
+	if err != nil {
+		rsp.Code = int(types.ErrCodeUUID)
+		rsp.Message = err.Error()
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
 	pi := &protocol.ImageGenerationBody{
 		Data: &protocol.ImageGenerationBody_Req{
 			Req: &protocol.ImageGenerationRequest{
@@ -245,12 +256,11 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requestID := generateUniqueID()
 	req := &protocol.Message{
 		Header: &protocol.MessageHeader{
 			ClientVersion: p2p.Hio.UserAgent,
 			Timestamp:     time.Now().Unix(),
-			Id:            requestID,
+			Id:            requestID.String(),
 			NodeId:        config.GC.Identity.PeerID,
 			Receiver:      msg.NodeID,
 			NodePubKey:    nil,
@@ -299,6 +309,14 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	requestID, err := uuid.NewRandom()
+	if err != nil {
+		rsp.Code = int(types.ErrCodeUUID)
+		rsp.Message = err.Error()
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
 	ccms := make([]*protocol.ChatCompletionMessage, 0)
 	for _, ccm := range msg.Messages {
 		ccms = append(ccms, &protocol.ChatCompletionMessage{
@@ -331,12 +349,11 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	requestID := generateUniqueID()
 	req := &protocol.Message{
 		Header: &protocol.MessageHeader{
 			ClientVersion: p2p.Hio.UserAgent,
 			Timestamp:     time.Now().Unix(),
-			Id:            requestID,
+			Id:            requestID.String(),
 			NodeId:        config.GC.Identity.PeerID,
 			Receiver:      msg.NodeID,
 			NodePubKey:    nil,
@@ -390,6 +407,14 @@ func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	requestID, err := uuid.NewRandom()
+	if err != nil {
+		rsp.Code = int(types.ErrCodeUUID)
+		rsp.Message = err.Error()
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
 	pi := &protocol.HostInfoBody{
 		Data: &protocol.HostInfoBody_Req{
 			Req: &protocol.HostInfoRequest{
@@ -406,12 +431,11 @@ func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	body, err = p2p.Encrypt(msg.NodeID, body)
 
-	requestID := generateUniqueID()
 	req := &protocol.Message{
 		Header: &protocol.MessageHeader{
 			ClientVersion: p2p.Hio.UserAgent,
 			Timestamp:     time.Now().Unix(),
-			Id:            requestID,
+			Id:            requestID.String(),
 			NodeId:        config.GC.Identity.PeerID,
 			Receiver:      msg.NodeID,
 			NodePubKey:    nil,
@@ -647,6 +671,14 @@ func (hs *httpService) listAIProjectHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	requestID, err := uuid.NewRandom()
+	if err != nil {
+		rsp.Code = int(types.ErrCodeUUID)
+		rsp.Message = err.Error()
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
 	pbody := &protocol.AIProjectBody{
 		Data: &protocol.AIProjectBody_Req{
 			Req: &protocol.AIProjectRequest{
@@ -663,12 +695,11 @@ func (hs *httpService) listAIProjectHandler(w http.ResponseWriter, r *http.Reque
 	}
 	body, err = p2p.Encrypt(msg.NodeID, body)
 
-	requestID := generateUniqueID()
 	req := &protocol.Message{
 		Header: &protocol.MessageHeader{
 			ClientVersion: p2p.Hio.UserAgent,
 			Timestamp:     time.Now().Unix(),
-			Id:            requestID,
+			Id:            requestID.String(),
 			NodeId:        config.GC.Identity.PeerID,
 			Receiver:      msg.NodeID,
 			NodePubKey:    nil,
