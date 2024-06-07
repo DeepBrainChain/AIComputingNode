@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"AIComputingNode/pkg/types"
+
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/crypto"
@@ -39,14 +41,6 @@ type HostInfo struct {
 	Topic *pubsub.Topic
 }
 
-type IdentifyProtocol struct {
-	ID              string   `json:"peer_id"`
-	ProtocolVersion string   `json:"protocol_version"`
-	AgentVersion    string   `json:"agent_version"`
-	Addresses       []string `json:"addresses"`
-	Protocols       []string `json:"protocols"`
-}
-
 type SwarmPeerInfo struct {
 	ID        string `json:"id"`
 	Peer      string `json:"peer"`
@@ -60,8 +54,8 @@ type PeerAddrInfo struct {
 	Addrs []string `json:"addrs"`
 }
 
-func (hio *HostInfo) GetIdentifyProtocol() IdentifyProtocol {
-	id := IdentifyProtocol{
+func (hio *HostInfo) GetIdentifyProtocol() types.IdentifyProtocol {
+	id := types.IdentifyProtocol{
 		ID:              hio.Host.ID().String(),
 		ProtocolVersion: hio.ProtocolVersion,
 		AgentVersion:    hio.UserAgent,

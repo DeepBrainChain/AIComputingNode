@@ -58,7 +58,7 @@ func (hs *httpService) peersHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 		return
 	}
-	rsp := PeerListResponse{
+	rsp := types.PeerListResponse{
 		Code:    0,
 		Message: "ok",
 	}
@@ -77,7 +77,7 @@ func (hs *httpService) peersHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(rsp)
 }
 
-func (hs *httpService) handleRequest(w http.ResponseWriter, r *http.Request, req *protocol.Message, rsp Response) {
+func (hs *httpService) handleRequest(w http.ResponseWriter, r *http.Request, req *protocol.Message, rsp types.HttpResponse) {
 	requestID := req.Header.Id
 	reqBytes, err := proto.Marshal(req)
 	if err != nil {
@@ -123,13 +123,13 @@ func (hs *httpService) peerHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 		return
 	}
-	rsp := PeerResponse{
+	rsp := types.PeerResponse{
 		Code:    0,
 		Message: "ok",
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	var msg PeerRequest
+	var msg types.PeerRequest
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
@@ -192,13 +192,13 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 		return
 	}
-	rsp := ImageGenerationResponse{
+	rsp := types.ImageGenerationResponse{
 		Code:    0,
 		Message: "ok",
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	var msg ImageGenerationRequest
+	var msg types.ImageGenerationRequest
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
@@ -271,13 +271,13 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 		return
 	}
-	rsp := ChatCompletionResponse{
+	rsp := types.ChatCompletionResponse{
 		Code:    0,
 		Message: "ok",
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	var msg ChatCompletionRequest
+	var msg types.ChatCompletionRequest
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
@@ -357,13 +357,13 @@ func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 		return
 	}
-	rsp := HostInfoResponse{
+	rsp := types.HostInfoResponse{
 		Code:    0,
 		Message: "ok",
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	var msg HostInfoRequest
+	var msg types.HostInfoRequest
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
@@ -453,13 +453,13 @@ func (hs *httpService) swarmConnectHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	rsp := SwarmConnectResponse{
+	rsp := types.SwarmConnectResponse{
 		Code:    0,
 		Message: "ok",
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	var req SwarmConnectRequest
+	var req types.SwarmConnectRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
@@ -487,13 +487,13 @@ func (hs *httpService) swarmDisconnectHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	rsp := SwarmConnectResponse{
+	rsp := types.SwarmConnectResponse{
 		Code:    0,
 		Message: "ok",
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	var req SwarmConnectRequest
+	var req types.SwarmConnectRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
@@ -531,7 +531,7 @@ func (hs *httpService) registerAIProjectHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	rsp := BaseResponse{
+	rsp := types.BaseHttpResponse{
 		Code:    0,
 		Message: "ok",
 	}
@@ -576,7 +576,7 @@ func (hs *httpService) unregisterAIProjectHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	rsp := BaseResponse{
+	rsp := types.BaseHttpResponse{
 		Code:    0,
 		Message: "ok",
 	}
@@ -620,13 +620,13 @@ func (hs *httpService) listAIProjectHandler(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 		return
 	}
-	rsp := AIProjectListResponse{
+	rsp := types.AIProjectListResponse{
 		Code:    0,
 		Message: "ok",
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	var msg AIProjectListRequest
+	var msg types.AIProjectListRequest
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()

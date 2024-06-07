@@ -113,10 +113,10 @@ func handleBroadcastMessage(ctx context.Context, msg *protocol.Message, publishC
 func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) {
 	pi := &protocol.PeerIdentityBody{}
 	if msg.ResultCode != 0 {
-		res := serve.PeerResponse{
+		res := types.PeerResponse{
 			Code:    int(msg.ResultCode),
 			Message: msg.ResultMessage,
-			Data:    p2p.IdentifyProtocol{},
+			Data:    types.IdentifyProtocol{},
 		}
 		notifyData, err := json.Marshal(res)
 		if err != nil {
@@ -170,10 +170,10 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 				log.Logger.Info("Gossip Peer Identity Request of ", piReq.GetNodeId())
 			}
 		} else if piRes := pi.GetRes(); piRes != nil {
-			res := serve.PeerResponse{
+			res := types.PeerResponse{
 				Code:    0,
 				Message: "ok",
-				Data: p2p.IdentifyProtocol{
+				Data: types.IdentifyProtocol{
 					ID:              msg.Header.NodeId,
 					ProtocolVersion: piRes.ProtocolVersion,
 					AgentVersion:    piRes.AgentVersion,
@@ -196,7 +196,7 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) {
 	ccb := &protocol.ChatCompletionBody{}
 	if msg.ResultCode != 0 {
-		res := serve.ChatCompletionResponse{
+		res := types.ChatCompletionResponse{
 			Code:    int(msg.ResultCode),
 			Message: msg.ResultMessage,
 		}
@@ -248,18 +248,18 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 				log.Logger.Info("Gossip Chat Completion Request of ", chatReq.GetNodeId())
 			}
 		} else if chatRes := ccb.GetRes(); chatRes != nil {
-			res := serve.ChatCompletionResponse{
+			res := types.ChatCompletionResponse{
 				Code:    int(msg.ResultCode),
 				Message: msg.ResultMessage,
 			}
 			if msg.ResultCode == 0 {
 				res.Data.Created = chatRes.Created
 				for _, choice := range chatRes.Choices {
-					ccmsg := serve.ChatCompletionMessage{
+					ccmsg := types.ChatCompletionMessage{
 						Role:    choice.GetMessage().GetRole(),
 						Content: choice.GetMessage().GetContent(),
 					}
-					res.Data.Choices = append(res.Data.Choices, serve.ChatResponseChoice{
+					res.Data.Choices = append(res.Data.Choices, types.ChatResponseChoice{
 						Index:        int(choice.GetIndex()),
 						Message:      ccmsg,
 						FinishReason: choice.GetFinishReason(),
@@ -281,7 +281,7 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) {
 	ig := &protocol.ImageGenerationBody{}
 	if msg.ResultCode != 0 {
-		res := serve.ImageGenerationResponse{
+		res := types.ImageGenerationResponse{
 			Code:    int(msg.ResultCode),
 			Message: msg.ResultMessage,
 		}
@@ -337,7 +337,7 @@ func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, de
 				log.Logger.Info("Gossip Image Generation Request of ", igReq.GetNodeId())
 			}
 		} else if igRes := ig.GetRes(); igRes != nil {
-			res := serve.ImageGenerationResponse{
+			res := types.ImageGenerationResponse{
 				Code:    int(msg.ResultCode),
 				Message: msg.ResultMessage,
 			}
@@ -361,7 +361,7 @@ func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, de
 func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) {
 	hi := &protocol.HostInfoBody{}
 	if msg.ResultCode != 0 {
-		res := serve.HostInfoResponse{
+		res := types.HostInfoResponse{
 			Code:    int(msg.ResultCode),
 			Message: msg.ResultMessage,
 		}
@@ -420,7 +420,7 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 				log.Logger.Warnf("Invalid node id %v in request body", hiReq.GetNodeId())
 			}
 		} else if hiRes := hi.GetRes(); hiRes != nil {
-			res := serve.HostInfoResponse{
+			res := types.HostInfoResponse{
 				Code:    int(msg.ResultCode),
 				Message: msg.ResultMessage,
 				Data:    *ProtocolMessage2HostInfo(hiRes),
@@ -440,7 +440,7 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) {
 	aip := &protocol.AIProjectBody{}
 	if msg.ResultCode != 0 {
-		res := serve.AIProjectListResponse{
+		res := types.AIProjectListResponse{
 			Code:    int(msg.ResultCode),
 			Message: msg.ResultMessage,
 		}
@@ -492,7 +492,7 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 				log.Logger.Warnf("Invalid node id %v in request body", aiReq.GetNodeId())
 			}
 		} else if aiRes := aip.GetRes(); aiRes != nil {
-			res := serve.AIProjectListResponse{
+			res := types.AIProjectListResponse{
 				Code:    int(msg.ResultCode),
 				Message: msg.ResultMessage,
 				Data:    ProtocolMessage2AIProject(aiRes),
@@ -533,7 +533,7 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 		Model: req.Model,
 	}
 	for _, ccm := range req.Messages {
-		chatReq.Messages = append(chatReq.Messages, model.ChatCompletionMessage{
+		chatReq.Messages = append(chatReq.Messages, types.ChatCompletionMessage{
 			Role:    ccm.Role,
 			Content: ccm.Content,
 		})
@@ -635,7 +635,7 @@ func HttpUrl2Multiaddr(url string) string {
 	return fmt.Sprintf("/ip4/%s/tcp/%s", urlParts[0], urlParts[1])
 }
 
-func HostInfo2ProtocolMessage(hostInfo *host.HostInfo) *protocol.HostInfoResponse {
+func HostInfo2ProtocolMessage(hostInfo *types.HostInfo) *protocol.HostInfoResponse {
 	res := &protocol.HostInfoResponse{
 		Os: &protocol.HostInfoResponse_OSInfo{
 			Os:              hostInfo.Os.OS,
@@ -674,9 +674,9 @@ func HostInfo2ProtocolMessage(hostInfo *host.HostInfo) *protocol.HostInfoRespons
 	return res
 }
 
-func ProtocolMessage2HostInfo(res *protocol.HostInfoResponse) *host.HostInfo {
-	hostInfo := &host.HostInfo{
-		Os: host.OSInfo{
+func ProtocolMessage2HostInfo(res *protocol.HostInfoResponse) *types.HostInfo {
+	hostInfo := &types.HostInfo{
+		Os: types.OSInfo{
 			OS:              res.Os.Os,
 			Platform:        res.Os.Platform,
 			PlatformFamily:  res.Os.PlatformFamily,
@@ -684,20 +684,20 @@ func ProtocolMessage2HostInfo(res *protocol.HostInfoResponse) *host.HostInfo {
 			KernelVersion:   res.Os.KernelVersion,
 			KernelArch:      res.Os.KernelArch,
 		},
-		Memory: host.MemoryInfo{
+		Memory: types.MemoryInfo{
 			TotalPhysicalBytes: res.Memory.TotalPhysicalBytes,
 			TotalUsableBytes:   res.Memory.TotalUsableBytes,
 		},
 	}
 	for _, cpu := range res.Cpu {
-		hostInfo.Cpu = append(hostInfo.Cpu, host.CpuInfo{
+		hostInfo.Cpu = append(hostInfo.Cpu, types.CpuInfo{
 			ModelName: cpu.ModelName,
 			Cores:     cpu.TotalCores,
 			Threads:   cpu.TotalThreads,
 		})
 	}
 	for _, disk := range res.Disk {
-		hostInfo.Disk = append(hostInfo.Disk, host.DiskInfo{
+		hostInfo.Disk = append(hostInfo.Disk, types.DiskInfo{
 			DriveType:    disk.DriveType,
 			SizeBytes:    disk.SizeBytes,
 			Model:        disk.Model,
@@ -705,7 +705,7 @@ func ProtocolMessage2HostInfo(res *protocol.HostInfoResponse) *host.HostInfo {
 		})
 	}
 	for _, gpu := range res.Gpu {
-		hostInfo.Gpu = append(hostInfo.Gpu, host.GpuInfo{
+		hostInfo.Gpu = append(hostInfo.Gpu, types.GpuInfo{
 			Vendor:  gpu.Vendor,
 			Product: gpu.Product,
 		})
