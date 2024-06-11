@@ -30,21 +30,12 @@ type PeerResponse struct {
 	Data    IdentifyProtocol `json:"data"`
 }
 
-type ImageGenerationRequest struct {
-	NodeID     string `json:"node_id"`
-	Model      string `json:"model"`
-	PromptWord string `json:"prompt_word"`
-	IpfsNode   string `json:"ipfs_node"`
-}
+type HostInfoRequest BaseHttpRequest
 
-type ImageGenerationResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Data    struct {
-		IpfsNode  string `json:"ipfs_node"`
-		CID       string `json:"cid"`
-		ImageName string `json:"image_name"`
-	} `json:"data"`
+type HostInfoResponse struct {
+	Code    int      `json:"code"`
+	Message string   `json:"message"`
+	Data    HostInfo `json:"data"`
 }
 
 type ChatCompletionMessage struct {
@@ -73,12 +64,26 @@ type ChatCompletionResponse struct {
 	} `json:"data"`
 }
 
-type HostInfoRequest BaseHttpRequest
+type ImageResponseChoice struct {
+	CID       string `json:"cid"`
+	ImageName string `json:"image_name"`
+}
 
-type HostInfoResponse struct {
-	Code    int      `json:"code"`
-	Message string   `json:"message"`
-	Data    HostInfo `json:"data"`
+type ImageGenerationRequest struct {
+	NodeID     string `json:"node_id"`
+	Model      string `json:"model"`
+	PromptWord string `json:"prompt_word"`
+	IpfsNode   string `json:"ipfs_node"`
+}
+
+type ImageGenerationResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		IpfsNode  string `json:"ipfs_node"`
+		CID       string `json:"cid"`
+		ImageName string `json:"image_name"`
+	} `json:"data"`
 }
 
 type SwarmConnectRequest struct {
@@ -111,11 +116,11 @@ func (res *PeerResponse) SetMessage(message string) {
 	res.Message = message
 }
 
-func (res *ImageGenerationResponse) SetCode(code int) {
+func (res *HostInfoResponse) SetCode(code int) {
 	res.Code = code
 }
 
-func (res *ImageGenerationResponse) SetMessage(message string) {
+func (res *HostInfoResponse) SetMessage(message string) {
 	res.Message = message
 }
 
@@ -127,11 +132,11 @@ func (res *ChatCompletionResponse) SetMessage(message string) {
 	res.Message = message
 }
 
-func (res *HostInfoResponse) SetCode(code int) {
+func (res *ImageGenerationResponse) SetCode(code int) {
 	res.Code = code
 }
 
-func (res *HostInfoResponse) SetMessage(message string) {
+func (res *ImageGenerationResponse) SetMessage(message string) {
 	res.Message = message
 }
 
@@ -150,12 +155,9 @@ func (req PeerRequest) Validate() error {
 	return nil
 }
 
-func (req ImageGenerationRequest) Validate() error {
+func (req HostInfoRequest) Validate() error {
 	if req.NodeID == "" {
 		return errors.New("empty node_id")
-	}
-	if req.Model == "" {
-		return errors.New("empty model")
 	}
 	return nil
 }
@@ -170,16 +172,12 @@ func (req ChatCompletionRequest) Validate() error {
 	return nil
 }
 
-func (req HostInfoRequest) Validate() error {
+func (req ImageGenerationRequest) Validate() error {
 	if req.NodeID == "" {
 		return errors.New("empty node_id")
 	}
-	return nil
-}
-
-func (req AIProjectListRequest) Validate() error {
-	if req.NodeID == "" {
-		return errors.New("empty node_id")
+	if req.Model == "" {
+		return errors.New("empty model")
 	}
 	return nil
 }
@@ -187,6 +185,13 @@ func (req AIProjectListRequest) Validate() error {
 func (req SwarmConnectRequest) Validate() error {
 	if req.NodeAddr == "" {
 		return errors.New("empty node_addr")
+	}
+	return nil
+}
+
+func (req AIProjectListRequest) Validate() error {
+	if req.NodeID == "" {
+		return errors.New("empty node_id")
 	}
 	return nil
 }

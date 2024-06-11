@@ -190,18 +190,18 @@ func (hs *httpService) peerHandler(w http.ResponseWriter, r *http.Request) {
 	hs.handleRequest(w, r, req, &rsp)
 }
 
-func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 		return
 	}
-	rsp := types.ImageGenerationResponse{
+	rsp := types.HostInfoResponse{
 		Code:    0,
 		Message: "ok",
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	var msg types.ImageGenerationRequest
+	var msg types.HostInfoRequest
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
@@ -217,8 +217,13 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if msg.NodeID == config.GC.Identity.PeerID {
-		rsp.Code = int(types.ErrCodeParam)
-		rsp.Message = "Cannot be sent to the node itself"
+		hd, err := host.GetHostInfo()
+		if err != nil {
+			rsp.Code = int(types.ErrCodeHostInfo)
+			rsp.Message = err.Error()
+		} else {
+			rsp.Data = *hd
+		}
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
@@ -231,13 +236,10 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pi := &protocol.ImageGenerationBody{
-		Data: &protocol.ImageGenerationBody_Req{
-			Req: &protocol.ImageGenerationRequest{
-				NodeId:     msg.NodeID,
-				Model:      msg.Model,
-				PromptWord: msg.PromptWord,
-				IpfsNode:   msg.IpfsNode,
+	pi := &protocol.HostInfoBody{
+		Data: &protocol.HostInfoBody_Req{
+			Req: &protocol.HostInfoRequest{
+				NodeId: msg.NodeID,
 			},
 		},
 	}
@@ -249,12 +251,6 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	body, err = p2p.Encrypt(msg.NodeID, body)
-	if err != nil {
-		rsp.Code = int(types.ErrCodeEncrypt)
-		rsp.Message = types.ErrCodeEncrypt.String()
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
 
 	req := &protocol.Message{
 		Header: &protocol.MessageHeader{
@@ -266,7 +262,7 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 			NodePubKey:    nil,
 			Sign:          nil,
 		},
-		Type:       *protocol.MessageType_IMAGE_GENERATION.Enum(),
+		Type:       *protocol.MessageType_HOST_INFO.Enum(),
 		Body:       body,
 		ResultCode: 0,
 	}
@@ -369,18 +365,18 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 	hs.handleRequest(w, r, req, &rsp)
 }
 
-func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 		return
 	}
-	rsp := types.HostInfoResponse{
+	rsp := types.ImageGenerationResponse{
 		Code:    0,
 		Message: "ok",
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	var msg types.HostInfoRequest
+	var msg types.ImageGenerationRequest
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
@@ -396,13 +392,8 @@ func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if msg.NodeID == config.GC.Identity.PeerID {
-		hd, err := host.GetHostInfo()
-		if err != nil {
-			rsp.Code = int(types.ErrCodeHostInfo)
-			rsp.Message = err.Error()
-		} else {
-			rsp.Data = *hd
-		}
+		rsp.Code = int(types.ErrCodeParam)
+		rsp.Message = "Cannot be sent to the node itself"
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
@@ -415,10 +406,13 @@ func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pi := &protocol.HostInfoBody{
-		Data: &protocol.HostInfoBody_Req{
-			Req: &protocol.HostInfoRequest{
-				NodeId: msg.NodeID,
+	pi := &protocol.ImageGenerationBody{
+		Data: &protocol.ImageGenerationBody_Req{
+			Req: &protocol.ImageGenerationRequest{
+				NodeId:     msg.NodeID,
+				Model:      msg.Model,
+				PromptWord: msg.PromptWord,
+				IpfsNode:   msg.IpfsNode,
 			},
 		},
 	}
@@ -430,6 +424,12 @@ func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	body, err = p2p.Encrypt(msg.NodeID, body)
+	if err != nil {
+		rsp.Code = int(types.ErrCodeEncrypt)
+		rsp.Message = types.ErrCodeEncrypt.String()
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
 
 	req := &protocol.Message{
 		Header: &protocol.MessageHeader{
@@ -441,7 +441,7 @@ func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
 			NodePubKey:    nil,
 			Sign:          nil,
 		},
-		Type:       *protocol.MessageType_HOST_INFO.Enum(),
+		Type:       *protocol.MessageType_IMAGE_GENERATION.Enum(),
 		Body:       body,
 		ResultCode: 0,
 	}
@@ -724,9 +724,9 @@ func NewHttpServe(pcn chan<- []byte, configFilePath string) {
 	mux.HandleFunc("/api/v0/id", hs.idHandler)
 	mux.HandleFunc("/api/v0/peers", hs.peersHandler)
 	mux.HandleFunc("/api/v0/peer", hs.peerHandler)
-	mux.HandleFunc("/api/v0/image/gen", hs.imageGenHandler)
-	mux.HandleFunc("/api/v0/chat/completion", hs.chatCompletionHandler)
 	mux.HandleFunc("/api/v0/host/info", hs.hostInfoHandler)
+	mux.HandleFunc("/api/v0/chat/completion", hs.chatCompletionHandler)
+	mux.HandleFunc("/api/v0/image/gen", hs.imageGenHandler)
 	mux.HandleFunc("/api/v0/swarm/peers", hs.swarmPeersHandler)
 	mux.HandleFunc("/api/v0/swarm/addrs", hs.swarmAddrsHandler)
 	mux.HandleFunc("/api/v0/swarm/connect", hs.swarmConnectHandler)
