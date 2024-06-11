@@ -95,10 +95,10 @@ curl http://127.0.0.1:1088/v1/chat/completions \
   // AI 模型给出的回答，最少要给出一条
   "data": [
     {
-      "url": "https://..."
+      "url": "/home/AI_project/ImageGenerationAI/photos/v4xxidnrc9ol7m80.png"
     },
     {
-      "url": "https://..."
+      "url": "/home/AI_project/ImageGenerationAI/photos/bwjwyeqmz0yn6wjv.png"
     }
   ]
 }
@@ -147,10 +147,10 @@ curl http://127.0.0.1:1088/v1/images/generations \
   // AI 模型给出的回答，最少要给出一条
   "data": [
     {
-      "url": "https://..."
+      "url": "/home/AI_project/ImageGenerationAI/photos/v4xxidnrc9ol7m80.png"
     },
     {
-      "url": "https://..."
+      "url": "/home/AI_project/ImageGenerationAI/photos/bwjwyeqmz0yn6wjv.png"
     }
   ]
 }
@@ -185,11 +185,15 @@ curl http://127.0.0.1:1088/v1/images/edits \
   "data": [
     {
       "model": "Llama3-8B",
-      "url": "https://..."
+      "url": "http://127.0.0.1:1088/v1/chat/completions"
     },
     {
       "model": "Qwen1.5-110B",
-      "url": "https://..."
+      "url": "http://127.0.0.1:1088/v1/chat/completions"
+    },
+    {
+      "model": "SuperImage",
+      "url": "http://127.0.0.1:1088/v1/images/generations"
     }
   ]
 }
