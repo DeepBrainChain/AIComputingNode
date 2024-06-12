@@ -412,6 +412,8 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 				NodeId:     msg.NodeID,
 				Model:      msg.Model,
 				PromptWord: msg.PromptWord,
+				Number:     int32(msg.Number),
+				Size:       msg.Size,
 				IpfsNode:   msg.IpfsNode,
 			},
 		},

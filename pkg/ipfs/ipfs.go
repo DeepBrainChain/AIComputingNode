@@ -23,7 +23,10 @@ type history struct {
 	TimeStamp int64  `json:"timestamp"`
 	Model     string `json:"model"`
 	Prompt    string `json:"prompt"`
-	ImageName string `json:"image_name"`
+	ReqNodeId string `json:"req_node_id"`
+	ResNodeId string `json:"res_node_id"`
+	// Image Choices
+	Choices []types.ImageResponseChoice `json:"choices"`
 }
 
 func UploadFile(ctx context.Context, addr string, filePath string) (string, int, error) {
@@ -56,12 +59,14 @@ func UploadFile(ctx context.Context, addr string, filePath string) (string, int,
 	return pip.RootCid().String(), 0, nil
 }
 
-func WriteMFSHistory(timestamp int64, ipfsServer, model, prompt, cid, image string) error {
+func WriteMFSHistory(timestamp int64, reqId, resId, fileName, ipfsServer, model, prompt string, images []types.ImageResponseChoice) error {
 	his := history{
 		TimeStamp: timestamp,
 		Model:     model,
 		Prompt:    prompt,
-		ImageName: image,
+		ReqNodeId: reqId,
+		ResNodeId: resId,
+		Choices:   images,
 	}
 	jsonData, err := json.MarshalIndent(his, "", "  ")
 	if err != nil {
@@ -70,7 +75,7 @@ func WriteMFSHistory(timestamp int64, ipfsServer, model, prompt, cid, image stri
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", fmt.Sprintf("%s.json", cid))
+	part, err := writer.CreateFormFile("file", fmt.Sprintf("%s.json", fileName))
 	if err != nil {
 		return fmt.Errorf("create multipart failed")
 	}
@@ -83,7 +88,7 @@ func WriteMFSHistory(timestamp int64, ipfsServer, model, prompt, cid, image stri
 		fmt.Sprintf(
 			"%s/api/v0/files/write?arg=/models/%s.json&create=true&parents=true",
 			ipfsServer,
-			cid,
+			fileName,
 		),
 		writer.FormDataContentType(),
 		body,
@@ -102,9 +107,9 @@ func WriteMFSHistory(timestamp int64, ipfsServer, model, prompt, cid, image stri
 	return nil
 }
 
-func ReadMFSHistory(ipfsServer, cid string) ([]byte, error) {
+func ReadMFSHistory(ipfsServer, fileName string) ([]byte, error) {
 	resp, err := http.PostForm(
-		fmt.Sprintf("%s/api/v0/files/read?arg=/models/%s.json", ipfsServer, cid),
+		fmt.Sprintf("%s/api/v0/files/read?arg=/models/%s.json", ipfsServer, fileName),
 		nil,
 	)
 	if err != nil {

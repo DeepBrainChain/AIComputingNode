@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"AIComputingNode/pkg/log"
+	"AIComputingNode/pkg/types"
 
 	"github.com/syndtr/goleveldb/leveldb"
 )
@@ -24,17 +25,6 @@ type peerInfo struct {
 	Address             string `json:"Address"`             // connection address
 	LastConnectTime     int64  `json:"LastConnectTime"`     // Time of last successful connection
 	ConsecutiveFailures int32  `json:"ConsecutiveFailures"` // Number of consecutive failures
-}
-
-type ModelHistory struct {
-	TimeStamp int64  `json:"timestamp"`
-	Code      int    `json:"code"`
-	Message   string `json:"message"`
-	Model     string `json:"model"`
-	Prompt    string `json:"prompt"`
-	IpfsAddr  string `json:"ipfs_addr"`
-	Cid       string `json:"cid"`
-	ImagePath string `json:"image_path"`
 }
 
 func InitDb(opts InitOptions) error {
@@ -120,30 +110,19 @@ func updatePeer(id string, pi peerInfo) error {
 	return nil
 }
 
-func WriteModelHistory(timestamp int64, code int, message, model, prompt, ipfsAddr, cid, image string) error {
-	mh := ModelHistory{
-		TimeStamp: timestamp,
-		Code:      code,
-		Message:   message,
-		Model:     model,
-		Prompt:    prompt,
-		IpfsAddr:  ipfsAddr,
-		Cid:       cid,
-		ImagePath: image,
-	}
+func WriteModelHistory(mh *types.ModelHistory) error {
 	value, err := json.Marshal(mh)
 	if err != nil {
 		log.Logger.Warnf("Marshal failed when write model history %v", err)
 		return err
 	}
 	keyBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(keyBytes, uint64(timestamp))
+	binary.LittleEndian.PutUint64(keyBytes, uint64(mh.TimeStamp))
 
 	if err := modelsDB.Put(keyBytes, value, nil); err != nil {
 		log.Logger.Warnf("Put model history failed %v", err)
 		return err
 	}
-	log.Logger.Infof("Execute %s model with prompt %q result {%d, %s, %q} and cid %s",
-		model, prompt, code, message, image, cid)
+	log.Logger.Infof("Put model history success")
 	return nil
 }

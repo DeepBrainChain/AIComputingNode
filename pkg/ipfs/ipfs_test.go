@@ -23,8 +23,9 @@ func TestUploadFile(t *testing.T) {
 		t.Fatalf("Upload file failed %v", err)
 	}
 	t.Logf("Upload file success and cid %s", cid)
+	t.Logf("Get file directory %s", gopath.Base(filePath))
 
-	if err := WriteMFSHistory(timestamp.Unix(), httpAPI, model, prompt, cid, gopath.Base(filePath)); err != nil {
+	if err := WriteMFSHistory(timestamp.Unix(), "123", "456", cid, httpAPI, model, prompt, nil); err != nil {
 		t.Fatalf("Write ipfs mfs history failed %v", err)
 	}
 	t.Log("Write ipfs mfs history success")

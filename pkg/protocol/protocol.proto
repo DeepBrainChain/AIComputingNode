@@ -60,13 +60,19 @@ message ImageGenerationRequest {
   string node_id = 1;
   string model = 2;
   string prompt_word = 3;
-  string ipfs_node = 4;
+  int32 number = 4;
+  string size = 5;
+  reserved 6 to 15;
+  string ipfs_node = 16;
 }
 
 message ImageGenerationResponse {
   string ipfs_node = 1;
-  string cid = 2;
-  string image_name = 3;
+  message ImageResponseChoice {
+    string cid = 1;
+    string image_name = 2;
+  }
+  repeated ImageResponseChoice choices = 2;
 }
 
 message ChatCompletionBody {

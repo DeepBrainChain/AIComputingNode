@@ -73,6 +73,8 @@ type ImageGenerationRequest struct {
 	NodeID     string `json:"node_id"`
 	Model      string `json:"model"`
 	PromptWord string `json:"prompt_word"`
+	Number     int    `json:"n"`
+	Size       string `json:"size"`
 	IpfsNode   string `json:"ipfs_node"`
 }
 
@@ -80,9 +82,8 @@ type ImageGenerationResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Data    struct {
-		IpfsNode  string `json:"ipfs_node"`
-		CID       string `json:"cid"`
-		ImageName string `json:"image_name"`
+		IpfsNode string                `json:"ipfs_node"`
+		Choices  []ImageResponseChoice `json:"choices"`
 	} `json:"data"`
 }
 
