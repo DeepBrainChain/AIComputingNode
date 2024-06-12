@@ -103,7 +103,7 @@ func main() {
 		log.Logger.Fatalf("Init database: %v", err)
 	}
 
-	PeersHistory, err := p2p.ConvertPeersFromStringMap(db.LoadPeers())
+	PeersHistory, err := p2p.ConvertPeersFromStringMap(db.LoadPeerConnHistory())
 	if err != nil {
 		log.Logger.Fatalf("Load peer history: %v", err)
 	}

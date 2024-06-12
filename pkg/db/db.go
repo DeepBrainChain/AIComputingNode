@@ -12,30 +12,30 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-var peersDB *leveldb.DB
+var connsDB *leveldb.DB
 var modelsDB *leveldb.DB
 
 type InitOptions struct {
 	Folder       string
-	PeersDBName  string
+	ConnsDBName  string
 	ModelsDBName string
 }
 
-type peerInfo struct {
+type connInfo struct {
 	Address             string `json:"Address"`             // connection address
 	LastConnectTime     int64  `json:"LastConnectTime"`     // Time of last successful connection
 	ConsecutiveFailures int32  `json:"ConsecutiveFailures"` // Number of consecutive failures
 }
 
 func InitDb(opts InitOptions) error {
-	if opts.PeersDBName == "" {
-		opts.PeersDBName = "peers.db"
+	if opts.ConnsDBName == "" {
+		opts.ConnsDBName = "conns.db"
 	}
 	if opts.ModelsDBName == "" {
 		opts.ModelsDBName = "models.db"
 	}
 	var err error
-	peersDB, err = leveldb.OpenFile(filepath.Join(opts.Folder, opts.PeersDBName), nil)
+	connsDB, err = leveldb.OpenFile(filepath.Join(opts.Folder, opts.ConnsDBName), nil)
 	if err != nil {
 		return err
 	}
@@ -43,39 +43,39 @@ func InitDb(opts InitOptions) error {
 	return err
 }
 
-func LoadPeers() map[string]string {
-	peers := make(map[string]string)
-	iter := peersDB.NewIterator(nil, nil)
+func LoadPeerConnHistory() map[string]string {
+	conns := make(map[string]string)
+	iter := connsDB.NewIterator(nil, nil)
 	for iter.Next() {
-		var pi peerInfo
+		var pi connInfo
 		if err := json.Unmarshal(iter.Value(), &pi); err != nil {
-			log.Logger.Warn("Parse failed when load peer of ", iter.Key(), err)
+			log.Logger.Warn("Parse failed when load peer conn history of ", iter.Key(), err)
 			continue
 		}
-		peers[string(iter.Key())] = pi.Address
+		conns[string(iter.Key())] = pi.Address
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
-		log.Logger.Warnf("Iterator failed when load peers %v", err)
+		log.Logger.Warnf("Iterator failed when load peer conns history %v", err)
 	}
-	return peers
+	return conns
 }
 
 func PeerConnected(id string, addr string) {
-	pi := peerInfo{
+	pi := connInfo{
 		Address:             addr,
 		LastConnectTime:     time.Now().Unix(),
 		ConsecutiveFailures: 0,
 	}
-	updatePeer(id, pi)
+	updatePeerConnHistory(id, pi)
 }
 
 func PeerConnectFailed(id string) {
-	value, err := peersDB.Get([]byte(id), nil)
+	value, err := connsDB.Get([]byte(id), nil)
 	if err != nil {
 		log.Logger.Warnf("Get connectiong db item failed %v", err)
 	}
-	var pi peerInfo
+	var pi connInfo
 	err = json.Unmarshal(value, &pi)
 	if err != nil {
 		log.Logger.Warnf("Parse connectiong db item failed %v", err)
@@ -89,21 +89,21 @@ func PeerConnectFailed(id string) {
 		if duration.Abs().Hours()/24 > 30.0 {
 			log.Logger.Infof("Connection with %s is too old and failed too many times, %s",
 				id, "will be deleted soon")
-			if err := peersDB.Delete([]byte(id), nil); err != nil {
+			if err := connsDB.Delete([]byte(id), nil); err != nil {
 				log.Logger.Warnf("Delete item %s failed %v", id, err)
 			}
 		}
 	} else {
-		updatePeer(id, pi)
+		updatePeerConnHistory(id, pi)
 	}
 }
 
-func updatePeer(id string, pi peerInfo) error {
+func updatePeerConnHistory(id string, pi connInfo) error {
 	value, err := json.Marshal(pi)
 	if err != nil {
 		log.Logger.Warnf("Marshal failed when update connectiong db %v", err)
 	}
-	err = peersDB.Put([]byte(id), value, nil)
+	err = connsDB.Put([]byte(id), value, nil)
 	if err != nil {
 		log.Logger.Warnf("Update connectiong db failed %v", err)
 	}
