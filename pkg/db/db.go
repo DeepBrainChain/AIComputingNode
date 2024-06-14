@@ -3,6 +3,7 @@ package db
 import (
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"time"
 
@@ -14,17 +15,25 @@ import (
 
 var connsDB *leveldb.DB
 var modelsDB *leveldb.DB
+var peersCollectDB *leveldb.DB
 
 type InitOptions struct {
 	Folder       string
 	ConnsDBName  string
 	ModelsDBName string
+	// Collect node information or not
+	EnablePeersCollect bool
 }
 
 type connInfo struct {
 	Address             string `json:"Address"`             // connection address
 	LastConnectTime     int64  `json:"LastConnectTime"`     // Time of last successful connection
 	ConsecutiveFailures int32  `json:"ConsecutiveFailures"` // Number of consecutive failures
+}
+
+type PeerCollectInfo struct {
+	AIProjects []types.AIProjectOfNode `json:"AIProjects"`
+	Timestamp  int64                   `json:"timestamp"`
 }
 
 func InitDb(opts InitOptions) error {
@@ -40,7 +49,16 @@ func InitDb(opts InitOptions) error {
 		return err
 	}
 	modelsDB, err = leveldb.OpenFile(filepath.Join(opts.Folder, opts.ModelsDBName), nil)
-	return err
+	if err != nil {
+		return err
+	}
+	if opts.EnablePeersCollect {
+		peersCollectDB, err = leveldb.OpenFile(filepath.Join(opts.Folder, "peers_collect.db"), nil)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func LoadPeerConnHistory() map[string]string {
@@ -124,5 +142,24 @@ func WriteModelHistory(mh *types.ModelHistory) error {
 		return err
 	}
 	log.Logger.Infof("Put model history success")
+	return nil
+}
+
+func UpdatePeerCollect(id string, info PeerCollectInfo) error {
+	if peersCollectDB == nil {
+		log.Logger.Warn("Not supported to update peer collect")
+		return fmt.Errorf("not supported")
+	}
+	value, err := json.Marshal(info)
+	if err != nil {
+		log.Logger.Warnf("Marshal failed when update peer collect db %v", err)
+		return err
+	}
+	err = peersCollectDB.Put([]byte(id), value, nil)
+	if err != nil {
+		log.Logger.Warnf("Update peer collect db failed %v", err)
+		return err
+	}
+	log.Logger.Infof("Update peer collect of %s success", id)
 	return nil
 }

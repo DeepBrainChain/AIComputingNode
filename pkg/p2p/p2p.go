@@ -22,8 +22,6 @@ import (
 
 var Hio *HostInfo
 
-var PeerList = make(map[peer.ID]multiaddr.Multiaddr)
-
 const (
 	connectionManagerTag    = "user-connect"
 	connectionManagerWeight = 100

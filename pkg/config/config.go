@@ -82,6 +82,13 @@ type AppConfig struct {
 	TopicName      string `json:"TopicName"`
 	Datastore      string `json:"Datastore"`
 	IpfsStorageAPI string `json:"IpfsStorageAPI"`
+	// peers collect config
+	PeersCollect AppPeersCollectConfig `json:"PeersCollect"`
+}
+
+type AppPeersCollectConfig struct {
+	Enabled           bool   `json:"Enabled"`
+	HeartbeatInterval string `json:"HeartbeatInterval"`
 }
 
 func (config Config) Validate() error {
@@ -223,6 +230,16 @@ func (config AppConfig) Validate() error {
 	if s, err := os.Stat(config.Datastore); err != nil || !s.IsDir() {
 		return fmt.Errorf("datastore must be a folder that already exists")
 	}
+	if err := config.PeersCollect.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (config AppPeersCollectConfig) Validate() error {
+	if _, err := time.ParseDuration(config.HeartbeatInterval); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -280,6 +297,10 @@ func LoadConfig(configPath string) (*Config, error) {
 		GC.Swarm.ConnMgr.Type = "basic"
 	}
 
+	if GC.Swarm.ConnMgr.GracePeriod == "" {
+		GC.Swarm.ConnMgr.GracePeriod = "20s"
+	}
+
 	if GC.Swarm.ConnMgr.LowWater == 0 {
 		GC.Swarm.ConnMgr.LowWater = 100
 	}
@@ -303,6 +324,10 @@ func LoadConfig(configPath string) (*Config, error) {
 
 	if GC.App.LogOutput == "" {
 		GC.App.LogOutput = "stderr"
+	}
+
+	if GC.App.PeersCollect.HeartbeatInterval == "" {
+		GC.App.PeersCollect.HeartbeatInterval = "60s"
 	}
 
 	return GC, nil

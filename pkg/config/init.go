@@ -121,6 +121,10 @@ func Init(mode string) error {
 			TopicName:      TopicName,
 			Datastore:      dataPath,
 			IpfsStorageAPI: "",
+			PeersCollect: AppPeersCollectConfig{
+				Enabled:           false,
+				HeartbeatInterval: "60s",
+			},
 		},
 	}
 	if mode == "server" {

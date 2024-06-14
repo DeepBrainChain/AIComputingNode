@@ -59,7 +59,11 @@ func PubsubHandler(ctx context.Context, sub *pubsub.Subscription, publishChan ch
 			continue
 		}
 
-		if pmsg.Header.NodeId == config.GC.Identity.PeerID {
+		if pmsg.Header.GetId() == "" && pmsg.Header.GetReceiver() == "" {
+			hbs.HandleBroadcastMessage(ctx, pmsg)
+			log.Logger.Infof("Received heartbeat message type %s from %s", pmsg.Type, pmsg.Header.NodeId)
+			continue
+		} else if pmsg.Header.NodeId == config.GC.Identity.PeerID {
 			log.Logger.Infof("Received message type %s from the node itself", pmsg.Type)
 			continue
 		} else if pmsg.Header.Receiver != config.GC.Identity.PeerID {

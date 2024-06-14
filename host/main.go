@@ -98,7 +98,11 @@ func main() {
 	log.Logger.Info("#                          START                               #")
 	log.Logger.Info("################################################################")
 
-	err = db.InitDb(db.InitOptions{Folder: cfg.App.Datastore})
+	err = db.InitDb(db.InitOptions{
+		Folder: cfg.App.Datastore,
+		// the node is deployed on a public server && enable peers collect
+		EnablePeersCollect: (cfg.Swarm.RelayService.Enabled && cfg.App.PeersCollect.Enabled),
+	})
 	if err != nil {
 		log.Logger.Fatalf("Init database: %v", err)
 	}
@@ -199,12 +203,10 @@ func main() {
 	host.Network().Notify(&network.NotifyBundle{
 		ConnectedF: func(n network.Network, c network.Conn) {
 			log.Logger.Infof("OnConnected remote multi-addr %v %v", c.RemoteMultiaddr(), c.RemotePeer())
-			p2p.PeerList[c.RemotePeer()] = c.RemoteMultiaddr()
 			db.PeerConnected(c.RemotePeer().String(), c.RemoteMultiaddr().String())
 		},
 		DisconnectedF: func(n network.Network, c network.Conn) {
 			log.Logger.Infof("OnDisconnected remote multi-addr %v %v", c.RemoteMultiaddr(), c.RemotePeer())
-			delete(p2p.PeerList, c.RemotePeer())
 			// db.PeerDisconnected(c.RemotePeer().String(), c.RemoteMultiaddr().String())
 		},
 	})
@@ -335,8 +337,13 @@ func main() {
 		Topic:           topic,
 	}
 
+	// Topic publish channel
 	publishChan := make(chan []byte, 1024)
+	// Stop heartbeat channel
+	heartbeatDone := make(chan bool)
+	heartbeatInterval, _ := time.ParseDuration(cfg.App.PeersCollect.HeartbeatInterval)
 	go ps.PublishToTopic(ctx, topic, publishChan)
+	ps.StartHeartbeatService(heartbeatInterval, publishChan, heartbeatDone)
 	go ps.PubsubHandler(ctx, sub, publishChan)
 	serve.NewHttpServe(publishChan, *configPath)
 
@@ -346,6 +353,7 @@ func main() {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	// select {} // hang forever
 	<-stop
+	heartbeatDone <- true
 	serve.StopHttpService()
 	kadDHT.Close()
 	host.Close()
