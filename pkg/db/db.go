@@ -163,3 +163,97 @@ func UpdatePeerCollect(id string, info PeerCollectInfo) error {
 	log.Logger.Infof("Update peer collect of %s success", id)
 	return nil
 }
+
+func FindPeers(limit int) ([]string, int) {
+	ids := make([]string, 0)
+	if peersCollectDB == nil {
+		return ids, int(types.ErrCodeUnsupported)
+	}
+
+	iter := peersCollectDB.NewIterator(nil, nil)
+	var count int = 0
+	for iter.Next() && count < limit {
+		ids = append(ids, string(iter.Key()))
+		count = count + 1
+	}
+
+	iter.Release()
+	if err := iter.Error(); err != nil {
+		log.Logger.Warnf("Iterator failed when load peer collect info %v", err)
+		return ids, int(types.ErrCodeDatabase)
+	}
+	return ids, 0
+}
+
+func ListAIProjects(limit int) ([]string, int) {
+	ids := make([]string, 0)
+	if peersCollectDB == nil {
+		return ids, int(types.ErrCodeUnsupported)
+	}
+
+	set := types.NewSet()
+	iter := peersCollectDB.NewIterator(nil, nil)
+	var info PeerCollectInfo
+	for iter.Next() && set.Size() < limit {
+		if err := json.Unmarshal(iter.Value(), &info); err != nil {
+			log.Logger.Warn("Parse failed when load peer collect info of ", iter.Key(), err)
+			continue
+		}
+		for _, project := range info.AIProjects {
+			set.Add(project.Project)
+		}
+	}
+
+	iter.Release()
+	if err := iter.Error(); err != nil {
+		log.Logger.Warnf("Iterator failed when load peer collect info %v", err)
+		return ids, int(types.ErrCodeDatabase)
+	}
+
+	for _, item := range set.Elements() {
+		ids = append(ids, item.(string))
+	}
+	return ids, 0
+}
+
+func GetPeersOfAIProjects(project, model string, limit int) ([]string, int) {
+	ids := make([]string, 0)
+	if peersCollectDB == nil {
+		return ids, int(types.ErrCodeUnsupported)
+	}
+
+	set := types.NewSet()
+	iter := peersCollectDB.NewIterator(nil, nil)
+	var info PeerCollectInfo
+	for iter.Next() && set.Size() < limit {
+		if err := json.Unmarshal(iter.Value(), &info); err != nil {
+			log.Logger.Warn("Parse failed when load peer collect info of ", iter.Key(), err)
+			continue
+		}
+		for _, item := range info.AIProjects {
+			if item.Project == project {
+				if model == "" {
+					set.Add(string(iter.Key()))
+				} else {
+					for _, item2 := range item.Models {
+						if model == item2 {
+							set.Add(string(iter.Key()))
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+
+	iter.Release()
+	if err := iter.Error(); err != nil {
+		log.Logger.Warnf("Iterator failed when load peer collect info %v", err)
+		return ids, int(types.ErrCodeDatabase)
+	}
+
+	for _, item := range set.Elements() {
+		ids = append(ids, item.(string))
+	}
+	return ids, 0
+}

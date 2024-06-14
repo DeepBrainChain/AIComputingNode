@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"AIComputingNode/pkg/config"
+	"AIComputingNode/pkg/db"
 	"AIComputingNode/pkg/host"
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/p2p"
@@ -58,16 +59,9 @@ func (hs *httpService) peersHandler(w http.ResponseWriter, r *http.Request) {
 		Code:    0,
 		Message: "ok",
 	}
-	peerChan, err := p2p.Hio.FindPeers(config.GC.App.TopicName)
-	if err != nil {
-		log.Logger.Warnf("List peer message: %v", err)
-		rsp.Code = int(types.ErrCodeRendezvous)
-		rsp.Message = err.Error()
-	} else {
-		for peer := range peerChan {
-			// rsp.List = append(rsp.List, peer.String())
-			rsp.Data = append(rsp.Data, peer.ID.String())
-		}
+	rsp.Data, rsp.Code = db.FindPeers(100)
+	if rsp.Code != 0 {
+		rsp.Message = types.ErrorCode(rsp.Code).String()
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(rsp)
@@ -453,6 +447,30 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 	hs.handleRequest(w, r, req, &rsp)
 }
 
+func (hs *httpService) rendezvousPeersHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
+		return
+	}
+	rsp := types.PeerListResponse{
+		Code:    0,
+		Message: "ok",
+	}
+	peerChan, err := p2p.Hio.FindPeers(config.GC.App.TopicName)
+	if err != nil {
+		log.Logger.Warnf("List peer message: %v", err)
+		rsp.Code = int(types.ErrCodeRendezvous)
+		rsp.Message = err.Error()
+	} else {
+		for peer := range peerChan {
+			// rsp.List = append(rsp.List, peer.String())
+			rsp.Data = append(rsp.Data, peer.ID.String())
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(rsp)
+}
+
 func (hs *httpService) swarmPeersHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
@@ -641,7 +659,7 @@ func (hs *httpService) unregisterAIProjectHandler(w http.ResponseWriter, r *http
 	json.NewEncoder(w).Encode(rsp)
 }
 
-func (hs *httpService) listAIProjectHandler(w http.ResponseWriter, r *http.Request) {
+func (hs *httpService) getAIProjectOfNodeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 		return
@@ -717,6 +735,52 @@ func (hs *httpService) listAIProjectHandler(w http.ResponseWriter, r *http.Reque
 	hs.handleRequest(w, r, req, &rsp)
 }
 
+func (hs *httpService) listAIProjectsHandler(w http.ResponseWriter, r *http.Request) {
+	// if r.Method != http.MethodGet {
+	// 	http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
+	// 	return
+	// }
+	rsp := types.PeerListResponse{
+		Code:    0,
+		Message: "ok",
+	}
+	rsp.Data, rsp.Code = db.FindPeers(100)
+	if rsp.Code != 0 {
+		rsp.Message = types.ErrorCode(rsp.Code).String()
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(rsp)
+}
+
+func (hs *httpService) getPeersOfAIProjectHandler(w http.ResponseWriter, r *http.Request) {
+	rsp := types.PeerListResponse{
+		Code:    0,
+		Message: "ok",
+	}
+	w.Header().Set("Content-Type", "application/json")
+
+	var req types.GetPeersOfAIProjectRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		rsp.Code = int(types.ErrCodeParse)
+		rsp.Message = types.ErrCodeParse.String()
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		rsp.Code = int(types.ErrCodeParam)
+		rsp.Message = err.Error()
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	rsp.Data, rsp.Code = db.GetPeersOfAIProjects(req.Project, req.Model, 100)
+	if rsp.Code != 0 {
+		rsp.Message = types.ErrorCode(rsp.Code).String()
+	}
+	json.NewEncoder(w).Encode(rsp)
+}
+
 func NewHttpServe(pcn chan<- []byte, configFilePath string) {
 	hs := &httpService{
 		publishChan: pcn,
@@ -729,6 +793,7 @@ func NewHttpServe(pcn chan<- []byte, configFilePath string) {
 	mux.HandleFunc("/api/v0/host/info", hs.hostInfoHandler)
 	mux.HandleFunc("/api/v0/chat/completion", hs.chatCompletionHandler)
 	mux.HandleFunc("/api/v0/image/gen", hs.imageGenHandler)
+	mux.HandleFunc("/api/v0/rendezvous/peers", hs.rendezvousPeersHandler)
 	mux.HandleFunc("/api/v0/swarm/peers", hs.swarmPeersHandler)
 	mux.HandleFunc("/api/v0/swarm/addrs", hs.swarmAddrsHandler)
 	mux.HandleFunc("/api/v0/swarm/connect", hs.swarmConnectHandler)
@@ -736,7 +801,10 @@ func NewHttpServe(pcn chan<- []byte, configFilePath string) {
 	mux.HandleFunc("/api/v0/pubsub/peers", hs.pubsubPeersHandler)
 	mux.HandleFunc("/api/v0/ai/project/register", hs.registerAIProjectHandler)
 	mux.HandleFunc("/api/v0/ai/project/unregister", hs.unregisterAIProjectHandler)
-	mux.HandleFunc("/api/v0/ai/project/list", hs.listAIProjectHandler)
+	mux.HandleFunc("/api/v0/ai/project/peer", hs.getAIProjectOfNodeHandler)
+	mux.HandleFunc("/api/v0/ai/projects/list", hs.listAIProjectsHandler)
+	mux.HandleFunc("/api/v0/ai/projects/peers", hs.getPeersOfAIProjectHandler)
+
 	httpServer = &http.Server{
 		Addr:    config.GC.API.Addr,
 		Handler: mux,

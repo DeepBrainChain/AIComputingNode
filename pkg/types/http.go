@@ -101,6 +101,11 @@ type AIProjectListResponse struct {
 	Data    []AIProjectOfNode `json:"data"`
 }
 
+type GetPeersOfAIProjectRequest struct {
+	Project string `json:"project"`
+	Model   string `json:"model"`
+}
+
 func (res *BaseHttpResponse) SetCode(code int) {
 	res.Code = code
 }
@@ -193,6 +198,13 @@ func (req SwarmConnectRequest) Validate() error {
 func (req AIProjectListRequest) Validate() error {
 	if req.NodeID == "" {
 		return errors.New("empty node_id")
+	}
+	return nil
+}
+
+func (req GetPeersOfAIProjectRequest) Validate() error {
+	if req.Project == "" {
+		return errors.New("empty project")
 	}
 	return nil
 }
