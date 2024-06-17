@@ -34,4 +34,10 @@ func TestSet(t *testing.T) {
 		array = append(array, item.(int))
 	}
 	t.Log("Convert s4 to array", array)
+
+	s5 := NewSet(1, 2, 3)
+	var a2 = [3]int{4, 5, 6}
+	s5.Add(a2)
+	t.Log("slice array[:]", a2[:])
+	t.Log("Set s5", s5.Elements(), s5.Size())
 }
