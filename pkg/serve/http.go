@@ -395,6 +395,12 @@ func (hs *httpService) chatCompletionProxyHandler(w http.ResponseWriter, r *http
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
+	if len(ids) == 0 {
+		rsp.Code = int(types.ErrCodeProxy)
+		rsp.Message = "Cannot find a node that supports the project model"
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
 
 	var wg sync.WaitGroup
 	var responses sync.Map
@@ -417,13 +423,14 @@ func (hs *httpService) chatCompletionProxyHandler(w http.ResponseWriter, r *http
 				res.Message = types.ErrCodeEncrypt.String()
 			} else {
 				resp, err := http.Post(
-					fmt.Sprintf("%s/chat/completion", config.GC.API.Addr),
+					fmt.Sprintf("http://%s/api/v0/chat/completion", config.GC.API.Addr),
 					"application/json",
 					bytes.NewBuffer(jsonData),
 				)
 				if err != nil || resp.StatusCode != 200 {
 					res.Code = int(types.ErrCodeDecrypt)
 					res.Message = types.ErrCodeDecrypt.String()
+					log.Logger.Warnf("post http proxy to %s failed", node_id)
 				} else {
 					body, err := io.ReadAll(resp.Body)
 					if err != nil {
@@ -582,6 +589,12 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
+	if len(ids) == 0 {
+		rsp.Code = int(types.ErrCodeProxy)
+		rsp.Message = "Cannot find a node that supports the project model"
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
 
 	var wg sync.WaitGroup
 	var responses sync.Map
@@ -607,13 +620,14 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 				res.Message = types.ErrCodeEncrypt.String()
 			} else {
 				resp, err := http.Post(
-					fmt.Sprintf("%s/image/gen", config.GC.API.Addr),
+					fmt.Sprintf("http://%s/api/v0/image/gen", config.GC.API.Addr),
 					"application/json",
 					bytes.NewBuffer(jsonData),
 				)
 				if err != nil || resp.StatusCode != 200 {
 					res.Code = int(types.ErrCodeDecrypt)
 					res.Message = types.ErrCodeDecrypt.String()
+					log.Logger.Warnf("post http proxy to %s failed", node_id)
 				} else {
 					body, err := io.ReadAll(resp.Body)
 					if err != nil {
