@@ -212,7 +212,7 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 	} else if err := proto.Unmarshal(decBody, ccb); err == nil {
 		if chatReq := ccb.GetReq(); chatReq != nil {
 			if chatReq.GetNodeId() == config.GC.Identity.PeerID {
-				code, message, chatRes := handleChatCompletionRequest(ctx, chatReq)
+				code, message, chatRes := handleChatCompletionRequest(ctx, chatReq, msg.Header)
 				igBody := &protocol.ChatCompletionBody{
 					Data: &protocol.ChatCompletionBody_Res{
 						Res: chatRes,
@@ -534,7 +534,7 @@ func TransformErrorResponse(msg *protocol.Message, code int32, message string) *
 	return &res
 }
 
-func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompletionRequest) (int, string, *protocol.ChatCompletionResponse) {
+func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompletionRequest, reqHeader *protocol.MessageHeader) (int, string, *protocol.ChatCompletionResponse) {
 	chatReq := model.ChatCompletionRequest{
 		Model: req.Model,
 	}
@@ -545,6 +545,23 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 		})
 	}
 	chatRes := model.ChatModel(config.GC.GetModelAPI(req.Model), chatReq)
+
+	modelHistory := &types.ModelHistory{
+		TimeStamp:    chatRes.Data.Created,
+		ReqId:        reqHeader.Id,
+		ReqNodeId:    reqHeader.NodeId,
+		ResNodeId:    reqHeader.Receiver,
+		Code:         chatRes.Code,
+		Message:      chatRes.Message,
+		Model:        req.GetModel(),
+		ChatMessages: chatReq.Messages,
+		ChatChoices:  chatRes.Data.Choices,
+		ImagePrompt:  "",
+		ImageChoices: []types.ImageResponseChoice{},
+		IpfsAddr:     "",
+	}
+	_ = db.WriteModelHistory(modelHistory)
+
 	response := &protocol.ChatCompletionResponse{}
 	if chatRes.Code != 0 {
 		return chatRes.Code, chatRes.Message, response
