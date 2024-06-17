@@ -216,6 +216,41 @@ func ListAIProjects(limit int) ([]string, int) {
 	return ids, 0
 }
 
+func GetModelsOfAIProjects(project string, limit int) ([]string, int) {
+	models := make([]string, 0)
+	if peersCollectDB == nil {
+		return models, int(types.ErrCodeUnsupported)
+	}
+
+	set := types.NewSet()
+	iter := peersCollectDB.NewIterator(nil, nil)
+	var info PeerCollectInfo
+	for iter.Next() && set.Size() < limit {
+		if err := json.Unmarshal(iter.Value(), &info); err != nil {
+			log.Logger.Warn("Parse failed when load peer collect info of ", iter.Key(), err)
+			continue
+		}
+		for _, item := range info.AIProjects {
+			if item.Project == project {
+				for _, model := range item.Models {
+					set.Add(model)
+				}
+			}
+		}
+	}
+
+	iter.Release()
+	if err := iter.Error(); err != nil {
+		log.Logger.Warnf("Iterator failed when load peer collect info %v", err)
+		return models, int(types.ErrCodeDatabase)
+	}
+
+	for _, item := range set.Elements() {
+		models = append(models, item.(string))
+	}
+	return models, 0
+}
+
 func GetPeersOfAIProjects(project, model string, limit int) ([]string, int) {
 	ids := make([]string, 0)
 	if peersCollectDB == nil {

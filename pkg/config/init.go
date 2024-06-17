@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"AIComputingNode/pkg/types"
+
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
 )
@@ -126,6 +128,7 @@ func Init(mode string) error {
 				HeartbeatInterval: "60s",
 			},
 		},
+		AIProjects: []types.AIProject{},
 	}
 	if mode == "server" {
 		config.Swarm.DisableNatPortMap = true
@@ -133,6 +136,7 @@ func Init(mode string) error {
 		config.Pubsub.Router = "floodsub"
 		config.Routing.Type = "dhtserver"
 		config.App.LogOutput = "stderr+file"
+		config.App.PeersCollect.Enabled = true
 	}
 	configPath := GetUniqueFile(cwd, mode, "json")
 	if err := config.SaveConfig(configPath); err != nil {

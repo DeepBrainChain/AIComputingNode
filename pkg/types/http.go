@@ -55,6 +55,12 @@ type ChatCompletionRequest struct {
 	Messages []ChatCompletionMessage `json:"messages"`
 }
 
+type ChatCompletionProxyRequest struct {
+	Project  string                  `json:"project"`
+	Model    string                  `json:"model"`
+	Messages []ChatCompletionMessage `json:"messages"`
+}
+
 type ChatCompletionResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
@@ -71,6 +77,15 @@ type ImageResponseChoice struct {
 
 type ImageGenerationRequest struct {
 	NodeID     string `json:"node_id"`
+	Model      string `json:"model"`
+	PromptWord string `json:"prompt_word"`
+	Number     int    `json:"n"`
+	Size       string `json:"size"`
+	IpfsNode   string `json:"ipfs_node"`
+}
+
+type ImageGenerationProxyRequest struct {
+	Project    string `json:"project"`
 	Model      string `json:"model"`
 	PromptWord string `json:"prompt_word"`
 	Number     int    `json:"n"`
@@ -99,6 +114,10 @@ type AIProjectListResponse struct {
 	Code    int               `json:"code"`
 	Message string            `json:"message"`
 	Data    []AIProjectOfNode `json:"data"`
+}
+
+type GetModelsOfAIProjectRequest struct {
+	Project string `json:"project"`
 }
 
 type GetPeersOfAIProjectRequest struct {
@@ -178,9 +197,29 @@ func (req ChatCompletionRequest) Validate() error {
 	return nil
 }
 
+func (req ChatCompletionProxyRequest) Validate() error {
+	if req.Project == "" {
+		return errors.New("empty project")
+	}
+	if req.Model == "" {
+		return errors.New("empty model")
+	}
+	return nil
+}
+
 func (req ImageGenerationRequest) Validate() error {
 	if req.NodeID == "" {
 		return errors.New("empty node_id")
+	}
+	if req.Model == "" {
+		return errors.New("empty model")
+	}
+	return nil
+}
+
+func (req ImageGenerationProxyRequest) Validate() error {
+	if req.Project == "" {
+		return errors.New("empty project")
 	}
 	if req.Model == "" {
 		return errors.New("empty model")
@@ -198,6 +237,13 @@ func (req SwarmConnectRequest) Validate() error {
 func (req AIProjectListRequest) Validate() error {
 	if req.NodeID == "" {
 		return errors.New("empty node_id")
+	}
+	return nil
+}
+
+func (req GetModelsOfAIProjectRequest) Validate() error {
+	if req.Project == "" {
+		return errors.New("empty project")
 	}
 	return nil
 }
