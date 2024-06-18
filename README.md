@@ -218,7 +218,7 @@ $ host.exe -config D:\Code\AIComputingNode\host\client.json
       // a public network server and collection is enabled.
       "Enabled": false,
       // Heartbeat interval
-      "HeartbeatInterval": "60s"
+      "HeartbeatInterval": "180s"
     }
   },
   // List of supported AI projects for Node, which can be managed using interface registration/unregistration
@@ -303,7 +303,7 @@ $ host.exe -config D:\Code\AIComputingNode\host\client.json
     "IpfsStorageAPI": "http://122.99.183.54:4002",
     "PeersCollect": {
       "Enabled": false,
-      "HeartbeatInterval": "60s"
+      "HeartbeatInterval": "180s"
     }
   },
   "AIProjects": [
@@ -377,7 +377,7 @@ $ host.exe -config D:\Code\AIComputingNode\host\client.json
     "IpfsStorageAPI": "",
     "PeersCollect": {
       "Enabled": true,
-      "HeartbeatInterval": "60s"
+      "HeartbeatInterval": "180s"
     }
   },
   "AIProjects": []
@@ -402,8 +402,6 @@ When we upload a file to an IPFS node (such as `/ip4/192.168.1.159/tcp/4002` in 
 
 ## HTTP API
 
-[AI model interface standard documentation](./model_api.md)
+[AI Model Interface Standard Documentation](./model_api.md)
 
-[Rest HTTP API](./api.http)
-
-Developer invites you to join team DBC in Apifox: https://app.apifox.com/invite?token=XJYVYIvuR6VDnQCKJfIqV
+[AIComputingNode HTTP API Interface Documentation](./api.md)
