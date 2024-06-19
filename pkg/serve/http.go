@@ -17,6 +17,7 @@ import (
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/p2p"
 	"AIComputingNode/pkg/protocol"
+	"AIComputingNode/pkg/timer"
 	"AIComputingNode/pkg/types"
 
 	"github.com/google/uuid"
@@ -830,6 +831,7 @@ func (hs *httpService) registerAIProjectHandler(w http.ResponseWriter, r *http.R
 		rsp.Message = fmt.Sprintf("config save err %v", err)
 	}
 	json.NewEncoder(w).Encode(rsp)
+	timer.AIT.SendAIProjects()
 }
 
 func (hs *httpService) unregisterAIProjectHandler(w http.ResponseWriter, r *http.Request) {
@@ -875,6 +877,7 @@ func (hs *httpService) unregisterAIProjectHandler(w http.ResponseWriter, r *http
 		rsp.Message = fmt.Sprintf("config save err %v", err)
 	}
 	json.NewEncoder(w).Encode(rsp)
+	timer.AIT.SendAIProjects()
 }
 
 func (hs *httpService) getAIProjectOfNodeHandler(w http.ResponseWriter, r *http.Request) {

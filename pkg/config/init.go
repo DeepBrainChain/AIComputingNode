@@ -125,7 +125,7 @@ func Init(mode string) error {
 			IpfsStorageAPI: "",
 			PeersCollect: AppPeersCollectConfig{
 				Enabled:           false,
-				HeartbeatInterval: "60s",
+				HeartbeatInterval: "180s",
 			},
 		},
 		AIProjects: []types.AIProject{},

@@ -17,6 +17,7 @@ import (
 	"AIComputingNode/pkg/p2p"
 	"AIComputingNode/pkg/protocol"
 	"AIComputingNode/pkg/serve"
+	"AIComputingNode/pkg/timer"
 	"AIComputingNode/pkg/types"
 
 	"google.golang.org/protobuf/proto"
@@ -60,7 +61,7 @@ func PubsubHandler(ctx context.Context, sub *pubsub.Subscription, publishChan ch
 		}
 
 		if pmsg.Header.GetId() == "" && pmsg.Header.GetReceiver() == "" {
-			hbs.HandleBroadcastMessage(ctx, pmsg)
+			timer.AIT.HandleBroadcastMessage(ctx, pmsg)
 			log.Logger.Infof("Received heartbeat message type %s from %s", pmsg.Type, pmsg.Header.NodeId)
 			continue
 		} else if pmsg.Header.NodeId == config.GC.Identity.PeerID {
@@ -462,7 +463,7 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 				projects := config.GC.GetAIProjectsOfNode()
 				aiBody := &protocol.AIProjectBody{
 					Data: &protocol.AIProjectBody_Res{
-						Res: AIProject2ProtocolMessage(projects),
+						Res: types.AIProject2ProtocolMessage(projects),
 					},
 				}
 				resBody, err := proto.Marshal(aiBody)
@@ -501,7 +502,7 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 			res := types.AIProjectListResponse{
 				Code:    int(msg.ResultCode),
 				Message: msg.ResultMessage,
-				Data:    ProtocolMessage2AIProject(aiRes),
+				Data:    types.ProtocolMessage2AIProject(aiRes),
 			}
 			notifyData, err := json.Marshal(res)
 			if err != nil {
@@ -767,24 +768,4 @@ func ProtocolMessage2HostInfo(res *protocol.HostInfoResponse) *types.HostInfo {
 		})
 	}
 	return hostInfo
-}
-
-func AIProject2ProtocolMessage(projs []types.AIProjectOfNode) *protocol.AIProjectResponse {
-	res := &protocol.AIProjectResponse{}
-	for _, proj := range projs {
-		res.Projects = append(res.Projects, &protocol.AIProjectOfNode{
-			Project: proj.Project,
-			Models:  proj.Models,
-		})
-	}
-	return res
-}
-
-func ProtocolMessage2AIProject(res *protocol.AIProjectResponse) []types.AIProjectOfNode {
-	projects := make([]types.AIProjectOfNode, len(res.Projects))
-	for i, project := range res.Projects {
-		projects[i].Project = project.Project
-		projects[i].Models = project.Models
-	}
-	return projects
 }

@@ -1,4 +1,4 @@
-package ps
+package timer
 
 import (
 	"context"
@@ -14,20 +14,21 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type HeartbeatService struct {
+type AITimer struct {
 	Interval    time.Duration
 	Timer       *time.Ticker
 	PublishChan chan<- []byte
-	DoneChan    chan bool
 }
 
-var hbs *HeartbeatService
+var DoneChan = make(chan bool)
 
-func (service HeartbeatService) Heartbeat() {
+var AIT *AITimer
+
+func (service AITimer) run() {
 	for {
 		select {
-		case <-service.DoneChan:
-			log.Logger.Info("heartbeat goroutine over")
+		case <-DoneChan:
+			log.Logger.Info("ai timer goroutine over")
 			return
 		case <-service.Timer.C:
 			service.SendAIProjects()
@@ -35,11 +36,11 @@ func (service HeartbeatService) Heartbeat() {
 	}
 }
 
-func (service HeartbeatService) SendAIProjects() {
+func (service AITimer) SendAIProjects() {
 	projects := config.GC.GetAIProjectsOfNode()
 	aiBody := &protocol.AIProjectBody{
 		Data: &protocol.AIProjectBody_Res{
-			Res: AIProject2ProtocolMessage(projects),
+			Res: types.AIProject2ProtocolMessage(projects),
 		},
 	}
 	body, err := proto.Marshal(aiBody)
@@ -71,7 +72,7 @@ func (service HeartbeatService) SendAIProjects() {
 	log.Logger.Info("Sending AI Project Heartbeat")
 }
 
-func (service HeartbeatService) HandleBroadcastMessage(ctx context.Context, msg *protocol.Message) {
+func (service AITimer) HandleBroadcastMessage(ctx context.Context, msg *protocol.Message) {
 	switch msg.Type {
 	case protocol.MessageType_AI_PROJECT:
 		if !config.GC.Swarm.RelayService.Enabled || !config.GC.App.PeersCollect.Enabled {
@@ -83,14 +84,14 @@ func (service HeartbeatService) HandleBroadcastMessage(ctx context.Context, msg 
 			return
 		}
 		if aiRes := aip.GetRes(); aiRes != nil {
-			service.HandleAIProjectMessage(msg.Header.NodeId, ProtocolMessage2AIProject(aiRes))
+			service.HandleAIProjectMessage(msg.Header.NodeId, types.ProtocolMessage2AIProject(aiRes))
 		}
 	default:
 		log.Logger.Warnf("Unsupported heartbeat message type", msg.Type)
 	}
 }
 
-func (service HeartbeatService) HandleAIProjectMessage(node_id string, projects []types.AIProjectOfNode) {
+func (service AITimer) HandleAIProjectMessage(node_id string, projects []types.AIProjectOfNode) {
 	info := db.PeerCollectInfo{
 		Timestamp:  time.Now().Unix(),
 		AIProjects: projects,
@@ -98,12 +99,15 @@ func (service HeartbeatService) HandleAIProjectMessage(node_id string, projects 
 	db.UpdatePeerCollect(node_id, info)
 }
 
-func StartHeartbeatService(interval time.Duration, pcn chan<- []byte, done chan bool) {
-	hbs = &HeartbeatService{
+func StartAITimer(interval time.Duration, pcn chan<- []byte) {
+	AIT = &AITimer{
 		Interval:    interval,
 		Timer:       time.NewTicker(interval),
 		PublishChan: pcn,
-		DoneChan:    done,
 	}
-	go hbs.Heartbeat()
+	go AIT.run()
+}
+
+func StopAITimer() {
+	DoneChan <- true
 }

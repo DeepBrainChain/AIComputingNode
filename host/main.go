@@ -18,6 +18,7 @@ import (
 	"AIComputingNode/pkg/p2p"
 	ps "AIComputingNode/pkg/pubsub"
 	"AIComputingNode/pkg/serve"
+	"AIComputingNode/pkg/timer"
 
 	"github.com/libp2p/go-libp2p"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -339,11 +340,9 @@ func main() {
 
 	// Topic publish channel
 	publishChan := make(chan []byte, 1024)
-	// Stop heartbeat channel
-	heartbeatDone := make(chan bool)
 	heartbeatInterval, _ := time.ParseDuration(cfg.App.PeersCollect.HeartbeatInterval)
 	go ps.PublishToTopic(ctx, topic, publishChan)
-	ps.StartHeartbeatService(heartbeatInterval, publishChan, heartbeatDone)
+	timer.StartAITimer(heartbeatInterval, publishChan)
 	go ps.PubsubHandler(ctx, sub, publishChan)
 	serve.NewHttpServe(publishChan, *configPath)
 
@@ -353,7 +352,7 @@ func main() {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	// select {} // hang forever
 	<-stop
-	heartbeatDone <- true
+	timer.StopAITimer()
 	serve.StopHttpService()
 	kadDHT.Close()
 	host.Close()
