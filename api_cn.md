@@ -302,7 +302,7 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
   // 模型名称
   "model": "superImage",
   // 所需图片的描述或者提示词
-  "prompt_word": "a bird flying in the sky",
+  "prompt": "a bird flying in the sky",
   // 要生成的图像数量，最少一个
   "n": 1,
   // 要生成图像的大小
@@ -344,7 +344,7 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
   // 模型名称
   "model": "superImage",
   // 所需图片的描述或者提示词
-  "prompt_word": "a bird flying in the sky",
+  "prompt": "a bird flying in the sky",
   // 要生成的图像数量，最少一个
   "n": 1,
   // 要生成图像的大小

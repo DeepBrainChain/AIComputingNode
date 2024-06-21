@@ -12,7 +12,7 @@ Distributed Inference Computing Network for Text-to-Image Generation
   - [`Server Configuration Example`](#server-configuration-example)
 - [`Tools`](#tools)
   - [`Ipfs`](#ipfs)
-- [`HTTP API`](#http-api)
+- [`Document`](#document)
 
 ## Compiling
 
@@ -400,7 +400,7 @@ $ ./ipfs -node /ip4/192.168.1.159/tcp/4002 -download QmStNRFDoBzuEn4g7wWXV7UEFXt
 
 When we upload a file to an IPFS node (such as `/ip4/192.168.1.159/tcp/4002` in the above example), a CID identification (such as `QmStNRFDoBzuEn4g7wWXV7UEFXtXGBf4SgJjzmjjDvD1Hb` in the above example) will be returned, and then we can view the file in the browser through `http://192.168.1.159:4040/ipfs/cid`, or even view it on the public Internet through `https://ipfs.io/ipfs/cid/`.
 
-## HTTP API
+## Document
 
 [AI Model Interface Standard Documentation](./model_api.md)
 

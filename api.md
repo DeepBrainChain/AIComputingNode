@@ -302,7 +302,7 @@ This interface is used to call the text-to-image model.
   // Model name you want to request
   "model": "superImage",
   // Text description prompt words for the required image
-  "prompt_word": "a bird flying in the sky",
+  "prompt": "a bird flying in the sky",
   // The number of images to be generated, at least one
   "n": 1,
   // The size of the image to be generated
@@ -344,7 +344,7 @@ This interface uses the project name to call the text-to-image model. The client
   // Model name you want to request
   "model": "superImage",
   // Text description prompt words for the required image
-  "prompt_word": "a bird flying in the sky",
+  "prompt": "a bird flying in the sky",
   // The number of images to be generated, at least one
   "n": 1,
   // The size of the image to be generated

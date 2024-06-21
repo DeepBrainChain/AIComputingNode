@@ -37,7 +37,7 @@ Content-Type: application/json
 # Use AI model image generation
 # @prompt node_id The node ID you want to query
 # @prompt model The model you want to use
-# @prompt prompt_word The prompt word parameters passed to the model
+# @prompt prompt The prompt word parameters passed to the model
 
 POST {{url}}/api/v0/image/gen HTTP/1.1
 Content-Type: application/json
@@ -45,7 +45,7 @@ Content-Type: application/json
 {
   "node_id": "{{nodeId1}}",
   "model": "test",
-  "prompt_word": "a bird flying in the sky"
+  "prompt": "a bird flying in the sky"
 }
 
 ###
