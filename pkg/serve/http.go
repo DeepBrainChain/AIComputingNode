@@ -414,9 +414,8 @@ func (hs *httpService) chatCompletionProxyHandler(w http.ResponseWriter, r *http
 				Message: "ok",
 			}
 			req := types.ChatCompletionRequest{
-				NodeID:   node_id,
-				Model:    msg.Model,
-				Messages: msg.Messages,
+				NodeID:           node_id,
+				ChatModelRequest: msg.ChatModelRequest,
 			}
 			jsonData, err := json.Marshal(req)
 			if err != nil {
@@ -513,12 +512,12 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 	pi := &protocol.ImageGenerationBody{
 		Data: &protocol.ImageGenerationBody_Req{
 			Req: &protocol.ImageGenerationRequest{
-				NodeId:     msg.NodeID,
-				Model:      msg.Model,
-				PromptWord: msg.PromptWord,
-				Number:     int32(msg.Number),
-				Size:       msg.Size,
-				IpfsNode:   msg.IpfsNode,
+				NodeId:   msg.NodeID,
+				Model:    msg.Model,
+				Prompt:   msg.Prompt,
+				Number:   int32(msg.Number),
+				Size:     msg.Size,
+				IpfsNode: msg.IpfsNode,
 			},
 		},
 	}
@@ -608,12 +607,9 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 				Message: "ok",
 			}
 			req := types.ImageGenerationRequest{
-				NodeID:     node_id,
-				Model:      msg.Model,
-				PromptWord: msg.PromptWord,
-				Number:     msg.Number,
-				Size:       msg.Size,
-				IpfsNode:   msg.IpfsNode,
+				NodeID:               node_id,
+				ImageGenModelRequest: msg.ImageGenModelRequest,
+				IpfsNode:             msg.IpfsNode,
 			}
 			jsonData, err := json.Marshal(req)
 			if err != nil {

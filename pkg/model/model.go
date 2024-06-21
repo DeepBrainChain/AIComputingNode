@@ -9,18 +9,6 @@ import (
 	"AIComputingNode/pkg/types"
 )
 
-type ChatCompletionRequest struct {
-	Model    string                        `json:"model"`
-	Messages []types.ChatCompletionMessage `json:"messages"`
-}
-
-type ImageGenerationRequest struct {
-	Model  string `json:"model"`
-	Prompt string `json:"prompt"`
-	Number int    `json:"n"`
-	Size   string `json:"size"`
-}
-
 type OldImageGenerationResponse struct {
 	Code     int    `json:"code"`
 	Status   string `json:"status"`
@@ -50,7 +38,7 @@ type ImageGenerationResponse struct {
 //	     }
 //	   ]
 //	 }"
-func ChatModel(api string, chatReq ChatCompletionRequest) *types.ChatCompletionResponse {
+func ChatModel(api string, chatReq types.ChatModelRequest) *types.ChatCompletionResponse {
 	result := &types.ChatCompletionResponse{
 		Code: int(types.ErrCodeModel),
 	}
@@ -87,7 +75,7 @@ func ChatModel(api string, chatReq ChatCompletionRequest) *types.ChatCompletionR
 
 // curl -X POST "http://127.0.0.1:8080/models/superimage" -d "{\"prompt\":\"bird\"}"
 // curl -X POST "http://127.0.0.1:8080/models" -d "{\"model\":\"superimage\",\"prompt\":\"bird\"}"
-func ImageGenerationModel(api string, req ImageGenerationRequest) (int, string, []string) {
+func ImageGenerationModel(api string, req types.ImageGenModelRequest) (int, string, []string) {
 	images := make([]string, 0)
 	if api == "" {
 		return int(types.ErrCodeModel), "Model API configuration is empty", images

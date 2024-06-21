@@ -46,6 +46,15 @@ func TestJsonStruct(t *testing.T) {
 		t.Fatalf("Unmarshal json %v", err)
 	}
 	t.Logf("Unmarshal json sucess %v", js)
+
+	test2 := JsonTest{
+		Key: "Test",
+	}
+	jsonData, err = json.Marshal(test2)
+	if err != nil {
+		t.Fatalf("Marshal json %v", err)
+	}
+	t.Logf("orignal json %s from struct %v", string(jsonData), test2)
 }
 
 func TestComposition(t *testing.T) {

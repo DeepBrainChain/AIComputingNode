@@ -59,7 +59,7 @@ message ImageGenerationBody {
 message ImageGenerationRequest {
   string node_id = 1;
   string model = 2;
-  string prompt_word = 3;
+  string prompt = 3;
   int32 number = 4;
   string size = 5;
   reserved 6 to 15;

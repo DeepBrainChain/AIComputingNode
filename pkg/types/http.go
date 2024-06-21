@@ -49,16 +49,19 @@ type ChatResponseChoice struct {
 	FinishReason string                `json:"finish_reason"`
 }
 
-type ChatCompletionRequest struct {
-	NodeID   string                  `json:"node_id"`
+type ChatModelRequest struct {
 	Model    string                  `json:"model"`
 	Messages []ChatCompletionMessage `json:"messages"`
 }
 
+type ChatCompletionRequest struct {
+	NodeID string `json:"node_id"`
+	ChatModelRequest
+}
+
 type ChatCompletionProxyRequest struct {
-	Project  string                  `json:"project"`
-	Model    string                  `json:"model"`
-	Messages []ChatCompletionMessage `json:"messages"`
+	Project string `json:"project"`
+	ChatModelRequest
 }
 
 type ChatCompletionResponse struct {
@@ -75,22 +78,23 @@ type ImageResponseChoice struct {
 	ImageName string `json:"image_name"`
 }
 
+type ImageGenModelRequest struct {
+	Model  string `json:"model"`
+	Prompt string `json:"prompt"`
+	Number int    `json:"n"`
+	Size   string `json:"size"`
+}
+
 type ImageGenerationRequest struct {
-	NodeID     string `json:"node_id"`
-	Model      string `json:"model"`
-	PromptWord string `json:"prompt_word"`
-	Number     int    `json:"n"`
-	Size       string `json:"size"`
-	IpfsNode   string `json:"ipfs_node"`
+	NodeID string `json:"node_id"`
+	ImageGenModelRequest
+	IpfsNode string `json:"ipfs_node"`
 }
 
 type ImageGenerationProxyRequest struct {
-	Project    string `json:"project"`
-	Model      string `json:"model"`
-	PromptWord string `json:"prompt_word"`
-	Number     int    `json:"n"`
-	Size       string `json:"size"`
-	IpfsNode   string `json:"ipfs_node"`
+	Project string `json:"project"`
+	ImageGenModelRequest
+	IpfsNode string `json:"ipfs_node"`
 }
 
 type ImageGenerationResponse struct {

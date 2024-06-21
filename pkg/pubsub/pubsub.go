@@ -388,7 +388,7 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 					code = int32(types.ErrCodeHostInfo)
 					message = err.Error()
 				}
-				hiRes := HostInfo2ProtocolMessage(hostInfo)
+				hiRes := types.HostInfo2ProtocolMessage(hostInfo)
 				hiBody := &protocol.HostInfoBody{
 					Data: &protocol.HostInfoBody_Res{
 						Res: hiRes,
@@ -430,7 +430,7 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 			res := types.HostInfoResponse{
 				Code:    int(msg.ResultCode),
 				Message: msg.ResultMessage,
-				Data:    *ProtocolMessage2HostInfo(hiRes),
+				Data:    *types.ProtocolMessage2HostInfo(hiRes),
 			}
 			notifyData, err := json.Marshal(res)
 			if err != nil {
@@ -536,7 +536,7 @@ func TransformErrorResponse(msg *protocol.Message, code int32, message string) *
 }
 
 func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompletionRequest, reqHeader *protocol.MessageHeader) (int, string, *protocol.ChatCompletionResponse) {
-	chatReq := model.ChatCompletionRequest{
+	chatReq := types.ChatModelRequest{
 		Model: req.Model,
 	}
 	for _, ccm := range req.Messages {
@@ -605,19 +605,19 @@ func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenera
 	if config.ValidateIpfsServer(res.IpfsAddr) {
 		res.Code, res.Message, imagePaths = model.ImageGenerationModel(
 			config.GC.GetModelAPI(req.GetModel()),
-			model.ImageGenerationRequest{
+			types.ImageGenModelRequest{
 				Model:  req.GetModel(),
-				Prompt: req.GetPromptWord(),
+				Prompt: req.GetPrompt(),
 				Number: int(req.GetNumber()),
 				Size:   req.GetSize(),
 			},
 		)
 		if res.Code == 0 {
 			log.Logger.Infof("Execute model %s with (%q, %d, %s) result %v",
-				req.GetModel(), req.GetPromptWord(), req.GetNumber(), req.GetSize(), imagePaths)
+				req.GetModel(), req.GetPrompt(), req.GetNumber(), req.GetSize(), imagePaths)
 		} else {
 			log.Logger.Errorf("Execute model %s with (%q, %d, %s) error %s",
-				req.GetModel(), req.GetPromptWord(), req.GetNumber(), req.GetSize(), res.Message)
+				req.GetModel(), req.GetPrompt(), req.GetNumber(), req.GetSize(), res.Message)
 		}
 	} else {
 		res.Code = int(types.ErrCodeModel)
@@ -642,7 +642,7 @@ func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenera
 	}
 	if res.Code == 0 {
 		if err := ipfs.WriteMFSHistory(res.Timestamp.Unix(), reqHeader.NodeId, reqHeader.Receiver, reqHeader.Id,
-			res.IpfsAddr, req.GetModel(), req.GetPromptWord(), images); err != nil {
+			res.IpfsAddr, req.GetModel(), req.GetPrompt(), images); err != nil {
 			log.Logger.Errorf("Write ipfs mfs history failed %v", err)
 		} else {
 			log.Logger.Info("Write ipfs mfs history success")
@@ -658,7 +658,7 @@ func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenera
 		Model:        req.GetModel(),
 		ChatMessages: []types.ChatCompletionMessage{},
 		ChatChoices:  []types.ChatResponseChoice{},
-		ImagePrompt:  req.GetPromptWord(),
+		ImagePrompt:  req.GetPrompt(),
 		ImageChoices: images,
 		IpfsAddr:     res.IpfsAddr,
 	}
@@ -690,82 +690,4 @@ func HttpUrl2Multiaddr(url string) string {
 		return ""
 	}
 	return fmt.Sprintf("/ip4/%s/tcp/%s", urlParts[0], urlParts[1])
-}
-
-func HostInfo2ProtocolMessage(hostInfo *types.HostInfo) *protocol.HostInfoResponse {
-	res := &protocol.HostInfoResponse{
-		Os: &protocol.HostInfoResponse_OSInfo{
-			Os:              hostInfo.Os.OS,
-			Platform:        hostInfo.Os.Platform,
-			PlatformFamily:  hostInfo.Os.PlatformFamily,
-			PlatformVersion: hostInfo.Os.PlatformVersion,
-			KernelVersion:   hostInfo.Os.KernelVersion,
-			KernelArch:      hostInfo.Os.KernelArch,
-		},
-		Memory: &protocol.HostInfoResponse_MemoryInfo{
-			TotalPhysicalBytes: hostInfo.Memory.TotalPhysicalBytes,
-			TotalUsableBytes:   hostInfo.Memory.TotalUsableBytes,
-		},
-	}
-	for _, cpu := range hostInfo.Cpu {
-		res.Cpu = append(res.Cpu, &protocol.HostInfoResponse_CpuInfo{
-			ModelName:    cpu.ModelName,
-			TotalCores:   cpu.Cores,
-			TotalThreads: cpu.Threads,
-		})
-	}
-	for _, disk := range hostInfo.Disk {
-		res.Disk = append(res.Disk, &protocol.HostInfoResponse_DiskInfo{
-			DriveType:    disk.DriveType,
-			SizeBytes:    disk.SizeBytes,
-			Model:        disk.Model,
-			SerialNumber: disk.SerialNumber,
-		})
-	}
-	for _, gpu := range hostInfo.Gpu {
-		res.Gpu = append(res.Gpu, &protocol.HostInfoResponse_GpuInfo{
-			Vendor:  gpu.Vendor,
-			Product: gpu.Product,
-		})
-	}
-	return res
-}
-
-func ProtocolMessage2HostInfo(res *protocol.HostInfoResponse) *types.HostInfo {
-	hostInfo := &types.HostInfo{
-		Os: types.OSInfo{
-			OS:              res.Os.Os,
-			Platform:        res.Os.Platform,
-			PlatformFamily:  res.Os.PlatformFamily,
-			PlatformVersion: res.Os.PlatformVersion,
-			KernelVersion:   res.Os.KernelVersion,
-			KernelArch:      res.Os.KernelArch,
-		},
-		Memory: types.MemoryInfo{
-			TotalPhysicalBytes: res.Memory.TotalPhysicalBytes,
-			TotalUsableBytes:   res.Memory.TotalUsableBytes,
-		},
-	}
-	for _, cpu := range res.Cpu {
-		hostInfo.Cpu = append(hostInfo.Cpu, types.CpuInfo{
-			ModelName: cpu.ModelName,
-			Cores:     cpu.TotalCores,
-			Threads:   cpu.TotalThreads,
-		})
-	}
-	for _, disk := range res.Disk {
-		hostInfo.Disk = append(hostInfo.Disk, types.DiskInfo{
-			DriveType:    disk.DriveType,
-			SizeBytes:    disk.SizeBytes,
-			Model:        disk.Model,
-			SerialNumber: disk.SerialNumber,
-		})
-	}
-	for _, gpu := range res.Gpu {
-		hostInfo.Gpu = append(hostInfo.Gpu, types.GpuInfo{
-			Vendor:  gpu.Vendor,
-			Product: gpu.Product,
-		})
-	}
-	return hostInfo
 }
