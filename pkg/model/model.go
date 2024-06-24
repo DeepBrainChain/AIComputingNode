@@ -73,8 +73,8 @@ func ChatModel(api string, chatReq types.ChatModelRequest) *types.ChatCompletion
 	return result
 }
 
-// curl -X POST "http://127.0.0.1:8080/models/superimage" -d "{\"prompt\":\"bird\"}"
-// curl -X POST "http://127.0.0.1:8080/models" -d "{\"model\":\"superimage\",\"prompt\":\"bird\"}"
+// curl -X POST "http://127.0.0.1:8080/models/superimage" -H "Content-Type: application/json" -d "{\"prompt\":\"bird\"}"
+// curl -X POST "http://127.0.0.1:8080/models" -H "Content-Type: application/json" -d "{\"model\":\"superimage\",\"prompt\":\"bird\"}"
 func ImageGenerationModel(api string, req types.ImageGenModelRequest) (int, string, []string) {
 	images := make([]string, 0)
 	if api == "" {

@@ -260,9 +260,13 @@ func GetPeersOfAIProjects(project, model string, limit int) ([]string, int) {
 	set := types.NewSet()
 	iter := peersCollectDB.NewIterator(nil, nil)
 	var info PeerCollectInfo
+	timestamp := time.Now().Add(-time.Minute * 10)
 	for iter.Next() && set.Size() < limit {
 		if err := json.Unmarshal(iter.Value(), &info); err != nil {
 			log.Logger.Warn("Parse failed when load peer collect info of ", iter.Key(), err)
+			continue
+		}
+		if time.Unix(info.Timestamp, 0).Before(timestamp) {
 			continue
 		}
 		for _, item := range info.AIProjects {
