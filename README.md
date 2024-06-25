@@ -1,6 +1,6 @@
 # InferenceComputingNetwork
 
-Distributed Inference Computing Network for Text-to-Image Generation
+Distributed Inference Computing Network for AI
 
 ## Table of Contents
 

@@ -1,6 +1,6 @@
 # AI 模型接口标准文档
 
-此文档描述 AI 模型提供的 API 接口标准，提供给分布式通信节点调用。接口设计参考 OpenAI API 协议 [API Reference - OpenAI API](https://platform.openai.com/docs/api-reference/chat/create)。
+此文档描述 AI 模型提供的 API 接口标准，提供给分布式通信节点调用。
 
 ## 文生文模型
 
@@ -40,7 +40,7 @@
     "index": 0,
     "message": {
       "role": "assistant",
-      "content": "\n\nHello there, how may I assist you today?",
+      "content": "Hello there, how may I assist you today?",
     },
     "finish_reason": "stop"
   }]
@@ -172,7 +172,7 @@ curl http://127.0.0.1:1088/v1/images/edits \
 
 一个项目可以有多个模型，例如 DecentralGPT 提供了 Llama3 70B 和 Qwen1.5-110B 等多个模型，因此可以提供一个接口查询所有模型的信息。
 
-这个接口可能不是必要，实际部署时需要调用分布式网络通信节点的注册接口来告知运行的模型和调用的 URL。
+这个接口可能不是必要，实际部署时需要调用分布式网络通信节点的注册接口来告知运行的模型和调用的 URL，注册接口和反注册请参考[AIComputingNode HTTP API 接口文档](./api_cn.md#注册-ai-项目)。
 
 - 请求方式：GET
 - 请求 URL：http://127.0.0.1:1088/v1/models

@@ -2,7 +2,7 @@
 
 此文档描述 AIComputingNode 分布式通信节点的 HTTP API 接口。
 
-详细测试用例请加入本项目在 Apifox 上的团队。
+详细测试用例请加入本项目在 Apifox 上的团队，团队中包含多个项目，请认准带有 `AIComputingNode` 和 `for AI` 描述的项目。
 
 开发者在 Apifox 邀请你加入DBC 团队 https://app.apifox.com/invite?token=ixfKl7kfZJXoFwBP5TRvQ
 

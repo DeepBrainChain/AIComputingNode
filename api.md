@@ -2,7 +2,7 @@
 
 This document describes the HTTP API interface of the AIComputingNode distributed communication node.
 
-For detailed test cases, please join the team of this project on Apifox.
+For detailed test cases, please join the team of this project on Apifox. The team contains multiple projects. Please look for projects with descriptions of `AIComputingNode` and `for AI`.
 
 Developer invites you to join team DBC in Apifox: https://app.apifox.com/invite?token=ixfKl7kfZJXoFwBP5TRvQ
 

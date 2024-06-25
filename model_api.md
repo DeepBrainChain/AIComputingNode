@@ -1,6 +1,6 @@
 # AI Model Interface Standard Documentation
 
-This document describes the API interface standard provided by the AI ​​model, which is provided to the distributed communication node for calling. The interface design refers to the [OpenAI API protocol](https://platform.openai.com/docs/api-reference/chat/create)。
+This document describes the API interface standard provided by the AI ​​model, which is provided to the distributed communication node for calling.
 
 ## Text generation text model
 
@@ -40,7 +40,7 @@ Chat dialogue, text assistant
     "index": 0,
     "message": {
       "role": "assistant",
-      "content": "\n\nHello there, how may I assist you today?",
+      "content": "Hello there, how may I assist you today?",
     },
     "finish_reason": "stop"
   }]
@@ -173,6 +173,7 @@ curl http://127.0.0.1:1088/v1/images/edits \
 A project can have multiple models. For example, DecentralGPT provides multiple models such as Llama3 70B and Qwen1.5-110B, so an interface can be provided to query the information of all models.
 
 This interface may not be necessary. In actual deployment, the registration interface of the distributed network communication node needs to be called to inform the running model and the calling URL.
+For registration interface and deregistration, please refer to [AIComputingNode HTTP API Interface Documentation](./api.md#register-ai-project)
 
 - request method: GET
 - request URL: http://127.0.0.1:1088/v1/models
