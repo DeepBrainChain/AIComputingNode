@@ -42,6 +42,7 @@ func ReadMFSFile(ipfsServer, filePath string) {
 	if err != nil {
 		log.Fatalf("Send ipfs http rpc request: %v", err)
 	}
+	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalf("Read http response: %v", err)
@@ -83,6 +84,7 @@ func WriteMFSFile(ipfsServer, filePath string) {
 	if err != nil {
 		log.Fatalf("Send ipfs http rpc request: %v", err)
 	}
+	defer resp.Body.Close()
 	resBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalf("Write http response: %v", err)

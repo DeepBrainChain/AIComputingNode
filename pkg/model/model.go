@@ -60,6 +60,7 @@ func ChatModel(api string, chatReq types.ChatModelRequest) *types.ChatCompletion
 		result.Message = "Post HTTP request error"
 		return result
 	}
+	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		result.Message = "Read model response error"
@@ -92,6 +93,7 @@ func ImageGenerationModel(api string, req types.ImageGenModelRequest) (int, stri
 	if err != nil || resp.StatusCode != 200 {
 		return int(types.ErrCodeModel), "Post HTTP request error", images
 	}
+	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return int(types.ErrCodeModel), "Read model response error", images

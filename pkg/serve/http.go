@@ -432,6 +432,7 @@ func (hs *httpService) chatCompletionProxyHandler(w http.ResponseWriter, r *http
 					res.Message = types.ErrCodeDecrypt.String()
 					log.Logger.Warnf("post http proxy to %s failed", node_id)
 				} else {
+					defer resp.Body.Close()
 					body, err := io.ReadAll(resp.Body)
 					if err != nil {
 						res.Code = int(types.ErrCodeDecrypt)
@@ -626,6 +627,7 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 					res.Message = types.ErrCodeDecrypt.String()
 					log.Logger.Warnf("post http proxy to %s failed", node_id)
 				} else {
+					defer resp.Body.Close()
 					body, err := io.ReadAll(resp.Body)
 					if err != nil {
 						res.Code = int(types.ErrCodeDecrypt)

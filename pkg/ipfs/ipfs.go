@@ -99,6 +99,7 @@ func WriteMFSHistory(timestamp int64, reqId, resId, fileName, ipfsServer, model,
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("http response status code %d", resp.StatusCode)
 	}
+	// defer resp.Body.Close()
 	// resBody, err := io.ReadAll(resp.Body)
 	// if err != nil {
 	// 	return fmt.Errorf("read ipfs mfs response failed")
@@ -115,5 +116,6 @@ func ReadMFSHistory(ipfsServer, fileName string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	return io.ReadAll(resp.Body)
 }

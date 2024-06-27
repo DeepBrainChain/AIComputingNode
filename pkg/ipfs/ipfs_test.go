@@ -36,3 +36,14 @@ func TestUploadFile(t *testing.T) {
 	}
 	t.Logf("Read ipfs mfs history:\n%s", string(body))
 }
+
+func TestReadFile(t *testing.T) {
+	body, err := ReadMFSHistory(
+		"http://192.168.1.159:4002",
+		"QmRE8s1WZTVAqyxiTXwziPjjXLFUxzt8rSEGoYN19tb513",
+	)
+	if err != nil {
+		t.Fatalf("Read ipfs mfs history failed %v", err)
+	}
+	t.Logf("Read ipfs mfs history:\n%s", string(body))
+}
