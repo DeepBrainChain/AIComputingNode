@@ -269,6 +269,11 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 						FinishReason: choice.GetFinishReason(),
 					})
 				}
+				res.Data.Usage = types.ChatResponseUsage{
+					CompletionTokens: int(chatRes.Usage.CompletionTokens),
+					PromptTokens:     int(chatRes.Usage.PromptTokens),
+					TotalTokens:      int(chatRes.Usage.TotalTokens),
+				}
 			}
 			notifyData, err := json.Marshal(res)
 			if err != nil {
@@ -537,7 +542,8 @@ func TransformErrorResponse(msg *protocol.Message, code int32, message string) *
 
 func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompletionRequest, reqHeader *protocol.MessageHeader) (int, string, *protocol.ChatCompletionResponse) {
 	chatReq := types.ChatModelRequest{
-		Model: req.Model,
+		Model:  req.Model,
+		Stream: req.Stream,
 	}
 	for _, ccm := range req.Messages {
 		chatReq.Messages = append(chatReq.Messages, types.ChatCompletionMessage{
@@ -557,6 +563,7 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 		Model:        req.GetModel(),
 		ChatMessages: chatReq.Messages,
 		ChatChoices:  chatRes.Data.Choices,
+		ChatUsage:    chatRes.Data.Usage,
 		ImagePrompt:  "",
 		ImageChoices: []types.ImageResponseChoice{},
 		IpfsAddr:     "",
@@ -577,6 +584,11 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 			},
 			FinishReason: choice.FinishReason,
 		})
+	}
+	response.Usage = &protocol.ChatCompletionResponse_ChatResponseUsage{
+		CompletionTokens: int32(chatRes.Data.Usage.CompletionTokens),
+		PromptTokens:     int32(chatRes.Data.Usage.PromptTokens),
+		TotalTokens:      int32(chatRes.Data.Usage.TotalTokens),
 	}
 	return chatRes.Code, chatRes.Message, response
 }
@@ -658,6 +670,7 @@ func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenera
 		Model:        req.GetModel(),
 		ChatMessages: []types.ChatCompletionMessage{},
 		ChatChoices:  []types.ChatResponseChoice{},
+		ChatUsage:    types.ChatResponseUsage{},
 		ImagePrompt:  req.GetPrompt(),
 		ImageChoices: images,
 		IpfsAddr:     res.IpfsAddr,

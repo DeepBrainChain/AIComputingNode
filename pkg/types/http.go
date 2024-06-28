@@ -49,9 +49,16 @@ type ChatResponseChoice struct {
 	FinishReason string                `json:"finish_reason"`
 }
 
+type StreamChatResponseChoice struct {
+	Index        int                   `json:"index"`
+	Delta        ChatCompletionMessage `json:"delta"`
+	FinishReason string                `json:"finish_reason"`
+}
+
 type ChatModelRequest struct {
 	Model    string                  `json:"model"`
 	Messages []ChatCompletionMessage `json:"messages"`
+	Stream   bool                    `json:"stream"`
 }
 
 type ChatCompletionRequest struct {
@@ -64,13 +71,28 @@ type ChatCompletionProxyRequest struct {
 	ChatModelRequest
 }
 
+type ChatResponseUsage struct {
+	CompletionTokens int `json:"completion_tokens"`
+	PromptTokens     int `json:"prompt_tokens"`
+	TotalTokens      int `json:"total_tokens"`
+}
+
+type ChatModelResponseData struct {
+	Created int64                `json:"created"`
+	Choices []ChatResponseChoice `json:"choices"`
+	Usage   ChatResponseUsage    `json:"usage"`
+}
+
+type StreamChatModelResponseData struct {
+	Created int64                      `json:"created"`
+	Choices []StreamChatResponseChoice `json:"choices"`
+	Usage   ChatResponseUsage          `json:"usage"`
+}
+
 type ChatCompletionResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Data    struct {
-		Created int64                `json:"created"`
-		Choices []ChatResponseChoice `json:"choices"`
-	} `json:"data"`
+	Code    int                   `json:"code"`
+	Message string                `json:"message"`
+	Data    ChatModelResponseData `json:"data"`
 }
 
 type ImageResponseChoice struct {

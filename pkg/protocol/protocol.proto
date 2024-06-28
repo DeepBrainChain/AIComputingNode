@@ -91,16 +91,23 @@ message ChatCompletionRequest {
   string node_id = 1;
   string model = 2;
   repeated ChatCompletionMessage messages = 3;
+  bool stream = 4;
 }
 
 message ChatCompletionResponse {
-  int64 created = 1;
   message ChatResponseChoice {
     int32 index = 1;
     ChatCompletionMessage message = 2;
     string finish_reason = 3;
   }
+  message ChatResponseUsage {
+    int32 completion_tokens = 1;
+    int32 prompt_tokens = 2;
+    int32 total_tokens = 3;
+  }
+  int64 created = 1;
   repeated ChatResponseChoice choices = 2;
+  ChatResponseUsage usage = 3;
 }
 
 message HostInfoBody {

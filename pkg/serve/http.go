@@ -325,6 +325,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 				NodeId:   msg.NodeID,
 				Model:    msg.Model,
 				Messages: ccms,
+				Stream:   false,
 			},
 		},
 	}

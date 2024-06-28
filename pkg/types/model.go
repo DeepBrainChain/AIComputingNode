@@ -12,6 +12,8 @@ type ModelHistory struct {
 	ChatMessages []ChatCompletionMessage `json:"chat_messages"`
 	// Chat Model Response
 	ChatChoices []ChatResponseChoice `json:"chat_choices"`
+	// Chat Model Response Usage
+	ChatUsage ChatResponseUsage `json:"chat_usage"`
 	// Image Generation Request
 	ImagePrompt string `json:"image_prompt"`
 	// Image Generation Response
