@@ -7,6 +7,7 @@ type ModelHistory struct {
 	ResNodeId string `json:"res_node_id"`
 	Code      int    `json:"code"`
 	Message   string `json:"message"`
+	Project   string `json:"project"`
 	Model     string `json:"model"`
 	// Chat Model Request
 	ChatMessages []ChatCompletionMessage `json:"chat_messages"`

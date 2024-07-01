@@ -154,9 +154,7 @@ func (hs *httpService) peerHandler(w http.ResponseWriter, r *http.Request) {
 
 	pi := &protocol.PeerIdentityBody{
 		Data: &protocol.PeerIdentityBody_Req{
-			Req: &protocol.PeerIdentityRequest{
-				NodeId: msg.NodeID,
-			},
+			Req: &protocol.PeerIdentityRequest{},
 		},
 	}
 	body, err := proto.Marshal(pi)
@@ -236,9 +234,7 @@ func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
 
 	pi := &protocol.HostInfoBody{
 		Data: &protocol.HostInfoBody_Req{
-			Req: &protocol.HostInfoRequest{
-				NodeId: msg.NodeID,
-			},
+			Req: &protocol.HostInfoRequest{},
 		},
 	}
 	body, err := proto.Marshal(pi)
@@ -322,7 +318,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 	pi := &protocol.ChatCompletionBody{
 		Data: &protocol.ChatCompletionBody_Req{
 			Req: &protocol.ChatCompletionRequest{
-				NodeId:   msg.NodeID,
+				Project:  msg.Project,
 				Model:    msg.Model,
 				Messages: ccms,
 				Stream:   false,
@@ -416,6 +412,7 @@ func (hs *httpService) chatCompletionProxyHandler(w http.ResponseWriter, r *http
 			}
 			req := types.ChatCompletionRequest{
 				NodeID:           node_id,
+				Project:          msg.Project,
 				ChatModelRequest: msg.ChatModelRequest,
 			}
 			jsonData, err := json.Marshal(req)
@@ -514,7 +511,7 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 	pi := &protocol.ImageGenerationBody{
 		Data: &protocol.ImageGenerationBody_Req{
 			Req: &protocol.ImageGenerationRequest{
-				NodeId:   msg.NodeID,
+				Project:  msg.Project,
 				Model:    msg.Model,
 				Prompt:   msg.Prompt,
 				Number:   int32(msg.Number),
@@ -610,6 +607,7 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 			}
 			req := types.ImageGenerationRequest{
 				NodeID:               node_id,
+				Project:              msg.Project,
 				ImageGenModelRequest: msg.ImageGenModelRequest,
 				IpfsNode:             msg.IpfsNode,
 			}
@@ -921,9 +919,7 @@ func (hs *httpService) getAIProjectOfNodeHandler(w http.ResponseWriter, r *http.
 
 	pbody := &protocol.AIProjectBody{
 		Data: &protocol.AIProjectBody_Req{
-			Req: &protocol.AIProjectRequest{
-				NodeId: msg.NodeID,
-			},
+			Req: &protocol.AIProjectRequest{},
 		},
 	}
 	body, err := proto.Marshal(pbody)

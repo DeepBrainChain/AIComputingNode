@@ -130,49 +130,45 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 		serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
 	} else if err := proto.Unmarshal(decBody, pi); err == nil {
 		if piReq := pi.GetReq(); piReq != nil {
-			if piReq.GetNodeId() == config.GC.Identity.PeerID {
-				idp := p2p.Hio.GetIdentifyProtocol()
-				piBody := &protocol.PeerIdentityBody{
-					Data: &protocol.PeerIdentityBody_Res{
-						Res: &protocol.PeerIdentityResponse{
-							ProtocolVersion: idp.ProtocolVersion,
-							AgentVersion:    idp.AgentVersion,
-							ListenAddrs:     idp.Addresses,
-							Protocols:       idp.Protocols,
-						},
+			idp := p2p.Hio.GetIdentifyProtocol()
+			piBody := &protocol.PeerIdentityBody{
+				Data: &protocol.PeerIdentityBody_Res{
+					Res: &protocol.PeerIdentityResponse{
+						ProtocolVersion: idp.ProtocolVersion,
+						AgentVersion:    idp.AgentVersion,
+						ListenAddrs:     idp.Addresses,
+						Protocols:       idp.Protocols,
 					},
-				}
-				resBody, err := proto.Marshal(piBody)
-				if err != nil {
-					log.Logger.Errorf("Marshal Identity Response Body %v", err)
-					return
-				}
-				resBody, err = p2p.Encrypt(msg.Header.NodeId, resBody)
-				res := protocol.Message{
-					Header: &protocol.MessageHeader{
-						ClientVersion: p2p.Hio.UserAgent,
-						Timestamp:     time.Now().Unix(),
-						Id:            msg.Header.Id,
-						NodeId:        config.GC.Identity.PeerID,
-						Receiver:      msg.Header.NodeId,
-					},
-					Type:       protocol.MessageType_PEER_IDENTITY,
-					Body:       resBody,
-					ResultCode: 0,
-				}
-				if err == nil {
-					res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
-				}
-				resBytes, err := proto.Marshal(&res)
-				if err != nil {
-					log.Logger.Errorf("Marshal Identity Response %v", err)
-					return
-				}
-				publishChan <- resBytes
-				log.Logger.Info("Sending Peer Identity Response")
-			} else {
-				log.Logger.Info("Gossip Peer Identity Request of ", piReq.GetNodeId())
+				},
 			}
+			resBody, err := proto.Marshal(piBody)
+			if err != nil {
+				log.Logger.Errorf("Marshal Identity Response Body %v", err)
+				return
+			}
+			resBody, err = p2p.Encrypt(msg.Header.NodeId, resBody)
+			res := protocol.Message{
+				Header: &protocol.MessageHeader{
+					ClientVersion: p2p.Hio.UserAgent,
+					Timestamp:     time.Now().Unix(),
+					Id:            msg.Header.Id,
+					NodeId:        config.GC.Identity.PeerID,
+					Receiver:      msg.Header.NodeId,
+				},
+				Type:       protocol.MessageType_PEER_IDENTITY,
+				Body:       resBody,
+				ResultCode: 0,
+			}
+			if err == nil {
+				res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+			}
+			resBytes, err := proto.Marshal(&res)
+			if err != nil {
+				log.Logger.Errorf("Marshal Identity Response %v", err)
+				return
+			}
+			publishChan <- resBytes
+			log.Logger.Info("Sending Peer Identity Response")
 		} else if piRes := pi.GetRes(); piRes != nil {
 			res := types.PeerResponse{
 				Code:    0,
@@ -212,45 +208,41 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 		serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
 	} else if err := proto.Unmarshal(decBody, ccb); err == nil {
 		if chatReq := ccb.GetReq(); chatReq != nil {
-			if chatReq.GetNodeId() == config.GC.Identity.PeerID {
-				code, message, chatRes := handleChatCompletionRequest(ctx, chatReq, msg.Header)
-				igBody := &protocol.ChatCompletionBody{
-					Data: &protocol.ChatCompletionBody_Res{
-						Res: chatRes,
-					},
-				}
-				resBody, err := proto.Marshal(igBody)
-				if err != nil {
-					log.Logger.Errorf("Marshal Chat Completion Response Body %v", err)
-					return
-				}
-				resBody, err = p2p.Encrypt(msg.Header.NodeId, resBody)
-				res := protocol.Message{
-					Header: &protocol.MessageHeader{
-						ClientVersion: p2p.Hio.UserAgent,
-						Timestamp:     chatRes.Created,
-						Id:            msg.Header.Id,
-						NodeId:        config.GC.Identity.PeerID,
-						Receiver:      msg.Header.NodeId,
-					},
-					Type:          protocol.MessageType_CHAT_COMPLETION,
-					Body:          resBody,
-					ResultCode:    int32(code),
-					ResultMessage: message,
-				}
-				if err == nil {
-					res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
-				}
-				resBytes, err := proto.Marshal(&res)
-				if err != nil {
-					log.Logger.Errorf("Marshal Chat Completion Response %v", err)
-					return
-				}
-				publishChan <- resBytes
-				log.Logger.Info("Sending Chat Completion Response")
-			} else {
-				log.Logger.Info("Gossip Chat Completion Request of ", chatReq.GetNodeId())
+			code, message, chatRes := handleChatCompletionRequest(ctx, chatReq, msg.Header)
+			igBody := &protocol.ChatCompletionBody{
+				Data: &protocol.ChatCompletionBody_Res{
+					Res: chatRes,
+				},
 			}
+			resBody, err := proto.Marshal(igBody)
+			if err != nil {
+				log.Logger.Errorf("Marshal Chat Completion Response Body %v", err)
+				return
+			}
+			resBody, err = p2p.Encrypt(msg.Header.NodeId, resBody)
+			res := protocol.Message{
+				Header: &protocol.MessageHeader{
+					ClientVersion: p2p.Hio.UserAgent,
+					Timestamp:     chatRes.Created,
+					Id:            msg.Header.Id,
+					NodeId:        config.GC.Identity.PeerID,
+					Receiver:      msg.Header.NodeId,
+				},
+				Type:          protocol.MessageType_CHAT_COMPLETION,
+				Body:          resBody,
+				ResultCode:    int32(code),
+				ResultMessage: message,
+			}
+			if err == nil {
+				res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+			}
+			resBytes, err := proto.Marshal(&res)
+			if err != nil {
+				log.Logger.Errorf("Marshal Chat Completion Response %v", err)
+				return
+			}
+			publishChan <- resBytes
+			log.Logger.Info("Sending Chat Completion Response")
 		} else if chatRes := ccb.GetRes(); chatRes != nil {
 			res := types.ChatCompletionResponse{
 				Code:    int(msg.ResultCode),
@@ -302,48 +294,44 @@ func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, de
 		serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
 	} else if err := proto.Unmarshal(decBody, ig); err == nil {
 		if igReq := ig.GetReq(); igReq != nil {
-			if igReq.GetNodeId() == config.GC.Identity.PeerID {
-				modelResult := handleImageGenerationRequest(ctx, igReq, msg.Header)
-				igBody := &protocol.ImageGenerationBody{
-					Data: &protocol.ImageGenerationBody_Res{
-						Res: &protocol.ImageGenerationResponse{
-							IpfsNode: modelResult.IpfsAddr,
-							Choices:  modelResult.Choices,
-						},
+			modelResult := handleImageGenerationRequest(ctx, igReq, msg.Header)
+			igBody := &protocol.ImageGenerationBody{
+				Data: &protocol.ImageGenerationBody_Res{
+					Res: &protocol.ImageGenerationResponse{
+						IpfsNode: modelResult.IpfsAddr,
+						Choices:  modelResult.Choices,
 					},
-				}
-				resBody, err := proto.Marshal(igBody)
-				if err != nil {
-					log.Logger.Errorf("Marshal Image Generation Response Body %v", err)
-					return
-				}
-				resBody, err = p2p.Encrypt(msg.Header.NodeId, resBody)
-				res := protocol.Message{
-					Header: &protocol.MessageHeader{
-						ClientVersion: p2p.Hio.UserAgent,
-						Timestamp:     modelResult.Timestamp.Unix(),
-						Id:            msg.Header.Id,
-						NodeId:        config.GC.Identity.PeerID,
-						Receiver:      msg.Header.NodeId,
-					},
-					Type:          protocol.MessageType_IMAGE_GENERATION,
-					Body:          resBody,
-					ResultCode:    int32(modelResult.Code),
-					ResultMessage: modelResult.Message,
-				}
-				if err == nil {
-					res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
-				}
-				resBytes, err := proto.Marshal(&res)
-				if err != nil {
-					log.Logger.Errorf("Marshal Image Generation Response %v", err)
-					return
-				}
-				publishChan <- resBytes
-				log.Logger.Info("Sending Image Generation Response")
-			} else {
-				log.Logger.Info("Gossip Image Generation Request of ", igReq.GetNodeId())
+				},
 			}
+			resBody, err := proto.Marshal(igBody)
+			if err != nil {
+				log.Logger.Errorf("Marshal Image Generation Response Body %v", err)
+				return
+			}
+			resBody, err = p2p.Encrypt(msg.Header.NodeId, resBody)
+			res := protocol.Message{
+				Header: &protocol.MessageHeader{
+					ClientVersion: p2p.Hio.UserAgent,
+					Timestamp:     modelResult.Timestamp.Unix(),
+					Id:            msg.Header.Id,
+					NodeId:        config.GC.Identity.PeerID,
+					Receiver:      msg.Header.NodeId,
+				},
+				Type:          protocol.MessageType_IMAGE_GENERATION,
+				Body:          resBody,
+				ResultCode:    int32(modelResult.Code),
+				ResultMessage: modelResult.Message,
+			}
+			if err == nil {
+				res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+			}
+			resBytes, err := proto.Marshal(&res)
+			if err != nil {
+				log.Logger.Errorf("Marshal Image Generation Response %v", err)
+				return
+			}
+			publishChan <- resBytes
+			log.Logger.Info("Sending Image Generation Response")
 		} else if igRes := ig.GetRes(); igRes != nil {
 			res := types.ImageGenerationResponse{
 				Code:    int(msg.ResultCode),
@@ -385,52 +373,48 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 		serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
 	} else if err := proto.Unmarshal(decBody, hi); err == nil {
 		if hiReq := hi.GetReq(); hiReq != nil {
-			if hiReq.GetNodeId() == config.GC.Identity.PeerID {
-				hostInfo, err := host.GetHostInfo()
-				var code int32 = 0
-				var message string = "ok"
-				if err != nil {
-					code = int32(types.ErrCodeHostInfo)
-					message = err.Error()
-				}
-				hiRes := types.HostInfo2ProtocolMessage(hostInfo)
-				hiBody := &protocol.HostInfoBody{
-					Data: &protocol.HostInfoBody_Res{
-						Res: hiRes,
-					},
-				}
-				resBody, err := proto.Marshal(hiBody)
-				if err != nil {
-					log.Logger.Warnf("Marshal HostInfo Response Body %v", err)
-					return
-				}
-				resBody, err = p2p.Encrypt(msg.Header.NodeId, resBody)
-				res := protocol.Message{
-					Header: &protocol.MessageHeader{
-						ClientVersion: p2p.Hio.UserAgent,
-						Timestamp:     time.Now().Unix(),
-						Id:            msg.Header.Id,
-						NodeId:        config.GC.Identity.PeerID,
-						Receiver:      msg.Header.NodeId,
-					},
-					Type:          protocol.MessageType_HOST_INFO,
-					Body:          resBody,
-					ResultCode:    code,
-					ResultMessage: message,
-				}
-				if err == nil {
-					res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
-				}
-				resBytes, err := proto.Marshal(&res)
-				if err != nil {
-					log.Logger.Errorf("Marshal HostInfo Response %v", err)
-					return
-				}
-				publishChan <- resBytes
-				log.Logger.Info("Sending HostInfo Response")
-			} else {
-				log.Logger.Warnf("Invalid node id %v in request body", hiReq.GetNodeId())
+			hostInfo, err := host.GetHostInfo()
+			var code int32 = 0
+			var message string = "ok"
+			if err != nil {
+				code = int32(types.ErrCodeHostInfo)
+				message = err.Error()
 			}
+			hiRes := types.HostInfo2ProtocolMessage(hostInfo)
+			hiBody := &protocol.HostInfoBody{
+				Data: &protocol.HostInfoBody_Res{
+					Res: hiRes,
+				},
+			}
+			resBody, err := proto.Marshal(hiBody)
+			if err != nil {
+				log.Logger.Warnf("Marshal HostInfo Response Body %v", err)
+				return
+			}
+			resBody, err = p2p.Encrypt(msg.Header.NodeId, resBody)
+			res := protocol.Message{
+				Header: &protocol.MessageHeader{
+					ClientVersion: p2p.Hio.UserAgent,
+					Timestamp:     time.Now().Unix(),
+					Id:            msg.Header.Id,
+					NodeId:        config.GC.Identity.PeerID,
+					Receiver:      msg.Header.NodeId,
+				},
+				Type:          protocol.MessageType_HOST_INFO,
+				Body:          resBody,
+				ResultCode:    code,
+				ResultMessage: message,
+			}
+			if err == nil {
+				res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+			}
+			resBytes, err := proto.Marshal(&res)
+			if err != nil {
+				log.Logger.Errorf("Marshal HostInfo Response %v", err)
+				return
+			}
+			publishChan <- resBytes
+			log.Logger.Info("Sending HostInfo Response")
 		} else if hiRes := hi.GetRes(); hiRes != nil {
 			res := types.HostInfoResponse{
 				Code:    int(msg.ResultCode),
@@ -464,45 +448,41 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 		serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
 	} else if err := proto.Unmarshal(decBody, aip); err == nil {
 		if aiReq := aip.GetReq(); aiReq != nil {
-			if aiReq.GetNodeId() == config.GC.Identity.PeerID {
-				projects := config.GC.GetAIProjectsOfNode()
-				aiBody := &protocol.AIProjectBody{
-					Data: &protocol.AIProjectBody_Res{
-						Res: types.AIProject2ProtocolMessage(projects),
-					},
-				}
-				resBody, err := proto.Marshal(aiBody)
-				if err != nil {
-					log.Logger.Warnf("Marshal AI Project Response Body %v", err)
-					return
-				}
-				resBody, err = p2p.Encrypt(msg.Header.NodeId, resBody)
-				res := protocol.Message{
-					Header: &protocol.MessageHeader{
-						ClientVersion: p2p.Hio.UserAgent,
-						Timestamp:     time.Now().Unix(),
-						Id:            msg.Header.Id,
-						NodeId:        config.GC.Identity.PeerID,
-						Receiver:      msg.Header.NodeId,
-					},
-					Type:          protocol.MessageType_AI_PROJECT,
-					Body:          resBody,
-					ResultCode:    0,
-					ResultMessage: "ok",
-				}
-				if err == nil {
-					res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
-				}
-				resBytes, err := proto.Marshal(&res)
-				if err != nil {
-					log.Logger.Errorf("Marshal AI Project Response %v", err)
-					return
-				}
-				publishChan <- resBytes
-				log.Logger.Info("Sending AI Project Response")
-			} else {
-				log.Logger.Warnf("Invalid node id %v in request body", aiReq.GetNodeId())
+			projects := config.GC.GetAIProjectsOfNode()
+			aiBody := &protocol.AIProjectBody{
+				Data: &protocol.AIProjectBody_Res{
+					Res: types.AIProject2ProtocolMessage(projects),
+				},
 			}
+			resBody, err := proto.Marshal(aiBody)
+			if err != nil {
+				log.Logger.Warnf("Marshal AI Project Response Body %v", err)
+				return
+			}
+			resBody, err = p2p.Encrypt(msg.Header.NodeId, resBody)
+			res := protocol.Message{
+				Header: &protocol.MessageHeader{
+					ClientVersion: p2p.Hio.UserAgent,
+					Timestamp:     time.Now().Unix(),
+					Id:            msg.Header.Id,
+					NodeId:        config.GC.Identity.PeerID,
+					Receiver:      msg.Header.NodeId,
+				},
+				Type:          protocol.MessageType_AI_PROJECT,
+				Body:          resBody,
+				ResultCode:    0,
+				ResultMessage: "ok",
+			}
+			if err == nil {
+				res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+			}
+			resBytes, err := proto.Marshal(&res)
+			if err != nil {
+				log.Logger.Errorf("Marshal AI Project Response %v", err)
+				return
+			}
+			publishChan <- resBytes
+			log.Logger.Info("Sending AI Project Response")
 		} else if aiRes := aip.GetRes(); aiRes != nil {
 			res := types.AIProjectListResponse{
 				Code:    int(msg.ResultCode),
@@ -551,7 +531,7 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 			Content: ccm.Content,
 		})
 	}
-	chatRes := model.ChatModel(config.GC.GetModelAPI(req.Model), chatReq)
+	chatRes := model.ChatModel(config.GC.GetModelAPI(req.Project, req.Model), chatReq)
 
 	modelHistory := &types.ModelHistory{
 		TimeStamp:    chatRes.Data.Created,
@@ -560,6 +540,7 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 		ResNodeId:    reqHeader.Receiver,
 		Code:         chatRes.Code,
 		Message:      chatRes.Message,
+		Project:      req.GetProject(),
 		Model:        req.GetModel(),
 		ChatMessages: chatReq.Messages,
 		ChatChoices:  chatRes.Data.Choices,
@@ -616,7 +597,7 @@ func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenera
 
 	if config.ValidateIpfsServer(res.IpfsAddr) {
 		res.Code, res.Message, imagePaths = model.ImageGenerationModel(
-			config.GC.GetModelAPI(req.GetModel()),
+			config.GC.GetModelAPI(req.GetProject(), req.GetModel()),
 			types.ImageGenModelRequest{
 				Model:  req.GetModel(),
 				Prompt: req.GetPrompt(),
@@ -667,6 +648,7 @@ func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenera
 		ResNodeId:    reqHeader.Receiver,
 		Code:         res.Code,
 		Message:      res.Message,
+		Project:      req.GetProject(),
 		Model:        req.GetModel(),
 		ChatMessages: []types.ChatCompletionMessage{},
 		ChatChoices:  []types.ChatResponseChoice{},

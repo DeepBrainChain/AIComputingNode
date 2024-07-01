@@ -62,7 +62,8 @@ type ChatModelRequest struct {
 }
 
 type ChatCompletionRequest struct {
-	NodeID string `json:"node_id"`
+	NodeID  string `json:"node_id"`
+	Project string `json:"project"`
 	ChatModelRequest
 }
 
@@ -108,7 +109,8 @@ type ImageGenModelRequest struct {
 }
 
 type ImageGenerationRequest struct {
-	NodeID string `json:"node_id"`
+	NodeID  string `json:"node_id"`
+	Project string `json:"project"`
 	ImageGenModelRequest
 	IpfsNode string `json:"ipfs_node"`
 }
@@ -217,6 +219,9 @@ func (req ChatCompletionRequest) Validate() error {
 	if req.NodeID == "" {
 		return errors.New("empty node_id")
 	}
+	if req.Project == "" {
+		return errors.New("empty project")
+	}
 	if req.Model == "" {
 		return errors.New("empty model")
 	}
@@ -236,6 +241,9 @@ func (req ChatCompletionProxyRequest) Validate() error {
 func (req ImageGenerationRequest) Validate() error {
 	if req.NodeID == "" {
 		return errors.New("empty node_id")
+	}
+	if req.Project == "" {
+		return errors.New("empty project")
 	}
 	if req.Model == "" {
 		return errors.New("empty model")

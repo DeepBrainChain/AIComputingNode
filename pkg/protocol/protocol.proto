@@ -38,7 +38,6 @@ message PeerIdentityBody {
 }
 
 message PeerIdentityRequest {
-  string node_id = 1;
 }
 
 message PeerIdentityResponse {
@@ -57,7 +56,7 @@ message ImageGenerationBody {
 }
 
 message ImageGenerationRequest {
-  string node_id = 1;
+  string project = 1;
   string model = 2;
   string prompt = 3;
   int32 number = 4;
@@ -88,7 +87,7 @@ message ChatCompletionMessage {
 }
 
 message ChatCompletionRequest {
-  string node_id = 1;
+  string project = 1;
   string model = 2;
   repeated ChatCompletionMessage messages = 3;
   bool stream = 4;
@@ -118,7 +117,6 @@ message HostInfoBody {
 }
 
 message HostInfoRequest {
-  string node_id = 1;
 }
 
 message HostInfoResponse {
@@ -169,7 +167,6 @@ message AIProjectOfNode {
 }
 
 message AIProjectRequest {
-  string node_id = 1;
 }
 
 message AIProjectResponse {
