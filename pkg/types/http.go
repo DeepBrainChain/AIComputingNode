@@ -1,6 +1,11 @@
 package types
 
-import "errors"
+import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"io"
+)
 
 type HttpResponse interface {
 	SetCode(code int)
@@ -102,21 +107,20 @@ type ImageResponseChoice struct {
 }
 
 type ImageGenModelRequest struct {
-	Model  string `json:"model"`
-	Prompt string `json:"prompt"`
-	Number int    `json:"n"`
-	Size   string `json:"size"`
+	Project string `json:"project"`
+	Model   string `json:"model"`
+	Prompt  string `json:"prompt"`
+	Number  int    `json:"n"`
+	Size    string `json:"size"`
 }
 
 type ImageGenerationRequest struct {
-	NodeID  string `json:"node_id"`
-	Project string `json:"project"`
+	NodeID string `json:"node_id"`
 	ImageGenModelRequest
 	IpfsNode string `json:"ipfs_node"`
 }
 
 type ImageGenerationProxyRequest struct {
-	Project string `json:"project"`
 	ImageGenModelRequest
 	IpfsNode string `json:"ipfs_node"`
 }
@@ -287,4 +291,12 @@ func (req GetPeersOfAIProjectRequest) Validate() error {
 		return errors.New("empty project")
 	}
 	return nil
+}
+
+func (req ChatModelRequest) RequestBody() (io.ReadCloser, int64, error) {
+	jsonData, err := json.Marshal(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	return io.NopCloser(bytes.NewBuffer(jsonData)), int64(len(jsonData)), nil
 }

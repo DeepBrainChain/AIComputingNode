@@ -2,13 +2,11 @@ package p2p
 
 import (
 	"bufio"
-	"encoding/json"
 	"net/http"
 	"net/url"
 
 	"AIComputingNode/pkg/config"
 	"AIComputingNode/pkg/log"
-	"AIComputingNode/pkg/types"
 
 	"github.com/libp2p/go-libp2p/core/network"
 )
@@ -36,14 +34,41 @@ func ChatProxyStreamHandler(stream network.Stream) {
 	}
 	defer req.Body.Close()
 
-	var msg types.ChatCompletionRequest
-	if err := json.NewDecoder(req.Body).Decode(&msg); err != nil {
-		stream.Reset()
-		log.Logger.Errorf("Parse chat proxy request failed: %v", err)
-		return
-	}
+	// var msg types.ChatModelRequest
+	// if err := json.NewDecoder(req.Body).Decode(&msg); err != nil {
+	// 	stream.Reset()
+	// 	log.Logger.Errorf("Parse chat proxy request failed: %v", err)
+	// 	return
+	// }
 
-	modelUrl := config.GC.GetModelAPI(msg.Project, msg.Model)
+	// modelUrl := config.GC.GetModelAPI(msg.Project, msg.Model)
+	// if modelUrl == "" {
+	// 	stream.Reset()
+	// 	log.Logger.Errorf("Get model api interface failed: %v", err)
+	// 	return
+	// }
+
+	// req.URL, err = url.Parse(modelUrl)
+	// if err != nil {
+	// 	stream.Reset()
+	// 	log.Logger.Errorf("Parse model api interface failed: %v", err)
+	// 	return
+	// }
+
+	// We need to reset these fields in the request
+	// URL as they are not maintained.
+	// req.URL.Scheme = "http"
+	// hp := strings.Split(req.Host, ":")
+	// if len(hp) > 1 && hp[1] == "443" {
+	// 	req.URL.Scheme = "https"
+	// } else {
+	// 	req.URL.Scheme = "http"
+	// }
+	// req.URL.Host = req.Host
+	queryValues := req.URL.Query()
+	projectName := queryValues.Get("project")
+	modelName := queryValues.Get("model")
+	modelUrl := config.GC.GetModelAPI(projectName, modelName)
 	if modelUrl == "" {
 		stream.Reset()
 		log.Logger.Errorf("Get model api interface failed: %v", err)
@@ -56,17 +81,9 @@ func ChatProxyStreamHandler(stream network.Stream) {
 		log.Logger.Errorf("Parse model api interface failed: %v", err)
 		return
 	}
-
-	// We need to reset these fields in the request
-	// URL as they are not maintained.
-	// req.URL.Scheme = "http"
-	// hp := strings.Split(req.Host, ":")
-	// if len(hp) > 1 && hp[1] == "443" {
-	// 	req.URL.Scheme = "https"
-	// } else {
-	// 	req.URL.Scheme = "http"
-	// }
-	// req.URL.Host = req.Host
+	queryValues.Del("project")
+	queryValues.Del("model")
+	req.URL.RawQuery = queryValues.Encode()
 
 	outreq := new(http.Request)
 	*outreq = *req

@@ -309,6 +309,20 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 			json.NewEncoder(w).Encode(rsp)
 			return
 		}
+		defer stream.Close()
+
+		r.Body, r.ContentLength, err = msg.ChatModelRequest.RequestBody()
+		if err != nil {
+			rsp.Code = int(types.ErrCodeStream)
+			rsp.Message = "Copy http request body failed"
+			log.Logger.Errorf("Copy http request body failed: %v", err)
+			json.NewEncoder(w).Encode(rsp)
+			return
+		}
+		queryValues := r.URL.Query()
+		queryValues.Add("project", msg.Project)
+		queryValues.Add("model", msg.Model)
+		r.URL.RawQuery = queryValues.Encode()
 
 		err = r.Write(stream)
 		if err != nil {
@@ -652,7 +666,6 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 			}
 			req := types.ImageGenerationRequest{
 				NodeID:               node_id,
-				Project:              msg.Project,
 				ImageGenModelRequest: msg.ImageGenModelRequest,
 				IpfsNode:             msg.IpfsNode,
 			}
