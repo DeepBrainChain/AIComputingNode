@@ -201,6 +201,8 @@ This interface is used to call text to generate text models
 {
   // Node running the model
   "node_id": "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL",
+  // AI project name
+  "project": "DecentralGPT",
   // Model name you want to request
   "model": "Llama3-70B",
   // Preset system assistant behavior mode and alternating question and answer records
@@ -213,7 +215,9 @@ This interface is used to call text to generate text models
       "role": "user",
       "content": "Hello"
     }
-  ]
+  ],
+  // If this is set to true, the returned data will be streamed in increments of one message at a time, and the data stream ends with data: [DONE].
+  "stream": false
 }
 ```
 - return example:
@@ -299,6 +303,8 @@ This interface is used to call the text-to-image model.
 {
   // Node running the model
   "node_id": "16Uiu2HAm49H3Hcae8rxKBdw8PfFcFAnBXQS8ierXA1VoZwhdDadV",
+  // AI project name
+  "project": "SuperImage",
   // Model name you want to request
   "model": "superImage",
   // Text description prompt words for the required image

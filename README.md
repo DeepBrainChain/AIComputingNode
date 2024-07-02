@@ -19,7 +19,7 @@ Distributed Inference Computing Network for AI
 ```shell
 $ go mod tidy
 $ version=$(git describe --tags)
-$ go build -ldflags "-X main.version=$version" -o host host\main.go
+$ go build -ldflags "-X main.version=$version" -o host host/main.go
 ```
 
 ## Protobuf

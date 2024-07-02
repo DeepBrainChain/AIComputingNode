@@ -201,6 +201,8 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 {
   // 运行模型的节点
   "node_id": "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL",
+  // AI 项目名称
+  "project": "DecentralGPT",
   // 模型名称
   "model": "Llama3-70B",
   // 预设的系统助理行为模式和交替问答记录
@@ -213,7 +215,9 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
       "role": "user",
       "content": "Hello"
     }
-  ]
+  ],
+  // 如果此项设置为 true，返回数据会将消息增量一段一段以流式传输，数据流以 data: [DONE] 结束。
+  "stream": false
 }
 ```
 - 返回示例:
@@ -299,6 +303,8 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 {
   // 运行模型的节点
   "node_id": "16Uiu2HAm49H3Hcae8rxKBdw8PfFcFAnBXQS8ierXA1VoZwhdDadV",
+  // AI 项目名称
+  "project": "SuperImage",
   // 模型名称
   "model": "superImage",
   // 所需图片的描述或者提示词
