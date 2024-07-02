@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"AIComputingNode/pkg/p2p"
 	"AIComputingNode/pkg/types"
 
 	"github.com/mattn/go-isatty"
@@ -152,7 +151,7 @@ func (config APIConfig) Validate() error {
 }
 
 func (config IdentityConfig) Validate() error {
-	peer, err := p2p.PeerIDFromPrivKeyString(config.PrivKey)
+	peer, err := PeerIDFromPrivKeyString(config.PrivKey)
 	if err != nil {
 		return err
 	}

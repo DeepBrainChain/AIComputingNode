@@ -1,6 +1,7 @@
 package serve
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -296,6 +297,50 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 		rsp.Code = int(types.ErrCodeParam)
 		rsp.Message = "Cannot be sent to the node itself"
 		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	if msg.Stream {
+		stream, err := p2p.Hio.NewStream(msg.NodeID)
+		if err != nil {
+			rsp.Code = int(types.ErrCodeStream)
+			rsp.Message = "Open stream with peer node failed"
+			log.Logger.Errorf("Open stream with peer node failed: %v", err)
+			json.NewEncoder(w).Encode(rsp)
+			return
+		}
+
+		err = r.Write(stream)
+		if err != nil {
+			stream.Reset()
+			rsp.Code = int(types.ErrCodeStream)
+			rsp.Message = "Write chat stream failed"
+			log.Logger.Errorf("Write chat stream failed: %v", err)
+			json.NewEncoder(w).Encode(rsp)
+			return
+		}
+
+		buf := bufio.NewReader(stream)
+		resp, err := http.ReadResponse(buf, r)
+		if err != nil {
+			stream.Reset()
+			rsp.Code = int(types.ErrCodeStream)
+			rsp.Message = "Read chat stream failed"
+			log.Logger.Errorf("Read chat stream failed: %v", err)
+			json.NewEncoder(w).Encode(rsp)
+			return
+		}
+
+		for k, v := range resp.Header {
+			for _, s := range v {
+				w.Header().Add(k, s)
+			}
+		}
+
+		w.WriteHeader(resp.StatusCode)
+
+		io.Copy(w, resp.Body)
+		resp.Body.Close()
 		return
 	}
 

@@ -156,6 +156,14 @@ func (hio *HostInfo) GetPublicKey(p peer.ID) (crypto.PubKey, error) {
 	return hio.Dht.GetPublicKey(hio.Ctx, p)
 }
 
+func (hio *HostInfo) NewStream(nodeId string) (network.Stream, error) {
+	peer, err := peer.Decode(nodeId)
+	if err != nil {
+		return nil, err
+	}
+	return hio.Host.NewStream(hio.Ctx, peer, ChatProxyProtocol)
+}
+
 func PrivKeyFromString(pk string) (crypto.PrivKey, error) {
 	privKeyBytes, err := crypto.ConfigDecodeKey(pk)
 	if err != nil {

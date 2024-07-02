@@ -212,6 +212,8 @@ func main() {
 		},
 	})
 
+	host.SetStreamHandler(p2p.ChatProxyProtocol, p2p.ChatProxyStreamHandler)
+
 	if cfg.Routing.Type == "none" {
 		dhtOpts := []dht.Option{
 			dht.Mode(dht.ModeClient),

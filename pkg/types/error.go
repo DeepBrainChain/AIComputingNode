@@ -20,6 +20,7 @@ const (
 	ErrCodeUUID
 	ErrCodeDatabase
 	ErrCodeProxy
+	ErrCodeStream
 	ErrCodeInternal ErrorCode = 5000
 )
 
@@ -41,6 +42,7 @@ var errMsg = map[ErrorCode]string{
 	ErrCodeUUID:        "UUID error",
 	ErrCodeDatabase:    "Database error",
 	ErrCodeProxy:       "Proxy error",
+	ErrCodeStream:      "Stream error",
 	ErrCodeInternal:    "Internal server error",
 }
 
