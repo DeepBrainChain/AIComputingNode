@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"testing"
 
+	"AIComputingNode/pkg/test"
 	"AIComputingNode/pkg/types"
 )
 
@@ -18,14 +19,15 @@ var steamRequest = `阅读下面的材料，根据要求写作。
 要求：选准角度，确定立意，明确文体，自拟标题；不要套作，不得抄袭；不得泄露个人信息；不少于800字。
 `
 
+// go test -v -timeout 30s -count=1 -run TestChatModel AIComputingNode/pkg/model
 func TestChatModel(t *testing.T) {
-	var (
-		api   = "http://122.99.183.53:1042/v1/chat/completions"
-		model = "Llama3-70B"
-	)
+	config, err := test.LoadConfig("D:/Code/AIComputingNode/test.json")
+	if err != nil {
+		t.Fatalf("Error loading test config file: %v", err)
+	}
 
 	req := types.ChatModelRequest{
-		Model:    model,
+		Model:    config.Models.Llama3.Name,
 		Messages: []types.ChatCompletionMessage{},
 		Stream:   false,
 	}
@@ -37,11 +39,11 @@ func TestChatModel(t *testing.T) {
 		Role:    "user",
 		Content: "Hello",
 	})
-	res := ChatModel(api, req)
+	res := ChatModel(config.Models.Llama3.API, req)
 	if res.Code != 0 {
-		t.Fatalf("Execute model %s error %s", model, res.Message)
+		t.Fatalf("Execute model %s error %s", config.Models.Llama3.Name, res.Message)
 	}
-	t.Logf("Execute model %s result %v", model, res.Data)
+	t.Logf("Execute model %s result %v", config.Models.Llama3.Name, res.Data)
 }
 
 // https://blog.csdn.net/QSTARTmachine/article/details/131993746
@@ -158,13 +160,13 @@ func StreamChatModel2(api string, chatReq types.ChatModelRequest) (code int, mes
 
 // go test -v -timeout 300s -count=1 -run TestStreamChatModel AIComputingNode/pkg/model
 func TestStreamChatModel(t *testing.T) {
-	var (
-		api   = "http://122.99.183.52:1042/v1/chat/completions"
-		model = "Qwen2-72B"
-	)
+	config, err := test.LoadConfig("D:/Code/AIComputingNode/test.json")
+	if err != nil {
+		t.Fatalf("Error loading test config file: %v", err)
+	}
 
 	req := types.ChatModelRequest{
-		Model:    model,
+		Model:    config.Models.Qwen2.Name,
 		Messages: []types.ChatCompletionMessage{},
 		Stream:   true,
 	}
@@ -176,25 +178,28 @@ func TestStreamChatModel(t *testing.T) {
 		Role:    "user",
 		Content: steamRequest,
 	})
-	code, message := StreamChatModel2(api, req)
+	code, message := StreamChatModel2(config.Models.Qwen2.API, req)
 	t.Logf("Execute stream chat model %v %s", code, message)
 }
 
 // go test -v -timeout 300s -count=1 -run TestImageModel AIComputingNode/pkg/model
 func TestImageModel(t *testing.T) {
+	config, err := test.LoadConfig("D:/Code/AIComputingNode/test.json")
+	if err != nil {
+		t.Fatalf("Error loading test config file: %v", err)
+	}
+
 	var (
-		api    = "http://127.0.0.1:8080/models"
-		model  = "superimage"
 		prompt = "bird"
 	)
 
 	req := types.ImageGenModelRequest{
-		Model:  model,
+		Model:  config.Models.SuperImage.Name,
 		Prompt: prompt,
 	}
-	code, message, image := ImageGenerationModel(api, req)
+	code, message, image := ImageGenerationModel(config.Models.SuperImage.API, req)
 	if code != 0 {
-		t.Fatalf("Execute model %s with %q error %s", model, prompt, message)
+		t.Fatalf("Execute model %s with %q error %s", config.Models.SuperImage.Name, prompt, message)
 	}
-	t.Logf("Execute model %s with %q result %v", model, prompt, image)
+	t.Logf("Execute model %s with %q result %v", config.Models.SuperImage.Name, prompt, image)
 }

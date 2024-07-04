@@ -8,12 +8,9 @@ import (
 )
 
 func TestMarshal(t *testing.T) {
-	var nodeId = "16Uiu2HAmKk7Fg4WysTpEGd5q1wH2NL4wmxyQ5Nj4HhkQHyB3bDhm"
 	pi := &PeerIdentityBody{
 		Data: &PeerIdentityBody_Req{
-			Req: &PeerIdentityRequest{
-				NodeId: nodeId,
-			},
+			Req: &PeerIdentityRequest{},
 		},
 	}
 	body, err := proto.Marshal(pi)
@@ -43,9 +40,7 @@ func TestMarshal(t *testing.T) {
 		t.Fatalf("Unmarshal message body failed %v", err)
 	}
 	if piReq := piBody.GetReq(); piReq != nil {
-		if piReq.NodeId != nodeId {
-			t.Fatal("Unmarshal message node id is not equal")
-		}
+		t.Logf("Unmarshal Peer Identity Request success")
 	} else {
 		t.Fatal("Unmarshal message oneof error")
 	}
