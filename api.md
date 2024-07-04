@@ -763,5 +763,6 @@ The following lists the common error codes and error messages defined by this pr
 | 1014 | UUID error |
 | 1015 | Database error |
 | 1016 | Unable to find supported nodes or all nodes report errors when executing AI requests using project names |
+| 1017 | Stream error for text-to-text model |
 | .... | Reserved for future expansion |
 | 5000 | Internal error |
