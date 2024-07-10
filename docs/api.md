@@ -2,9 +2,7 @@
 
 This document describes the HTTP API interface of the AIComputingNode distributed communication node.
 
-Detailed test cases can be viewed on the Apifox platform.
-
-Developers on Apifox invite you to join the AIComputingNode project: https://app.apifox.com/invite/project?token=D1ma8H7EoulT18yumWnDl
+Detailed test cases can be viewed on the Apifox platform: <https://xr03hymjol.apifox.cn>.
 
 ## Common query interfaces
 
@@ -234,16 +232,23 @@ This interface is used to call text to generate text models
         "index": 0,
         "message": {
           "role": "assistant",
-          "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat for a bit? I'm here to assist you with any questions or topics you'd like to discuss."
+          "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat for a bit? I'm here to assist you with any questions or tasks you might have."
         },
         "finish_reason": "stop"
       }
-    ]
+    ],
+    "usage": {
+      "completion_tokens": 44,
+      "prompt_tokens": 22,
+      "total_tokens": 66
+    }
   }
 }
 ```
 
-### Text generation text model(Use project name)
+### ~~Text generation text model(Use project name)~~
+
+**This interface will be deprecated.**
 
 This interface uses the project name to call the text-to-text model. The client will select some nodes running the specified project and model according to the strategy, send model requests to them respectively, and select a response with the correct result.
 
@@ -283,11 +288,16 @@ This interface uses the project name to call the text-to-text model. The client 
         "index": 0,
         "message": {
           "role": "assistant",
-          "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat for a bit? I'm here to assist you with any questions or topics you'd like to discuss."
+          "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat for a bit? I'm here to assist you with any questions or tasks you might have."
         },
         "finish_reason": "stop"
       }
-    ]
+    ],
+    "usage": {
+      "completion_tokens": 44,
+      "prompt_tokens": 22,
+      "total_tokens": 66
+    }
   }
 }
 ```
@@ -336,7 +346,9 @@ This interface is used to call the text-to-image model.
 }
 ```
 
-### Text generation image model(Use project name)
+### ~~Text generation image model(Use project name)~~
+
+**This interface will be deprecated.**
 
 This interface uses the project name to call the text-to-image model. The client will select some nodes running the specified project and model according to the strategy, send model requests to them respectively, and select a response with the correct result.
 
@@ -420,6 +432,7 @@ This interface is used to query the model list of the specified AI project runni
   // Error message
   "message": "ok",
   "data": [
+    "Qwen2-72B",
     "Llama3-70B"
   ]
 }
@@ -448,7 +461,8 @@ This interface is used to query the list of nodes running the specified AI proje
   // Error message
   "message": "ok",
   "data": [
-    "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL"
+    "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL",
+    "16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
   ]
 }
 ```

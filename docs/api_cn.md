@@ -2,9 +2,7 @@
 
 此文档描述 AIComputingNode 分布式通信节点的 HTTP API 接口。
 
-详细测试用例可以在 Apifox 平台上获取查看。
-
-开发者在 Apifox 邀请你加入项目 AIComputingNode: https://app.apifox.com/invite/project?token=D1ma8H7EoulT18yumWnDl
+详细测试用例可以在 Apifox 平台上获取查看: <https://xr03hymjol.apifox.cn>。
 
 ## 常用查询接口
 
@@ -234,16 +232,23 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
         "index": 0,
         "message": {
           "role": "assistant",
-          "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat for a bit? I'm here to assist you with any questions or topics you'd like to discuss."
+          "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat for a bit? I'm here to assist you with any questions or tasks you might have."
         },
         "finish_reason": "stop"
       }
-    ]
+    ],
+    "usage": {
+      "completion_tokens": 44,
+      "prompt_tokens": 22,
+      "total_tokens": 66
+    }
   }
 }
 ```
 
-### 文生文模型(使用项目名称)
+### ~~文生文模型(使用项目名称)~~
+
+**此接口即将废弃。**
 
 此接口使用项目名称来调用文生文模型。客户端会根据策略选择一些运行指定项目和模型的节点，分别向其发送模型请求，选择结果正确的一个应答。
 
@@ -283,11 +288,16 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
         "index": 0,
         "message": {
           "role": "assistant",
-          "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat for a bit? I'm here to assist you with any questions or topics you'd like to discuss."
+          "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat for a bit? I'm here to assist you with any questions or tasks you might have."
         },
         "finish_reason": "stop"
       }
-    ]
+    ],
+    "usage": {
+      "completion_tokens": 44,
+      "prompt_tokens": 22,
+      "total_tokens": 66
+    }
   }
 }
 ```
@@ -336,7 +346,9 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 }
 ```
 
-### 文生图模型(使用项目名称)
+### ~~文生图模型(使用项目名称)~~
+
+**此接口即将废弃。**
 
 此接口用来调用文生图模型。客户端会根据策略选择一些运行指定项目和模型的节点，分别向其发送模型请求，选择结果正确的一个应答。
 
@@ -420,6 +432,7 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
   // 错误信息
   "message": "ok",
   "data": [
+    "Qwen2-72B",
     "Llama3-70B"
   ]
 }
@@ -448,7 +461,8 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
   // 错误信息
   "message": "ok",
   "data": [
-    "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL"
+    "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL",
+    "16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
   ]
 }
 ```

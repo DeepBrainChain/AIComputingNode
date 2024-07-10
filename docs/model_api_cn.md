@@ -1,19 +1,19 @@
-# AI Model Interface Standard Documentation
+# AI 模型接口标准文档
 
-This document describes the API interface standard provided by the AI ​​model, which is provided to the distributed communication node for calling.
+此文档描述 AI 模型提供的 API 接口标准，提供给分布式通信节点调用。
 
-## Text generation text model
+## 文生文模型
 
-Chat dialogue, text assistant
+聊天对话，文字助理
 
-- request method: POST
-- request URL: http://127.0.0.1:1088/v1/chat/completions
-- request Body:
+- 请求方式：POST
+- 请求 URL：http://127.0.0.1:1088/v1/chat/completions
+- 请求 Body：
 ```json
 {
-  // Model name you want to request
+  // 想要请求的模型名称
   "model": "Llama3-8B",
-  // Preset system assistant behavior mode and alternating question and answer records
+  // 预设的系统助理行为模式和交替问答记录
   "messages": [
     {
       "role": "system",
@@ -26,16 +26,16 @@ Chat dialogue, text assistant
   ]
 }
 ```
-- return example:
+- 返回示例：
 ```json
 {
-  // Error code, 0 means success, non-0 means failure
+  // 错误码，0 表示成功，非 0 表示失败
   "code": 0,
-  // Error message
+  // 错误信息
   "message": "success",
   "created": 1677652288,
   "model": "Llama3-8B",
-  // The answer given by the AI ​​model must give at least one
+  // AI 模型给出的回答，最少要给出一条
   "choices": [{
     "index": 0,
     "message": {
@@ -43,7 +43,12 @@ Chat dialogue, text assistant
       "content": "Hello there, how may I assist you today?",
     },
     "finish_reason": "stop"
-  }]
+  }],
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 12,
+    "total_tokens": 21
+  }
 }
 ```
 
@@ -65,34 +70,34 @@ curl http://127.0.0.1:1088/v1/chat/completions \
   }'
 ```
 
-## Text generation image model
+## 文生图模型
 
-Generate pictures based on prompt words
+根据提示词生成图片
 
-- request method: POST
-- request URL: http://127.0.0.1:1088/v1/images/generations
-- request Body:
+- 请求方式：POST
+- 请求 URL：http://127.0.0.1:1088/v1/images/generations
+- 请求 Body：
 ```json
 {
-  // Model name you want to request
+  // 想要请求的模型名称
   "model": "SuperImage",
-  // Text description prompt words for the required image
+  // 所需图像的文本描述
   "prompt": "A cute baby sea otter",
-  // The number of images to be generated, at least one
+  // 要生成的图像数量，最少一个
   "n": 2,
-  // The size of the image to be generated
+  // 要生成图像的大小
   "size": "1024x1024"
 }
 ```
-- return example:
+- 返回示例：
 ```json
 {
-  // Error code, 0 means success, non-0 means failure
+  // 错误码，0 表示成功，非 0 表示失败
   "code": 0,
-  // Error message
+  // 错误信息
   "message": "success",
   "created": 1589478378,
-  // The answer given by the AI ​​model must give at least one
+  // AI 模型给出的回答，最少要给出一条
   "data": [
     {
       "url": "/home/AI_project/ImageGenerationAI/photos/v4xxidnrc9ol7m80.png"
@@ -115,36 +120,36 @@ curl http://127.0.0.1:1088/v1/images/generations \
   }'
 ```
 
-## Image editing model
+## 修图模型
 
-Modify images based on prompt words
+根据提示词修改图片
 
-- request method: POST
-- request URL: http://127.0.0.1:1088/v1/images/edits
-- request Body:
+- 请求方式：POST
+- 请求 URL：http://127.0.0.1:1088/v1/images/edits
+- 请求 Body：
 ```json
 {
-  // Model name you want to request
+  // 想要请求的模型名称
   "model": "SuperImage",
-  // Image to be edited
+  // 要编辑的图片
   "image": "https://...",
-  // Text description prompt words for the required image
+  // 所需图像的文本描述
   "prompt": "A cute baby sea otter wearing a beret",
-  // The number of images to be generated, at least one
+  // 要生成的图像数量
   "n": 2,
-  // The size of the image to be generated
+  // 要生成图像的大小
   "size": "1024x1024"
 }
 ```
-- return example:
+- 返回示例：
 ```json
 {
-  // Error code, 0 means success, non-0 means failure
+  // 错误码，0 表示成功，非 0 表示失败
   "code": 0,
-  // Error message
+  // 错误信息
   "message": "success",
   "created": 1589478378,
-  // The answer given by the AI ​​model must give at least one
+  // AI 模型给出的回答，最少要给出一条
   "data": [
     {
       "url": "/home/AI_project/ImageGenerationAI/photos/v4xxidnrc9ol7m80.png"
@@ -168,21 +173,20 @@ curl http://127.0.0.1:1088/v1/images/edits \
   }'
 ```
 
-## Model list
+## 模型列表
 
-A project can have multiple models. For example, DecentralGPT provides multiple models such as Llama3 70B and Qwen1.5-110B, so an interface can be provided to query the information of all models.
+一个项目可以有多个模型，例如 DecentralGPT 提供了 Llama3 70B 和 Qwen1.5-110B 等多个模型，因此可以提供一个接口查询所有模型的信息。
 
-This interface may not be necessary. In actual deployment, the registration interface of the distributed network communication node needs to be called to inform the running model and the calling URL.
-For registration interface and deregistration, please refer to [AIComputingNode HTTP API Interface Documentation](./api.md#register-ai-project)
+这个接口可能不是必要，实际部署时需要调用分布式网络通信节点的注册接口来告知运行的模型和调用的 URL，注册接口和反注册请参考[AIComputingNode HTTP API 接口文档](./api_cn.md#注册-ai-项目)。
 
-- request method: GET
-- request URL: http://127.0.0.1:1088/v1/models
-- return example:
+- 请求方式：GET
+- 请求 URL：http://127.0.0.1:1088/v1/models
+- 返回示例：
 ```json
 {
-  // Project name, such as DecentralGPT, SuperImage
+  // 项目名称，例如 DecentralGPT，SuperImage
   "project": "xxx",
-  // List of information such as the name and URL of the AI ​​model
+  // AI 模型的名称和 URL 等信息的列表
   "data": [
     {
       "model": "Llama3-8B",
@@ -203,3 +207,11 @@ For registration interface and deregistration, please refer to [AIComputingNode 
 ```shell
 curl http://127.0.0.1:1088/v1/models
 ```
+
+## 流程图
+
+![Flowchat](../img/flowchart1.jpg)
+
+![Flowchat](../img/flowchart2.jpg)
+
+![Flowchat](../img/flowchart3.jpg)

@@ -402,6 +402,6 @@ When we upload a file to an IPFS node (such as `/ip4/192.168.1.159/tcp/4002` in 
 
 ## Document
 
-[AI Model Interface Standard Documentation](./model_api.md)
+[AI Model Interface Standard Documentation](./docs/model_api.md)
 
-[AIComputingNode HTTP API Interface Documentation](./api.md)
+[AIComputingNode HTTP API Interface Documentation](./docs/api.md)
