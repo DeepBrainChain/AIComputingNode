@@ -2,20 +2,20 @@ package serve
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"sync"
+	"net/url"
 	"time"
 
 	"AIComputingNode/pkg/config"
 	"AIComputingNode/pkg/db"
 	"AIComputingNode/pkg/host"
 	"AIComputingNode/pkg/log"
+	"AIComputingNode/pkg/model"
 	"AIComputingNode/pkg/p2p"
 	"AIComputingNode/pkg/protocol"
 	"AIComputingNode/pkg/timer"
@@ -294,10 +294,56 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	if msg.NodeID == config.GC.Identity.PeerID {
-		rsp.Code = int(types.ErrCodeParam)
-		rsp.Message = "Cannot be sent to the node itself"
-		json.NewEncoder(w).Encode(rsp)
-		return
+		modelAPI := config.GC.GetModelAPI(msg.Project, msg.Model)
+		if msg.Stream {
+			if modelAPI == "" {
+				rsp.Code = int(types.ErrCodeModel)
+				rsp.Message = "Model API configuration is empty"
+				json.NewEncoder(w).Encode(rsp)
+				return
+			}
+			req := new(http.Request)
+			*req = *r
+			var err error = nil
+			req.URL, err = url.Parse(modelAPI)
+			if err != nil {
+				rsp.Code = int(types.ErrCodeModel)
+				rsp.Message = "Parse model api interface failed"
+				json.NewEncoder(w).Encode(rsp)
+				return
+			}
+			req.Body, req.ContentLength, err = msg.ChatModelRequest.RequestBody()
+			if err != nil {
+				rsp.Code = int(types.ErrCodeModel)
+				rsp.Message = "Copy http request body failed"
+				json.NewEncoder(w).Encode(rsp)
+				return
+			}
+			resp, err := http.DefaultTransport.RoundTrip(req)
+			if err != nil {
+				rsp.Code = int(types.ErrCodeModel)
+				rsp.Message = "RoundTrip chat request failed"
+				log.Logger.Errorf("RoundTrip chat request failed: %v", err)
+				json.NewEncoder(w).Encode(rsp)
+				return
+			}
+
+			for k, v := range resp.Header {
+				for _, s := range v {
+					w.Header().Add(k, s)
+				}
+			}
+
+			w.WriteHeader(resp.StatusCode)
+
+			io.Copy(w, resp.Body)
+			resp.Body.Close()
+			return
+		} else {
+			rsp = *model.ChatModel(modelAPI, msg.ChatModelRequest)
+			json.NewEncoder(w).Encode(rsp)
+			return
+		}
 	}
 
 	if msg.Stream {
@@ -420,110 +466,19 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 }
 
 func (hs *httpService) chatCompletionProxyHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
-		return
-	}
+	// if r.Method != http.MethodPost {
+	// 	http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
+	// 	return
+	// }
 	rsp := types.ChatCompletionResponse{
 		Code:    0,
 		Message: "ok",
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	var msg types.ChatCompletionProxyRequest
-	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
-		rsp.Code = int(types.ErrCodeParse)
-		rsp.Message = types.ErrCodeParse.String()
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
-
-	if err := msg.Validate(); err != nil {
-		rsp.Code = int(types.ErrCodeParam)
-		rsp.Message = err.Error()
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
-
-	ids, code := db.GetPeersOfAIProjects(msg.Project, msg.Model, 3)
-	if code != 0 {
-		rsp.Code = code
-		rsp.Message = fmt.Sprintf("find node of project failed %s", types.ErrorCode(rsp.Code).String())
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
-	if len(ids) == 0 {
-		rsp.Code = int(types.ErrCodeProxy)
-		rsp.Message = "Cannot find a node that supports the project model"
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
-
-	var wg sync.WaitGroup
-	var responses sync.Map
-	for _, node_id := range ids {
-		wg.Add(1)
-		go func(node_id string) {
-			defer wg.Done()
-			res := types.ChatCompletionResponse{
-				Code:    0,
-				Message: "ok",
-			}
-			req := types.ChatCompletionRequest{
-				NodeID:           node_id,
-				Project:          msg.Project,
-				ChatModelRequest: msg.ChatModelRequest,
-			}
-			jsonData, err := json.Marshal(req)
-			if err != nil {
-				res.Code = int(types.ErrCodeEncrypt)
-				res.Message = types.ErrCodeEncrypt.String()
-			} else {
-				resp, err := http.Post(
-					fmt.Sprintf("http://%s/api/v0/chat/completion", config.GC.API.Addr),
-					"application/json",
-					bytes.NewBuffer(jsonData),
-				)
-				if err != nil || resp.StatusCode != 200 {
-					res.Code = int(types.ErrCodeDecrypt)
-					res.Message = types.ErrCodeDecrypt.String()
-					log.Logger.Warnf("post http proxy to %s failed", node_id)
-				} else {
-					defer resp.Body.Close()
-					body, err := io.ReadAll(resp.Body)
-					if err != nil {
-						res.Code = int(types.ErrCodeDecrypt)
-						res.Message = types.ErrCodeDecrypt.String()
-					} else {
-						if err := json.Unmarshal(body, &res); err != nil {
-							res.Code = int(types.ErrCodeDecrypt)
-							res.Message = types.ErrCodeDecrypt.String()
-						}
-					}
-				}
-			}
-			responses.Store(node_id, res)
-		}(node_id)
-	}
-	wg.Wait()
-
-	var deal = false
-	responses.Range(func(key, value any) bool {
-		result := value.(types.ChatCompletionResponse)
-		if result.Code == 0 {
-			json.NewEncoder(w).Encode(result)
-			deal = true
-			return false
-		}
-		return true
-	})
-
-	if !deal {
-		rsp.Code = int(types.ErrCodeProxy)
-		rsp.Message = fmt.Sprintf("all failed in %d requests", len(ids))
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
+	rsp.Code = int(types.ErrCodeDeprecated)
+	rsp.Message = types.ErrCodeDeprecated.String()
+	json.NewEncoder(w).Encode(rsp)
 }
 
 func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
@@ -615,110 +570,19 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
-		return
-	}
+	// if r.Method != http.MethodPost {
+	// 	http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
+	// 	return
+	// }
 	rsp := types.ImageGenerationResponse{
 		Code:    0,
 		Message: "ok",
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	var msg types.ImageGenerationProxyRequest
-	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
-		rsp.Code = int(types.ErrCodeParse)
-		rsp.Message = types.ErrCodeParse.String()
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
-
-	if err := msg.Validate(); err != nil {
-		rsp.Code = int(types.ErrCodeParam)
-		rsp.Message = err.Error()
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
-
-	ids, code := db.GetPeersOfAIProjects(msg.Project, msg.Model, 3)
-	if code != 0 {
-		rsp.Code = code
-		rsp.Message = fmt.Sprintf("find node of project failed %s", types.ErrorCode(rsp.Code).String())
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
-	if len(ids) == 0 {
-		rsp.Code = int(types.ErrCodeProxy)
-		rsp.Message = "Cannot find a node that supports the project model"
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
-
-	var wg sync.WaitGroup
-	var responses sync.Map
-	for _, node_id := range ids {
-		wg.Add(1)
-		go func(node_id string) {
-			defer wg.Done()
-			res := types.ImageGenerationResponse{
-				Code:    0,
-				Message: "ok",
-			}
-			req := types.ImageGenerationRequest{
-				NodeID:               node_id,
-				ImageGenModelRequest: msg.ImageGenModelRequest,
-				IpfsNode:             msg.IpfsNode,
-			}
-			jsonData, err := json.Marshal(req)
-			if err != nil {
-				res.Code = int(types.ErrCodeEncrypt)
-				res.Message = types.ErrCodeEncrypt.String()
-			} else {
-				resp, err := http.Post(
-					fmt.Sprintf("http://%s/api/v0/image/gen", config.GC.API.Addr),
-					"application/json",
-					bytes.NewBuffer(jsonData),
-				)
-				if err != nil || resp.StatusCode != 200 {
-					res.Code = int(types.ErrCodeDecrypt)
-					res.Message = types.ErrCodeDecrypt.String()
-					log.Logger.Warnf("post http proxy to %s failed", node_id)
-				} else {
-					defer resp.Body.Close()
-					body, err := io.ReadAll(resp.Body)
-					if err != nil {
-						res.Code = int(types.ErrCodeDecrypt)
-						res.Message = types.ErrCodeDecrypt.String()
-					} else {
-						if err := json.Unmarshal(body, &res); err != nil {
-							res.Code = int(types.ErrCodeDecrypt)
-							res.Message = types.ErrCodeDecrypt.String()
-						}
-					}
-				}
-			}
-			responses.Store(node_id, res)
-		}(node_id)
-	}
-	wg.Wait()
-
-	var deal = false
-	responses.Range(func(key, value any) bool {
-		result := value.(types.ImageGenerationResponse)
-		if result.Code == 0 {
-			json.NewEncoder(w).Encode(result)
-			deal = true
-			return false
-		}
-		return true
-	})
-
-	if !deal {
-		rsp.Code = int(types.ErrCodeProxy)
-		rsp.Message = fmt.Sprintf("all failed in %d requests", len(ids))
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
+	rsp.Code = int(types.ErrCodeDeprecated)
+	rsp.Message = types.ErrCodeDeprecated.String()
+	json.NewEncoder(w).Encode(rsp)
 }
 
 func (hs *httpService) rendezvousPeersHandler(w http.ResponseWriter, r *http.Request) {

@@ -533,6 +533,7 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 	}
 	chatRes := model.ChatModel(config.GC.GetModelAPI(req.Project, req.Model), chatReq)
 
+	log.Logger.Infof("Execute model %s in %s result {code:%d, message:%s}", req.Project, req.Model, chatRes.Code, chatRes.Message)
 	modelHistory := &types.ModelHistory{
 		TimeStamp:    chatRes.Data.Created,
 		ReqId:        reqHeader.Id,

@@ -21,6 +21,7 @@ const (
 	ErrCodeDatabase
 	ErrCodeProxy
 	ErrCodeStream
+	ErrCodeDeprecated
 	ErrCodeInternal ErrorCode = 5000
 )
 
@@ -43,6 +44,7 @@ var errMsg = map[ErrorCode]string{
 	ErrCodeDatabase:    "Database error",
 	ErrCodeProxy:       "Proxy error",
 	ErrCodeStream:      "Stream error",
+	ErrCodeDeprecated:  "Deprecated function",
 	ErrCodeInternal:    "Internal server error",
 }
 

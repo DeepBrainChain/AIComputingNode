@@ -196,6 +196,8 @@ func TestImageModel(t *testing.T) {
 	req := types.ImageGenModelRequest{
 		Model:  config.Models.SuperImage.Name,
 		Prompt: prompt,
+		Number: 1,
+		Size:   "1024x1024",
 	}
 	code, message, image := ImageGenerationModel(config.Models.SuperImage.API, req)
 	if code != 0 {
