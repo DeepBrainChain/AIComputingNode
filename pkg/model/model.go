@@ -3,6 +3,7 @@ package model
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -57,7 +58,11 @@ func ChatModel(api string, chatReq types.ChatModelRequest) *types.ChatCompletion
 		bytes.NewBuffer(jsonData),
 	)
 	if err != nil || resp.StatusCode != 200 {
-		result.Message = "Post HTTP request error"
+		if err == nil {
+			result.Message = fmt.Sprintf("Post HTTP request error, %s", resp.Status)
+		} else {
+			result.Message = "Post HTTP request error"
+		}
 		return result
 	}
 	defer resp.Body.Close()

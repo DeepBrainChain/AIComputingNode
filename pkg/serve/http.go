@@ -347,6 +347,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	if msg.Stream {
+		log.Logger.Info("Received chat completion stream request")
 		stream, err := p2p.Hio.NewStream(msg.NodeID)
 		if err != nil {
 			rsp.Code = int(types.ErrCodeStream)
@@ -356,6 +357,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 			return
 		}
 		defer stream.Close()
+		log.Logger.Infof("Create libp2p stream with %s success", msg.NodeID)
 
 		r.Body, r.ContentLength, err = msg.ChatModelRequest.RequestBody()
 		if err != nil {
@@ -380,6 +382,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
+		log.Logger.Info("Read the response that was send from dest peer")
 		buf := bufio.NewReader(stream)
 		resp, err := http.ReadResponse(buf, r)
 		if err != nil {
@@ -399,8 +402,10 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 
 		w.WriteHeader(resp.StatusCode)
 
+		log.Logger.Info("Copy the body from libp2p stream")
 		io.Copy(w, resp.Body)
 		resp.Body.Close()
+		log.Logger.Info("Handle chat completion stream request over")
 		return
 	}
 

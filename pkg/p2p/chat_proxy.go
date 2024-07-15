@@ -21,6 +21,7 @@ func ChatProxyStreamHandler(stream network.Stream) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
+	log.Logger.Infof("Chat proxy stream with %s started", stream.ID())
 	// Create a new buffered reader, as ReadRequest needs one.
 	// The buffered reader reads from our stream, on which we
 	// have sent the HTTP request (see ServeHTTP())
@@ -99,5 +100,7 @@ func ChatProxyStreamHandler(stream network.Stream) {
 
 	// resp.Write writes whatever response we obtained for our
 	// request back to the stream.
+	log.Logger.Info("Write roundtrip response into chat proxy stream")
 	resp.Write(stream)
+	log.Logger.Infof("Chat proxy stream with %s stopped", stream.ID())
 }
