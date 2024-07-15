@@ -86,7 +86,8 @@ curl http://127.0.0.1:1088/v1/chat/completions \
   // 要生成的图像数量，最少一个
   "n": 2,
   // 要生成图像的大小
-  "size": "1024x1024"
+  "width": 1024,
+  "height": 1024
 }
 ```
 - 返回示例：
@@ -116,7 +117,8 @@ curl http://127.0.0.1:1088/v1/images/generations \
     "model": "SuperImage",
     "prompt": "A cute baby sea otter",
     "n": 1,
-    "size": "1024x1024"
+    "width": 1024,
+    "height": 1024
   }'
 ```
 
@@ -138,7 +140,8 @@ curl http://127.0.0.1:1088/v1/images/generations \
   // 要生成的图像数量
   "n": 2,
   // 要生成图像的大小
-  "size": "1024x1024"
+  "width": 1024,
+  "height": 1024
 }
 ```
 - 返回示例：
@@ -169,7 +172,8 @@ curl http://127.0.0.1:1088/v1/images/edits \
     "image": "https://...",
     "prompt": "A cute baby sea otter wearing a beret",
     "n": 1,
-    "size": "1024x1024"
+    "width": 1024,
+    "height": 1024
   }'
 ```
 
@@ -177,7 +181,7 @@ curl http://127.0.0.1:1088/v1/images/edits \
 
 一个项目可以有多个模型，例如 DecentralGPT 提供了 Llama3 70B 和 Qwen1.5-110B 等多个模型，因此可以提供一个接口查询所有模型的信息。
 
-这个接口可能不是必要，实际部署时需要调用分布式网络通信节点的注册接口来告知运行的模型和调用的 URL，注册接口和反注册请参考[AIComputingNode HTTP API 接口文档](./api_cn.md#注册-ai-项目)。
+这个接口可能不是必要，实际部署时需要调用分布式网络通信节点的注册接口来告知运行的模型和调用的 URL。
 
 - 请求方式：GET
 - 请求 URL：http://127.0.0.1:1088/v1/models
@@ -206,6 +210,70 @@ curl http://127.0.0.1:1088/v1/images/edits \
 
 ```shell
 curl http://127.0.0.1:1088/v1/models
+```
+
+## 分布式网络通信节点的注册/反注册接口
+
+模型运行起来时需要向分布式网络通信节点注册，只有注册后的模型才能被分布式通信网络中的各个节点知晓和调用，在模型停止运行时，不要忘记反注册。
+
+### 注册 AI 项目
+
+此接口用于接受 AI 项目和模型的注册与更新，并将其在分布式网络节点间共享。
+
+- 请求方式: POST
+- 请求 URL: http://127.0.0.1:6000/api/v0/ai/project/register
+- 请求 Body:
+```json
+{
+  // AI 项目名称
+  "project": "DecentralGPT",
+  // AI 模型和 HTTP 接口信息列表
+  "models": [
+    {
+      // 模型名称
+      "model": "Llama3-70B",
+      // 执行模型的 HTTP Url
+      "api": "http://127.0.0.1:1042/v1/chat/completions",
+      // 模型类型，默认 0
+      // 0 - 文生文模型
+      // 1 - 文生图模型
+      // 2 - 图生图模型
+      "type": 0
+    }
+  ]
+}
+```
+- 返回示例:
+```json
+{
+  // 错误码，0 表示成功，非 0 表示失败
+  "code": 0,
+  // 错误信息
+  "message": "ok"
+}
+```
+
+### 反注册 AI 项目
+
+此接口用于接受 AI 项目和模型的反注册，并将其在分布式网络节点间共享。
+
+- 请求方式: POST
+- 请求 URL: http://127.0.0.1:6000/api/v0/ai/project/unregister
+- 请求 Body:
+```json
+{
+  // AI 项目名称
+  "project": "DecentralGPT"
+}
+```
+- 返回示例:
+```json
+{
+  // 错误码，0 表示成功，非 0 表示失败
+  "code": 0,
+  // 错误信息
+  "message": "ok"
+}
 ```
 
 ## 流程图

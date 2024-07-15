@@ -86,7 +86,9 @@ Generate pictures based on prompt words
   // The number of images to be generated, at least one
   "n": 2,
   // The size of the image to be generated
-  "size": "1024x1024"
+  "size": "1024x1024",
+  "width": 1024,
+  "height": 1024
 }
 ```
 - return example:
@@ -116,7 +118,8 @@ curl http://127.0.0.1:1088/v1/images/generations \
     "model": "SuperImage",
     "prompt": "A cute baby sea otter",
     "n": 1,
-    "size": "1024x1024"
+    "width": 1024,
+    "height": 1024
   }'
 ```
 
@@ -138,7 +141,8 @@ Modify images based on prompt words
   // The number of images to be generated, at least one
   "n": 2,
   // The size of the image to be generated
-  "size": "1024x1024"
+  "width": 1024,
+  "height": 1024
 }
 ```
 - return example:
@@ -169,7 +173,8 @@ curl http://127.0.0.1:1088/v1/images/edits \
     "image": "https://...",
     "prompt": "A cute baby sea otter wearing a beret",
     "n": 1,
-    "size": "1024x1024"
+    "width": 1024,
+    "height": 1024
   }'
 ```
 
@@ -178,7 +183,6 @@ curl http://127.0.0.1:1088/v1/images/edits \
 A project can have multiple models. For example, DecentralGPT provides multiple models such as Llama3 70B and Qwen1.5-110B, so an interface can be provided to query the information of all models.
 
 This interface may not be necessary. In actual deployment, the registration interface of the distributed network communication node needs to be called to inform the running model and the calling URL.
-For registration interface and deregistration, please refer to [AIComputingNode HTTP API Interface Documentation](./api.md#register-ai-project)
 
 - request method: GET
 - request URL: http://127.0.0.1:1088/v1/models
@@ -207,6 +211,70 @@ For registration interface and deregistration, please refer to [AIComputingNode 
 
 ```shell
 curl http://127.0.0.1:1088/v1/models
+```
+
+## Registration/deregistration interface for distributed network communication nodes
+
+When the model is running, it needs to be registered with the distributed network communication node. Only the registered model can be known and called by each node in the distributed communication network. When the model stops running, don't forget to deregister.
+
+### Register AI project
+
+This interface is used to accept registration and updates of AI projects and models, and share them among distributed network nodes.
+
+- request method: POST
+- request URL: http://127.0.0.1:6000/api/v0/ai/project/register
+- request Body:
+```json
+{
+  // AI project name
+  "project": "DecentralGPT",
+  // List of AI model and HTTP interface information
+  "models": [
+    {
+      // Model name
+      "model": "Llama3-70B",
+      // HTTP Url for executing model
+      "api": "http://127.0.0.1:1042/v1/chat/completions",
+      // Model type, default 0
+      // 0 - Text generation text model
+      // 1 - Text generation image model
+      // 2 - Image editing model
+      "type": 0
+    }
+  ]
+}
+```
+- return example:
+```json
+{
+  // Error code, 0 means success, non-0 means failure
+  "code": 0,
+  // Error message
+  "message": "ok"
+}
+```
+
+### Unregister AI project
+
+This interface is used to accept the unregistration of AI projects and models, and share them among distributed network nodes.
+
+- request method: POST
+- request URL: http://127.0.0.1:6000/api/v0/ai/project/unregister
+- request Body:
+```json
+{
+  // AI project name
+  "project": "DecentralGPT"
+}
+```
+- return example:
+```json
+{
+  // Error code, 0 means success, non-0 means failure
+  "code": 0,
+  // Error message
+  "message": "ok"
+}
 ```
 
 ## Flowchart
