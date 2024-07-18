@@ -296,6 +296,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 	if msg.NodeID == config.GC.Identity.PeerID {
 		modelAPI := config.GC.GetModelAPI(msg.Project, msg.Model)
 		if msg.Stream {
+			log.Logger.Info("Received chat completion stream request from the node itself")
 			if modelAPI == "" {
 				rsp.Code = int(types.ErrCodeModel)
 				rsp.Message = "Model API configuration is empty"
@@ -312,6 +313,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 				json.NewEncoder(w).Encode(rsp)
 				return
 			}
+			req.Host = req.URL.Host
 			req.Body, req.ContentLength, err = msg.ChatModelRequest.RequestBody()
 			if err != nil {
 				rsp.Code = int(types.ErrCodeModel)
@@ -319,6 +321,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 				json.NewEncoder(w).Encode(rsp)
 				return
 			}
+			log.Logger.Infof("Making request to %s\n", req.URL)
 			resp, err := http.DefaultTransport.RoundTrip(req)
 			if err != nil {
 				rsp.Code = int(types.ErrCodeModel)
@@ -336,8 +339,10 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 
 			w.WriteHeader(resp.StatusCode)
 
+			log.Logger.Info("Copy roundtrip response")
 			io.Copy(w, resp.Body)
 			resp.Body.Close()
+			log.Logger.Info("Handle chat completion stream request over from the node itself")
 			return
 		} else {
 			rsp = *model.ChatModel(modelAPI, msg.ChatModelRequest)
@@ -981,10 +986,11 @@ func NewHttpServe(pcn chan<- []byte, configFilePath string) {
 	mux.HandleFunc("/api/v0/ai/projects/peers", hs.getPeersOfAIProjectHandler)
 
 	httpServer = &http.Server{
-		Addr:    config.GC.API.Addr,
-		Handler: mux,
-		// ReadTimeout:  20 * time.Second,
-		// WriteTimeout: 20 * time.Second,
+		Addr:         config.GC.API.Addr,
+		Handler:      mux,
+		ReadTimeout:  20 * time.Second,
+		WriteTimeout: 90 * time.Second,
+		IdleTimeout:  90 * time.Second,
 	}
 	go func() {
 		log.Logger.Info("HTTP server is running on http://", httpServer.Addr)

@@ -2,8 +2,10 @@ package p2p
 
 import (
 	"bufio"
+	"crypto/tls"
 	"net"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"time"
 
@@ -27,11 +29,49 @@ var DefaultTransport http.RoundTripper = &http.Transport{
 	// DisableKeepAlives:   true,
 	// MaxIdleConnsPerHost: -1,
 	DisableKeepAlives:     false,
-	MaxIdleConnsPerHost:   30,
+	MaxIdleConnsPerHost:   20,
 	MaxConnsPerHost:       128,
 	IdleConnTimeout:       90 * time.Second,
 	TLSHandshakeTimeout:   10 * time.Second,
 	ExpectContinueTimeout: 1 * time.Second,
+}
+
+func NewHttpClientTrace() *httptrace.ClientTrace {
+	trace := &httptrace.ClientTrace{
+		DNSStart: func(di httptrace.DNSStartInfo) {
+			log.Logger.Infof("HTTP client trace DNSStart{Host: %v}", di.Host)
+		},
+		DNSDone: func(di httptrace.DNSDoneInfo) {
+			log.Logger.Infof("HTTP client trace DNSDone{Addrs: %v, Error: %v, Coalesced: %v}", di.Addrs, di.Err, di.Coalesced)
+		},
+		ConnectStart: func(network, addr string) {
+			log.Logger.Infof("HTTP client trace ConnectStart{network: %s, addr: %s}", network, addr)
+		},
+		ConnectDone: func(network, addr string, err error) {
+			log.Logger.Infof("HTTP client trace ConnectDone{network: %s, addr: %s, err: %v}", network, addr, err)
+		},
+		TLSHandshakeStart: func() {
+			log.Logger.Info("HTTP client trace TLSHandshakeStart")
+		},
+		TLSHandshakeDone: func(cs tls.ConnectionState, err error) {
+			log.Logger.Infof("HTTP client trace TLSHandshakeDone{tls.ConnectionState: {Version: %v, ServerName: %v}, err %v}",
+				cs.Version, cs.ServerName, err)
+		},
+		GetConn: func(hostPort string) {
+			log.Logger.Infof("HTTP client trace GetConn{HostPort: %v}", hostPort)
+		},
+		GotConn: func(gci httptrace.GotConnInfo) {
+			log.Logger.Infof("HTTP client trace GotConn{GotConnInfo: {Reused: %v, WasIdle: %v, IdleTime: %v}}",
+				gci.Reused, gci.WasIdle, gci.IdleTime.String())
+		},
+		PutIdleConn: func(err error) {
+			log.Logger.Infof("HTTP client trace PutIdleConn{err: %v}", err)
+		},
+		GotFirstResponseByte: func() {
+			log.Logger.Info("HTTP client trace GotFirstResponseByte")
+		},
+	}
+	return trace
 }
 
 // streamHandler is our function to handle any libp2p-net streams that belong
@@ -108,8 +148,9 @@ func ChatProxyStreamHandler(stream network.Stream) {
 	req.URL.RawQuery = queryValues.Encode()
 	req.Host = req.URL.Host
 
-	outreq := new(http.Request)
-	*outreq = *req
+	// outreq := new(http.Request)
+	// *outreq = *req
+	outreq := req.WithContext(httptrace.WithClientTrace(req.Context(), NewHttpClientTrace()))
 
 	// We now make the request
 	log.Logger.Infof("Making request to %s", req.URL)
