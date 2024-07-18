@@ -2,8 +2,10 @@ package p2p
 
 import (
 	"bufio"
+	"net"
 	"net/http"
 	"net/url"
+	"time"
 
 	"AIComputingNode/pkg/config"
 	"AIComputingNode/pkg/log"
@@ -12,6 +14,25 @@ import (
 )
 
 const ChatProxyProtocol = "/chat-proxy/0.0.1"
+
+var DefaultTransport http.RoundTripper = &http.Transport{
+	// Proxy: ProxyFromEnvironment,
+	DialContext: (&net.Dialer{
+		Timeout:   10 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}).DialContext,
+	DisableCompression: true,
+	// ForceAttemptHTTP2:     true,
+	MaxIdleConns: 100,
+	// DisableKeepAlives:   true,
+	// MaxIdleConnsPerHost: -1,
+	DisableKeepAlives:     false,
+	MaxIdleConnsPerHost:   30,
+	MaxConnsPerHost:       128,
+	IdleConnTimeout:       90 * time.Second,
+	TLSHandshakeTimeout:   10 * time.Second,
+	ExpectContinueTimeout: 1 * time.Second,
+}
 
 // streamHandler is our function to handle any libp2p-net streams that belong
 // to our protocol. The streams should contain an HTTP request which we need
@@ -85,13 +106,14 @@ func ChatProxyStreamHandler(stream network.Stream) {
 	queryValues.Del("project")
 	queryValues.Del("model")
 	req.URL.RawQuery = queryValues.Encode()
+	req.Host = req.URL.Host
 
 	outreq := new(http.Request)
 	*outreq = *req
 
 	// We now make the request
-	log.Logger.Infof("Making request to %s\n", req.URL)
-	resp, err := http.DefaultTransport.RoundTrip(outreq)
+	log.Logger.Infof("Making request to %s", req.URL)
+	resp, err := DefaultTransport.RoundTrip(outreq)
 	if err != nil {
 		stream.Reset()
 		log.Logger.Errorf("RoundTrip chat proxy request failed: %v", err)

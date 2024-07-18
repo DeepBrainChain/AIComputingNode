@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"testing"
 
 	"AIComputingNode/pkg/test"
@@ -180,6 +182,71 @@ func TestStreamChatModel(t *testing.T) {
 	})
 	code, message := StreamChatModel2(config.Models.Qwen2.API, req)
 	t.Logf("Execute stream chat model %v %s", code, message)
+}
+
+func TestConcurrentStreamChatModel(t *testing.T) {
+	config, err := test.LoadConfig("D:/Code/AIComputingNode/test.json")
+	if err != nil {
+		t.Fatalf("Error loading test config file: %v", err)
+	}
+
+	req := types.ChatModelRequest{
+		Model:    config.Models.Qwen2.Name,
+		Messages: []types.ChatCompletionMessage{},
+		Stream:   true,
+	}
+	req.Messages = append(req.Messages, types.ChatCompletionMessage{
+		Role:    "system",
+		Content: "You are a helpful assistant.",
+	})
+	req.Messages = append(req.Messages, types.ChatCompletionMessage{
+		Role:    "user",
+		Content: "Hello, What's the weather like today? Where is a good place to travel?",
+	})
+	jsonData, err := json.Marshal(req)
+	if err != nil {
+		t.Fatalf("Marshal model request: %v", err)
+	}
+
+	concurrency := 5
+	var wg sync.WaitGroup
+
+	for i := 0; i < concurrency; i++ {
+		wg.Add(1)
+		go func(i int, body []byte) {
+			defer wg.Done()
+			t.Logf("Goroutine %v started", i)
+			req, err := http.NewRequest("POST", config.Models.Qwen2.API, bytes.NewBuffer(body))
+			if err != nil {
+				t.Errorf("Goroutine %v new request failed: %v", i, err)
+				return
+			}
+			defer req.Body.Close()
+
+			resp, err := http.DefaultTransport.RoundTrip(req)
+			if err != nil {
+				t.Errorf("Goroutine %v roundtrip request failed: %v", i, err)
+				return
+			}
+			defer resp.Body.Close()
+			sc := bufio.NewScanner(resp.Body)
+			for {
+				if !sc.Scan() {
+					if err := sc.Err(); errors.Is(err, io.EOF) {
+						t.Logf("Goroutine %v read response EOF", i)
+					} else if err != nil {
+						t.Errorf("Goroutine %v read response failed: %v", i, err)
+					}
+					break
+				}
+				line := sc.Bytes()
+				t.Logf("Goroutine %v read response %s", i, string(line))
+			}
+			t.Logf("Goroutine %v stopped", i)
+		}(i, jsonData)
+	}
+
+	wg.Wait()
 }
 
 // go test -v -timeout 300s -count=1 -run TestImageModel AIComputingNode/pkg/model
