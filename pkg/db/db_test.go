@@ -6,7 +6,12 @@ import (
 )
 
 func TestLevelDB(t *testing.T) {
-	if err := InitDb(InitOptions{Folder: ".", ConnsDBName: "test.db"}); err != nil {
+	if err := InitDb(InitOptions{
+		Folder:             ".",
+		ConnsDBName:        "conns.db",
+		ModelsDBName:       "models.db",
+		EnablePeersCollect: false,
+	}); err != nil {
 		t.Fatal("Init db failed", err)
 	}
 	PeerConnected("16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF",
@@ -17,6 +22,21 @@ func TestLevelDB(t *testing.T) {
 	for key, value := range peers {
 		t.Log("load db item", key, value)
 	}
+
+	data, err := connsDB.Get([]byte("16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"), nil)
+	if err != nil {
+		t.Errorf("Level db get item failed %v", err)
+	}
+	t.Logf("Level db get item value %s", string(data))
+
+	none, err := connsDB.Get([]byte("1234567"), nil)
+	if err != nil {
+		t.Errorf("Level db get not existed item failed %v", err)
+	}
+	t.Logf("Level db get not existed item value %v", none)
+
 	connsDB.Close()
-	os.RemoveAll("./test.db")
+	os.RemoveAll("./conns.db")
+	modelsDB.Close()
+	os.RemoveAll("./models.db")
 }

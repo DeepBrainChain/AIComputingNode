@@ -88,6 +88,7 @@ type AppConfig struct {
 type AppPeersCollectConfig struct {
 	Enabled           bool   `json:"Enabled"`
 	HeartbeatInterval string `json:"HeartbeatInterval"`
+	ClientProject     string `json:"ClientProject"`
 }
 
 func (config Config) Validate() error {
@@ -328,7 +329,7 @@ func LoadConfig(configPath string) (*Config, error) {
 	}
 
 	if GC.App.PeersCollect.HeartbeatInterval == "" {
-		GC.App.PeersCollect.HeartbeatInterval = "60s"
+		GC.App.PeersCollect.HeartbeatInterval = "180s"
 	}
 
 	return GC, nil

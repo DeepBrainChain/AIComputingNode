@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"AIComputingNode/pkg/config"
+	"AIComputingNode/pkg/conngater"
 	"AIComputingNode/pkg/db"
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/p2p"
@@ -124,6 +125,7 @@ func main() {
 	var kadDHT *dht.IpfsDHT
 
 	privKey, _ := p2p.PrivKeyFromString(cfg.Identity.PrivKey)
+	connGater := &conngater.ConnectionGater{}
 
 	opts := []libp2p.Option{
 		libp2p.ListenAddrStrings(cfg.Addresses...),
@@ -132,6 +134,7 @@ func main() {
 		libp2p.DefaultSecurity,
 		libp2p.ProtocolVersion(ProtocolVersion),
 		libp2p.UserAgent(version),
+		libp2p.ConnectionGater(connGater),
 	}
 	if cfg.Swarm.ConnMgr.Type == "basic" {
 		gracePeriod, _ := time.ParseDuration(cfg.Swarm.ConnMgr.GracePeriod)

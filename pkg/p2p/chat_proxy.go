@@ -150,7 +150,7 @@ func ChatProxyStreamHandler(stream network.Stream) {
 
 	// outreq := new(http.Request)
 	// *outreq = *req
-	outreq := req.WithContext(httptrace.WithClientTrace(req.Context(), NewHttpClientTrace()))
+	outreq := req.WithContext(httptrace.WithClientTrace(Hio.Ctx, NewHttpClientTrace()))
 
 	// We now make the request
 	log.Logger.Infof("Making request to %s", req.URL)

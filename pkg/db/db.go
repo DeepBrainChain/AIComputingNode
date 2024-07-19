@@ -164,6 +164,21 @@ func UpdatePeerCollect(id string, info PeerCollectInfo) error {
 	return nil
 }
 
+func GetAIProjectsOfNode(id string) []types.AIProjectOfNode {
+	if peersCollectDB == nil {
+		return []types.AIProjectOfNode{}
+	}
+	value, err := peersCollectDB.Get([]byte(id), nil)
+	if err != nil {
+		return []types.AIProjectOfNode{}
+	}
+	var info PeerCollectInfo
+	if err := json.Unmarshal(value, &info); err != nil {
+		return []types.AIProjectOfNode{}
+	}
+	return info.AIProjects
+}
+
 func FindPeers(limit int) ([]string, int) {
 	ids := make([]string, 0)
 	if peersCollectDB == nil {

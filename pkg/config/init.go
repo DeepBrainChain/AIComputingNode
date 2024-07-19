@@ -126,6 +126,7 @@ func Init(mode string) error {
 			PeersCollect: AppPeersCollectConfig{
 				Enabled:           false,
 				HeartbeatInterval: "180s",
+				ClientProject:     "",
 			},
 		},
 		AIProjects: []types.AIProject{},
