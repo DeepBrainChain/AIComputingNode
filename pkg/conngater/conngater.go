@@ -4,6 +4,7 @@ import (
 	"AIComputingNode/pkg/config"
 	"AIComputingNode/pkg/db"
 	"AIComputingNode/pkg/log"
+	"AIComputingNode/pkg/types"
 
 	"github.com/libp2p/go-libp2p/core/control"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -41,8 +42,15 @@ func (cg *ConnectionGater) InterceptSecured(dir network.Direction, p peer.ID, cm
 	if dir == network.DirInbound && config.GC.App.PeersCollect.ClientProject != "" {
 		// _, ok := cg.blockedDialedPeers[p]
 		// return !ok
-		nodeProjects := db.GetAIProjectsOfNode(p.String())
-		for _, ap := range nodeProjects {
+		info := &db.PeerCollectInfo{}
+		if err := db.GetAIProjectsOfNode(p.String(), info); err != nil {
+			return true
+		}
+		nt := (types.NodeType)(info.NodeType)
+		if !nt.IsModelNode() {
+			return true
+		}
+		for _, ap := range info.AIProjects {
 			if ap.Project == config.GC.App.PeersCollect.ClientProject {
 				return true
 			}

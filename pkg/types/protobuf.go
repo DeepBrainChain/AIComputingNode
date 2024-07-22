@@ -80,8 +80,10 @@ func ProtocolMessage2HostInfo(res *protocol.HostInfoResponse) *HostInfo {
 	return hostInfo
 }
 
-func AIProject2ProtocolMessage(projs []AIProjectOfNode) *protocol.AIProjectResponse {
-	res := &protocol.AIProjectResponse{}
+func AIProject2ProtocolMessage(projs []AIProjectOfNode, nt uint32) *protocol.AIProjectResponse {
+	res := &protocol.AIProjectResponse{
+		NodeType: nt,
+	}
 	for _, proj := range projs {
 		res.Projects = append(res.Projects, &protocol.AIProjectOfNode{
 			Project: proj.Project,

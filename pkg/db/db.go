@@ -33,6 +33,7 @@ type connInfo struct {
 
 type PeerCollectInfo struct {
 	AIProjects []types.AIProjectOfNode `json:"AIProjects"`
+	NodeType   uint32                  `json:"NodeType"`
 	Timestamp  int64                   `json:"timestamp"`
 }
 
@@ -164,19 +165,18 @@ func UpdatePeerCollect(id string, info PeerCollectInfo) error {
 	return nil
 }
 
-func GetAIProjectsOfNode(id string) []types.AIProjectOfNode {
+func GetAIProjectsOfNode(id string, info *PeerCollectInfo) error {
 	if peersCollectDB == nil {
-		return []types.AIProjectOfNode{}
+		return fmt.Errorf("peers collect db not exist")
 	}
 	value, err := peersCollectDB.Get([]byte(id), nil)
 	if err != nil {
-		return []types.AIProjectOfNode{}
+		return fmt.Errorf("id not exist %v", err.Error())
 	}
-	var info PeerCollectInfo
-	if err := json.Unmarshal(value, &info); err != nil {
-		return []types.AIProjectOfNode{}
+	if err := json.Unmarshal(value, info); err != nil {
+		return fmt.Errorf("unmarshal json failed %v", err.Error())
 	}
-	return info.AIProjects
+	return nil
 }
 
 func FindPeers(limit int) ([]string, int) {

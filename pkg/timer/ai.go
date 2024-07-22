@@ -38,9 +38,22 @@ func (service AITimer) run() {
 
 func (service AITimer) SendAIProjects() {
 	projects := config.GC.GetAIProjectsOfNode()
+	var nt types.NodeType = 0x00
+	if config.GC.Swarm.RelayService.Enabled {
+		nt |= types.PublicIpFlag
+	}
+	if config.GC.App.PeersCollect.Enabled {
+		nt |= types.PeersCollectFlag
+	}
+	for _, proj := range projects {
+		if len(proj.Models) > 0 {
+			nt |= types.ModelFlag
+			break
+		}
+	}
 	aiBody := &protocol.AIProjectBody{
 		Data: &protocol.AIProjectBody_Res{
-			Res: types.AIProject2ProtocolMessage(projects),
+			Res: types.AIProject2ProtocolMessage(projects, uint32(nt)),
 		},
 	}
 	body, err := proto.Marshal(aiBody)
@@ -84,17 +97,18 @@ func (service AITimer) HandleBroadcastMessage(ctx context.Context, msg *protocol
 			return
 		}
 		if aiRes := aip.GetRes(); aiRes != nil {
-			service.HandleAIProjectMessage(msg.Header.NodeId, types.ProtocolMessage2AIProject(aiRes))
+			service.HandleAIProjectMessage(msg.Header.NodeId, types.ProtocolMessage2AIProject(aiRes), aiRes.NodeType)
 		}
 	default:
 		log.Logger.Warnf("Unsupported heartbeat message type", msg.Type)
 	}
 }
 
-func (service AITimer) HandleAIProjectMessage(node_id string, projects []types.AIProjectOfNode) {
+func (service AITimer) HandleAIProjectMessage(node_id string, projects []types.AIProjectOfNode, nodeType uint32) {
 	info := db.PeerCollectInfo{
 		Timestamp:  time.Now().Unix(),
 		AIProjects: projects,
+		NodeType:   nodeType,
 	}
 	db.UpdatePeerCollect(node_id, info)
 }

@@ -451,7 +451,7 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 			projects := config.GC.GetAIProjectsOfNode()
 			aiBody := &protocol.AIProjectBody{
 				Data: &protocol.AIProjectBody_Res{
-					Res: types.AIProject2ProtocolMessage(projects),
+					Res: types.AIProject2ProtocolMessage(projects, 0),
 				},
 			}
 			resBody, err := proto.Marshal(aiBody)

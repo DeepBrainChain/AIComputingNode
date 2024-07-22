@@ -171,4 +171,5 @@ message AIProjectRequest {
 
 message AIProjectResponse {
   repeated AIProjectOfNode projects = 1;
+  uint32 node_type = 2;
 }

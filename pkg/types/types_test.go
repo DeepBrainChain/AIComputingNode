@@ -84,3 +84,26 @@ func TestComposition(t *testing.T) {
 	}
 	t.Logf("orignal json %s", string(jsonData))
 }
+
+func TestNodeType(t *testing.T) {
+	var nt NodeType = 0x00
+	t.Logf("%v ~ {%v, %v, %v}", nt, nt.IsPublicNode(), nt.IsClientNode(), nt.IsModelNode())
+
+	nt |= PublicIpFlag
+	t.Logf("%v ~ {%v, %v, %v}", nt, nt.IsPublicNode(), nt.IsClientNode(), nt.IsModelNode())
+
+	nt |= PeersCollectFlag
+	t.Logf("%v ~ {%v, %v, %v}", nt, nt.IsPublicNode(), nt.IsClientNode(), nt.IsModelNode())
+
+	nt |= ModelFlag
+	t.Logf("%v ~ {%v, %v, %v}", nt, nt.IsPublicNode(), nt.IsClientNode(), nt.IsModelNode())
+
+	nt &= ^ModelFlag
+	t.Logf("%v ~ {%v, %v, %v}", nt, nt.IsPublicNode(), nt.IsClientNode(), nt.IsModelNode())
+
+	nt &= ^PeersCollectFlag
+	t.Logf("%v ~ {%v, %v, %v}", nt, nt.IsPublicNode(), nt.IsClientNode(), nt.IsModelNode())
+
+	nt &= ^PublicIpFlag
+	t.Logf("%v ~ {%v, %v, %v}", nt, nt.IsPublicNode(), nt.IsClientNode(), nt.IsModelNode())
+}
