@@ -36,7 +36,8 @@ type ModelResult struct {
 }
 
 func PublishToTopic(ctx context.Context, topic *pubsub.Topic, messageChan <-chan []byte) {
-	for message := range messageChan {
+	for {
+		message := <-messageChan
 		if err := topic.Publish(ctx, message); err != nil {
 			log.Logger.Errorf("Error when publish to topic %v", err)
 		} else {
