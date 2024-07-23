@@ -540,6 +540,8 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 				Prompt:   msg.Prompt,
 				Number:   int32(msg.Number),
 				Size:     msg.Size,
+				Width:    int32(msg.Width),
+				Height:   int32(msg.Height),
 				IpfsNode: msg.IpfsNode,
 			},
 		},

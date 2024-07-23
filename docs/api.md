@@ -322,7 +322,10 @@ This interface is used to call the text-to-image model.
   // The number of images to be generated, at least one
   "n": 1,
   // The size of the image to be generated
+  // v0.1.3 started to deprecate the size field, please use the width and height fields
   "size": "1024x1024",
+  "width": 1024,
+  "height": 1024,
   // IPFS storage node, each project can deploy its own IPFS storage server
   "ipfs_node": ""
 }

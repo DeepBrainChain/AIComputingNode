@@ -605,6 +605,8 @@ func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenera
 				Prompt: req.GetPrompt(),
 				Number: int(req.GetNumber()),
 				Size:   req.GetSize(),
+				Width:  int(req.GetWidth()),
+				Height: int(req.GetHeight()),
 			},
 		)
 		if res.Code == 0 {
