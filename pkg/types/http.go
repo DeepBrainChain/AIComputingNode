@@ -112,8 +112,8 @@ type ImageGenModelRequest struct {
 	Prompt  string `json:"prompt"`
 	Number  int    `json:"n"`
 	Size    string `json:"size"`
-	Width   int    `json"width"`
-	Height  int    `json"height"`
+	Width   int    `json:"width"`
+	Height  int    `json:"height"`
 }
 
 type ImageGenerationRequest struct {

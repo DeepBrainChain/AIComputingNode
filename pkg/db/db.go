@@ -311,3 +311,37 @@ func GetPeersOfAIProjects(project, model string, limit int) ([]string, int) {
 	}
 	return ids, 0
 }
+
+func CleanExpiredPeerCollectInfo() {
+	ids := make(map[string]int64)
+	if peersCollectDB == nil {
+		return
+	}
+
+	iter := peersCollectDB.NewIterator(nil, nil)
+	var info PeerCollectInfo
+	timestamp := time.Now().Add(-time.Hour * 24)
+	for iter.Next() {
+		if err := json.Unmarshal(iter.Value(), &info); err != nil {
+			log.Logger.Warn("Parse failed when load peer collect info of ", iter.Key(), err)
+			continue
+		}
+		if time.Unix(info.Timestamp, 0).Before(timestamp) {
+			ids[string(iter.Key())] = info.Timestamp
+		}
+	}
+
+	iter.Release()
+	if err := iter.Error(); err != nil {
+		log.Logger.Warnf("Iterator failed when load peer collect info %v", err)
+		return
+	}
+
+	for id, ts := range ids {
+		if err := peersCollectDB.Delete([]byte(id), nil); err != nil {
+			log.Logger.Warnf("Delete expired peer collect info of %s failed %v", id, err)
+		} else {
+			log.Logger.Infof("Delete expired peer collect info of %s with %v", id, ts)
+		}
+	}
+}

@@ -31,6 +31,7 @@ func (service AITimer) run() {
 			log.Logger.Info("ai timer goroutine over")
 			return
 		case <-service.Timer.C:
+			db.CleanExpiredPeerCollectInfo()
 			service.SendAIProjects()
 		}
 	}

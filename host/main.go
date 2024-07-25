@@ -84,16 +84,19 @@ func main() {
 
 	cfg, err := config.LoadConfig(*configPath)
 	if err != nil {
-		panic(err)
+		fmt.Println("Failed to load JSON configuration file:", err)
+		os.Exit(1)
 	}
 	err = cfg.Validate()
 	if err != nil {
-		panic(err)
+		fmt.Println("Invalid configuration item:", err)
+		os.Exit(1)
 	}
 
 	err = log.InitLogging(cfg.App.LogLevel, cfg.App.LogFile, cfg.App.LogOutput)
 	if err != nil {
-		panic(err)
+		fmt.Println("Initialize the log module failed:", err)
+		os.Exit(1)
 	}
 
 	log.Logger.Info("################################################################")
