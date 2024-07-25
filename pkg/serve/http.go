@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"AIComputingNode/pkg/config"
@@ -469,9 +470,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 		Body:       body,
 		ResultCode: 0,
 	}
-	if err == nil {
-		req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
-	}
+	req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
 	hs.handleRequest(w, r, req, &rsp)
 }
 
@@ -575,9 +574,7 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 		Body:       body,
 		ResultCode: 0,
 	}
-	if err == nil {
-		req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
-	}
+	req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
 	hs.handleRequest(w, r, req, &rsp)
 }
 
@@ -932,9 +929,10 @@ func (hs *httpService) getModelsOfAIProjectHandler(w http.ResponseWriter, r *htt
 }
 
 func (hs *httpService) getPeersOfAIProjectHandler(w http.ResponseWriter, r *http.Request) {
-	rsp := types.PeerListResponse{
+	rsp := types.GetPeersOfAIProjectResponse{
 		Code:    0,
 		Message: "ok",
+		Data:    make([]types.AIProjectPeerInfo, 0),
 	}
 	w.Header().Set("Content-Type", "application/json")
 
@@ -953,9 +951,35 @@ func (hs *httpService) getPeersOfAIProjectHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	rsp.Data, rsp.Code = db.GetPeersOfAIProjects(req.Project, req.Model, 100)
-	if rsp.Code != 0 {
-		rsp.Message = types.ErrorCode(rsp.Code).String()
+	number := 20
+	if r.URL.Query().Has("number") {
+		num := r.URL.Query().Get("number")
+		if rnum, err := strconv.Atoi(num); err != nil || rnum <= 0 {
+			rsp.Code = int(types.ErrCodeParse)
+			rsp.Message = types.ErrCodeParse.String()
+			json.NewEncoder(w).Encode(rsp)
+			return
+		} else {
+			number = rnum
+		}
+		if number > 100 {
+			number = 100
+		}
+	}
+
+	ids, code := db.GetPeersOfAIProjects(req.Project, req.Model, number)
+	if code != 0 {
+		rsp.Code = code
+		rsp.Message = types.ErrorCode(code).String()
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+	for _, id := range ids {
+		rsp.Data = append(rsp.Data, types.AIProjectPeerInfo{
+			NodeID:       id,
+			Connectivity: p2p.Hio.Connectedness(id),
+			Latency:      p2p.Hio.Latency(id).Microseconds(),
+		})
 	}
 	json.NewEncoder(w).Encode(rsp)
 }

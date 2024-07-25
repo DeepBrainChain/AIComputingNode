@@ -3,6 +3,7 @@ package p2p
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"AIComputingNode/pkg/types"
 
@@ -18,6 +19,7 @@ import (
 
 	drouting "github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	"github.com/libp2p/go-libp2p/p2p/net/swarm"
+	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 )
 
 var Hio *HostInfo
@@ -33,6 +35,10 @@ type HostInfo struct {
 	ProtocolVersion string
 	PrivKey         crypto.PrivKey
 	Ctx             context.Context
+
+	PingService    *ping.PingService
+	PingCtx        context.Context
+	PingStopCancel context.CancelFunc
 
 	Dht   *dht.IpfsDHT
 	RD    *drouting.RoutingDiscovery
@@ -162,6 +168,22 @@ func (hio *HostInfo) NewStream(nodeId string) (network.Stream, error) {
 		return nil, err
 	}
 	return hio.Host.NewStream(hio.Ctx, peer, ChatProxyProtocol)
+}
+
+func (hio *HostInfo) Connectedness(nodeId string) int {
+	peer, err := peer.Decode(nodeId)
+	if err != nil {
+		return int(network.NotConnected)
+	}
+	return int(hio.Host.Network().Connectedness(peer))
+}
+
+func (hio *HostInfo) Latency(nodeId string) time.Duration {
+	peer, err := peer.Decode(nodeId)
+	if err != nil {
+		return time.Duration(0)
+	}
+	return hio.Host.Peerstore().LatencyEWMA(peer)
 }
 
 func PrivKeyFromString(pk string) (crypto.PrivKey, error) {

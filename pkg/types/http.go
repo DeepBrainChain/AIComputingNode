@@ -159,6 +159,18 @@ type GetPeersOfAIProjectRequest struct {
 	Model   string `json:"model"`
 }
 
+type AIProjectPeerInfo struct {
+	NodeID       string `json:"node_id"`
+	Connectivity int    `json:"connectivity"`
+	Latency      int64  `json:"latency"`
+}
+
+type GetPeersOfAIProjectResponse struct {
+	Code    int                 `json:"code"`
+	Message string              `json:"message"`
+	Data    []AIProjectPeerInfo `json:"data"`
+}
+
 func (res *BaseHttpResponse) SetCode(code int) {
 	res.Code = code
 }

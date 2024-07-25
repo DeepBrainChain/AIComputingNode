@@ -32,6 +32,7 @@ import (
 	drouting "github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	dutil "github.com/libp2p/go-libp2p/p2p/discovery/util"
 	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
+	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 )
@@ -126,6 +127,7 @@ func main() {
 	defer cancel()
 
 	var kadDHT *dht.IpfsDHT
+	var pingService *ping.PingService = nil
 
 	privKey, _ := p2p.PrivKeyFromString(cfg.Identity.PrivKey)
 	connGater := &conngater.ConnectionGater{}
@@ -183,6 +185,9 @@ func main() {
 	if cfg.Swarm.RelayService.Enabled {
 		opts = append(opts, libp2p.EnableRelayService())
 	}
+	if cfg.Swarm.RelayService.Enabled && cfg.App.PeersCollect.Enabled {
+		opts = append(opts, libp2p.Ping(false))
+	}
 	if !cfg.Swarm.DisableNatPortMap {
 		opts = append(opts, libp2p.NATPortMap())
 	}
@@ -219,6 +224,11 @@ func main() {
 	})
 
 	host.SetStreamHandler(p2p.ChatProxyProtocol, p2p.ChatProxyStreamHandler)
+	pingCtx, pingStopCancel := context.WithCancel(context.Background())
+	if cfg.Swarm.RelayService.Enabled && cfg.App.PeersCollect.Enabled {
+		pingService = &ping.PingService{Host: host}
+		host.SetStreamHandler(ping.ID, pingService.PingHandler)
+	}
 
 	if cfg.Routing.Type == "none" {
 		dhtOpts := []dht.Option{
@@ -341,6 +351,9 @@ func main() {
 		ProtocolVersion: ProtocolVersion,
 		PrivKey:         privKey,
 		Ctx:             ctx,
+		PingService:     pingService,
+		PingCtx:         pingCtx,
+		PingStopCancel:  pingStopCancel,
 		Dht:             kadDHT,
 		RD:              routingDiscovery,
 		Topic:           topic,
@@ -353,6 +366,7 @@ func main() {
 	timer.StartAITimer(heartbeatInterval, publishChan)
 	go ps.PubsubHandler(ctx, sub, publishChan)
 	serve.NewHttpServe(publishChan, *configPath)
+	p2p.Hio.StartPingService()
 
 	log.Logger.Info("listening for connections")
 
@@ -360,6 +374,7 @@ func main() {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	// select {} // hang forever
 	<-stop
+	p2p.Hio.StopPingService()
 	timer.StopAITimer()
 	serve.StopHttpService()
 	kadDHT.Close()
