@@ -1,6 +1,7 @@
 package serve
 
 import (
+	"sync"
 	"testing"
 	"time"
 )
@@ -18,6 +19,41 @@ func TestSingleTimer(t *testing.T) {
 	}()
 
 	time.Sleep(3 * time.Second)
+}
+
+func TestRepeatedTimer(t *testing.T) {
+	timer := time.NewTimer(3 * time.Second)
+	done := make(chan bool)
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		t.Logf("%v | goroutine start", time.Now())
+		for {
+			select {
+			case <-done:
+				t.Logf("%v | goroutine over", time.Now())
+				return
+			case <-timer.C:
+				t.Logf("%v | Timer triggered", time.Now())
+			}
+
+			time.Sleep(1 * time.Second)
+			t.Logf("%v | Do something over", time.Now())
+			timer.Reset(3 * time.Second)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		time.Sleep(20 * time.Second)
+		done <- true
+	}()
+
+	wg.Wait()
+	timer.Stop()
 }
 
 func TestTimerTicker(t *testing.T) {

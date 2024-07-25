@@ -12,13 +12,14 @@ func (hio *HostInfo) StartPingService() {
 	}
 
 	go func() {
-		ticker := time.NewTicker(30 * time.Second)
-		defer ticker.Stop()
+		interval := 30 * time.Second
+		timer := time.NewTimer(interval)
+		defer timer.Stop()
 		for {
 			select {
 			case <-hio.PingCtx.Done():
 				return
-			case <-ticker.C:
+			case <-timer.C:
 			}
 
 			conns := hio.Host.Network().Conns()
@@ -33,6 +34,7 @@ func (hio *HostInfo) StartPingService() {
 					}
 				}
 			}
+			timer.Reset(interval)
 		}
 	}()
 }
