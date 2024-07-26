@@ -248,7 +248,7 @@ This interface is used to call text to generate text models
 
 ### ~~Text generation text model(Use project name)~~
 
-**This interface will be deprecated.**
+**This interface has been deprecated since v0.1.2.**
 
 This interface uses the project name to call the text-to-text model. The client will select some nodes running the specified project and model according to the strategy, send model requests to them respectively, and select a response with the correct result.
 
@@ -351,7 +351,7 @@ This interface is used to call the text-to-image model.
 
 ### ~~Text generation image model(Use project name)~~
 
-**This interface will be deprecated.**
+**This interface has been deprecated since v0.1.2.**
 
 This interface uses the project name to call the text-to-image model. The client will select some nodes running the specified project and model according to the strategy, send model requests to them respectively, and select a response with the correct result.
 
@@ -447,6 +447,8 @@ This interface is used to query the list of nodes running the specified AI proje
 
 - request method: POST
 - request URL: http://127.0.0.1:6000/api/v0/ai/projects/peers
+- request Query parameters:
+  - number: positive integer type optional parameter - Indicates the maximum number of nodes you want to query, the default value is 20
 - request Body:
 ```json
 {
@@ -464,11 +466,38 @@ This interface is used to query the list of nodes running the specified AI proje
   // Error message
   "message": "ok",
   "data": [
-    "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL",
-    "16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
+    // For versions v0.1.2 and earlier, the "data" field is a string array consisting of node IDs.
+    // "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL",
+    // "16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
+    // Starting from version v0.1.3, the "data" field was changed to a structure array, and
+    // information such as node connection latency time was added.
+    // "node_id" indicates the node ID
+    // "connectivity" indicates the connectivity between nodes, and there are the following cases:
+    // 0 - NotConnected, means no connection to peer
+    // 1 - Connected, means has an open, live connection to peer
+    // 2 - CanConnect, means recently connected to peer, terminated gracefully
+    // 3 - CannotConnect, means recently attempted connecting but failed to connect
+    // "latency" indicates the round-trip time (RTT) of the node connection, int64 type non-negative
+    // integer, in microseconds as the time unit, there are the following cases:
+    // 0 - unconnected node, latency time cannot be calculated, default is 0
+    // Positive integer - normal node connection latency time
+    // ps: 1 second = 1e3 milliseconds = 1e6 microseconds = 1e9 nanoseconds
+    {
+      "node_id": "16Uiu2HAmPKuJU5VE2PCnydyUn1VcTN2Lt59UDJFFEiRbb7h1x4CV",
+      "connectivity": 1,
+      "latency": 89121
+    },
+    {
+      "node_id": "16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF",
+      "connectivity": 0,
+      "latency": 0
+    }
   ]
 }
 ```
+
+Starting from version v0.1.3, an optional Query parameter "number" is added to the request URL to limit the maximum number of nodes you want to query. For example, if you only need 3 nodes, you can use the URL
+`http://127.0.0.1:6000/api/v0/ai/projects/peers?number=3`.
 
 ## Node control interface
 

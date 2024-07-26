@@ -248,7 +248,7 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 
 ### ~~文生文模型(使用项目名称)~~
 
-**此接口即将废弃。**
+**此接口从 v0.1.2 版本开始被弃用。**
 
 此接口使用项目名称来调用文生文模型。客户端会根据策略选择一些运行指定项目和模型的节点，分别向其发送模型请求，选择结果正确的一个应答。
 
@@ -351,7 +351,7 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 
 ### ~~文生图模型(使用项目名称)~~
 
-**此接口即将废弃。**
+**此接口从 v0.1.2 版本开始被弃用。**
 
 此接口用来调用文生图模型。客户端会根据策略选择一些运行指定项目和模型的节点，分别向其发送模型请求，选择结果正确的一个应答。
 
@@ -447,6 +447,8 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 
 - 请求方式: POST
 - 请求 URL: http://127.0.0.1:6000/api/v0/ai/projects/peers
+- 请求 Query 参数:
+  - number: 正整数类型可选参数 - 表示想要查询的最大节点数量，默认值为 20
 - 请求 Body:
 ```json
 {
@@ -464,11 +466,36 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
   // 错误信息
   "message": "ok",
   "data": [
-    "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL",
-    "16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
+    // v0.1.2 版本及其之前版本，"data" 字段为节点 ID 组成的字符串数组
+    // "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL",
+    // "16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
+    // v0.1.3 版本开始将 "data" 字段修改为结构体数组，添加了节点连接延迟时间等信息
+    // "node_id" 表示节点 ID
+    // "connectivity" 表示节点之间的连通性，有下列几种情况:
+    // 0 - 未连接
+    // 1 - 已建立连接
+    // 2 - 可连接，最近连接过，但已被关闭
+    // 3 - 最近尝试建立连接失败了
+    // "latency" 表示节点连接的往返时延 RTT(Round-Trip Time)，int64 类型非负整数，以微秒为时间单位，有下列几种情况:
+    // 0 - 未连接的节点，无法计算延迟时间，默认为 0
+    // 正整数 - 正常的节点连接延迟时间
+    // ps: 1 秒 = 1e3 毫秒 = 1e6 微秒 = 1e9 纳秒
+    {
+      "node_id": "16Uiu2HAmPKuJU5VE2PCnydyUn1VcTN2Lt59UDJFFEiRbb7h1x4CV",
+      "connectivity": 1,
+      "latency": 89121
+    },
+    {
+      "node_id": "16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF",
+      "connectivity": 0,
+      "latency": 0
+    }
   ]
 }
 ```
+
+v0.1.3 版本开始在请求 URL 中增加了可选的 Query 参数 "number" 来限制想要查询的最大节点数量，例如仅需 3 个节点，可以使用 URL
+`http://127.0.0.1:6000/api/v0/ai/projects/peers?number=3`。
 
 ## 节点控制接口
 
