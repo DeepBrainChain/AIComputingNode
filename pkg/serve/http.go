@@ -277,12 +277,12 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 		Code:    0,
 		Message: "ok",
 	}
-	w.Header().Set("Content-Type", "application/json")
 
 	var msg types.ChatCompletionRequest
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
@@ -290,6 +290,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 	if err := msg.Validate(); err != nil {
 		rsp.Code = int(types.ErrCodeParam)
 		rsp.Message = err.Error()
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
@@ -301,6 +302,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 			if modelAPI == "" {
 				rsp.Code = int(types.ErrCodeModel)
 				rsp.Message = "Model API configuration is empty"
+				w.Header().Set("Content-Type", "application/json")
 				json.NewEncoder(w).Encode(rsp)
 				return
 			}
@@ -311,6 +313,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 			if err != nil {
 				rsp.Code = int(types.ErrCodeModel)
 				rsp.Message = "Parse model api interface failed"
+				w.Header().Set("Content-Type", "application/json")
 				json.NewEncoder(w).Encode(rsp)
 				return
 			}
@@ -319,6 +322,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 			if err != nil {
 				rsp.Code = int(types.ErrCodeModel)
 				rsp.Message = "Copy http request body failed"
+				w.Header().Set("Content-Type", "application/json")
 				json.NewEncoder(w).Encode(rsp)
 				return
 			}
@@ -328,6 +332,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 				rsp.Code = int(types.ErrCodeModel)
 				rsp.Message = "RoundTrip chat request failed"
 				log.Logger.Errorf("RoundTrip chat request failed: %v", err)
+				w.Header().Set("Content-Type", "application/json")
 				json.NewEncoder(w).Encode(rsp)
 				return
 			}
@@ -347,6 +352,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 			return
 		} else {
 			rsp = *model.ChatModel(modelAPI, msg.ChatModelRequest)
+			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(rsp)
 			return
 		}
@@ -359,6 +365,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 			rsp.Code = int(types.ErrCodeStream)
 			rsp.Message = "Open stream with peer node failed"
 			log.Logger.Errorf("Open stream with peer node failed: %v", err)
+			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(rsp)
 			return
 		}
@@ -370,6 +377,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 			rsp.Code = int(types.ErrCodeStream)
 			rsp.Message = "Copy http request body failed"
 			log.Logger.Errorf("Copy http request body failed: %v", err)
+			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(rsp)
 			return
 		}
@@ -384,6 +392,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 			rsp.Code = int(types.ErrCodeStream)
 			rsp.Message = "Write chat stream failed"
 			log.Logger.Errorf("Write chat stream failed: %v", err)
+			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(rsp)
 			return
 		}
@@ -396,6 +405,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 			rsp.Code = int(types.ErrCodeStream)
 			rsp.Message = "Read chat stream failed"
 			log.Logger.Errorf("Read chat stream failed: %v", err)
+			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(rsp)
 			return
 		}
@@ -414,6 +424,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 		log.Logger.Info("Handle chat completion stream request over")
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 
 	requestID, err := uuid.NewRandom()
 	if err != nil {
@@ -438,6 +449,11 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 				Model:    msg.Model,
 				Messages: ccms,
 				Stream:   false,
+				Wallet: &protocol.WalletVerification{
+					Wallet:    msg.Wallet,
+					Signature: msg.Signature,
+					Hash:      msg.Hash,
+				},
 			},
 		},
 	}
@@ -542,6 +558,11 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 				Width:    int32(msg.Width),
 				Height:   int32(msg.Height),
 				IpfsNode: msg.IpfsNode,
+				Wallet: &protocol.WalletVerification{
+					Wallet:    msg.Wallet,
+					Signature: msg.Signature,
+					Hash:      msg.Hash,
+				},
 			},
 		},
 	}

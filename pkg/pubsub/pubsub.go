@@ -525,6 +525,11 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 	chatReq := types.ChatModelRequest{
 		Model:  req.Model,
 		Stream: req.Stream,
+		WalletVerification: types.WalletVerification{
+			Wallet:    req.Wallet.Wallet,
+			Signature: req.Wallet.Signature,
+			Hash:      req.Wallet.Hash,
+		},
 	}
 	for _, ccm := range req.Messages {
 		chatReq.Messages = append(chatReq.Messages, types.ChatCompletionMessage{
@@ -607,6 +612,11 @@ func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenera
 				Size:   req.GetSize(),
 				Width:  int(req.GetWidth()),
 				Height: int(req.GetHeight()),
+				WalletVerification: types.WalletVerification{
+					Wallet:    req.Wallet.Wallet,
+					Signature: req.Wallet.Signature,
+					Hash:      req.Wallet.Hash,
+				},
 			},
 		)
 		if res.Code == 0 {

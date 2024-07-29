@@ -215,7 +215,13 @@ This interface is used to call text to generate text models
     }
   ],
   // If this is set to true, the returned data will be streamed in increments of one message at a time, and the data stream ends with data: [DONE].
-  "stream": false
+  "stream": false,
+  // User’s wallet public key
+  "wallet": "",
+  // Wallet signature
+  "signature": "",
+  // Original data hash
+  "hash": ""
 }
 ```
 - return example:
@@ -327,7 +333,13 @@ This interface is used to call the text-to-image model.
   "width": 1024,
   "height": 1024,
   // IPFS storage node, each project can deploy its own IPFS storage server
-  "ipfs_node": ""
+  "ipfs_node": "",
+  // User’s wallet public key
+  "wallet": "",
+  // Wallet signature
+  "signature": "",
+  // Original data hash
+  "hash": ""
 }
 ```
 - return example:

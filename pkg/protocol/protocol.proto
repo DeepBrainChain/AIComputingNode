@@ -48,6 +48,12 @@ message PeerIdentityResponse {
   repeated string protocols = 3;
 }
 
+message WalletVerification {
+  string wallet = 1;
+  string signature = 2;
+  string hash = 3;
+}
+
 message ImageGenerationBody {
   oneof data {
     ImageGenerationRequest req = 1;
@@ -65,6 +71,7 @@ message ImageGenerationRequest {
   int32 height = 7;
   reserved 8 to 15;
   string ipfs_node = 16;
+  WalletVerification wallet = 17;
 }
 
 message ImageGenerationResponse {
@@ -93,6 +100,8 @@ message ChatCompletionRequest {
   string model = 2;
   repeated ChatCompletionMessage messages = 3;
   bool stream = 4;
+  reserved 5 to 15;
+  WalletVerification wallet = 16;
 }
 
 message ChatCompletionResponse {

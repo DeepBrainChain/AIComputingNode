@@ -215,7 +215,13 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
     }
   ],
   // 如果此项设置为 true，返回数据会将消息增量一段一段以流式传输，数据流以 data: [DONE] 结束。
-  "stream": false
+  "stream": false,
+  // 用户的钱包公钥
+  "wallet": "",
+  // 钱包签名
+  "signature": "",
+  // 原始数据的 hash
+  "hash": ""
 }
 ```
 - 返回示例:
@@ -327,7 +333,13 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
   "width": 1024,
   "height": 1024,
   // IPFS 存储节点，每个项目可以自行部署 IPFS 存储服务器
-  "ipfs_node": ""
+  "ipfs_node": "",
+  // 用户的钱包公钥
+  "wallet": "",
+  // 钱包签名
+  "signature": "",
+  // 原始数据的 hash
+  "hash": ""
 }
 ```
 - 返回示例:

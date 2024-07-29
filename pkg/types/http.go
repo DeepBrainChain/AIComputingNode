@@ -43,6 +43,12 @@ type HostInfoResponse struct {
 	Data    HostInfo `json:"data"`
 }
 
+type WalletVerification struct {
+	Wallet    string `json:"wallet"`
+	Signature string `json:"signature"`
+	Hash      string `json:"hash"`
+}
+
 type ChatCompletionMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
@@ -64,6 +70,7 @@ type ChatModelRequest struct {
 	Model    string                  `json:"model"`
 	Messages []ChatCompletionMessage `json:"messages"`
 	Stream   bool                    `json:"stream"`
+	WalletVerification
 }
 
 type ChatCompletionRequest struct {
@@ -114,6 +121,7 @@ type ImageGenModelRequest struct {
 	Size    string `json:"size"`
 	Width   int    `json:"width"`
 	Height  int    `json:"height"`
+	WalletVerification
 }
 
 type ImageGenerationRequest struct {
