@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"AIComputingNode/pkg/config"
@@ -501,7 +502,7 @@ func (hs *httpService) chatCompletionProxyHandler(w http.ResponseWriter, r *http
 		Message: "ok",
 	}
 
-	var msg types.ChatCompletionRequest
+	var msg types.ChatCompletionProxyRequest
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
@@ -555,18 +556,29 @@ func (hs *httpService) chatCompletionProxyHandler(w http.ResponseWriter, r *http
 		return peers[i].Latency < peers[j].Latency
 	})
 
+	urlScheme := "http"
+	hp := strings.Split(r.Host, ":")
+	if len(hp) > 1 && hp[1] == "443" {
+		urlScheme = "https"
+	}
 	var err error = nil
 	failed_count := 0
 	for _, peer := range peers {
 		if failed_count >= 3 {
 			break
 		}
-		msg.NodeID = peer.NodeID
-		req := new(http.Request)
-		*req = *r
+		chatReq := types.ChatCompletionRequest{
+			NodeID:           peer.NodeID,
+			Project:          msg.Project,
+			ChatModelRequest: msg.ChatModelRequest,
+		}
+		req := r.Clone(r.Context())
+		req.URL.Host = r.Host
+		req.URL.Scheme = urlScheme
 		req.URL.Path = "/api/v0/chat/completion"
-		req.Body, req.ContentLength, err = msg.RequestBody()
+		req.Body, req.ContentLength, err = chatReq.RequestBody()
 		if err != nil {
+			log.Logger.Warnf("Make chat completion proxy request body %v in %d time", err, failed_count)
 			continue
 		}
 		resp, err := http.DefaultTransport.RoundTrip(req)
