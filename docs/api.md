@@ -252,11 +252,11 @@ This interface is used to call text to generate text models
 }
 ```
 
-### ~~Text generation text model(Use project name)~~
+### Text generation text model(Use project name)
 
-**This interface has been deprecated since v0.1.2.**
+**This interface has been deprecated since v0.1.2 and has been restored since v0.1.4.**
 
-This interface uses the project name to call the text-to-text model. The client will select some nodes running the specified project and model according to the strategy, send model requests to them respectively, and select a response with the correct result.
+This interface uses the project name to call the text-to-text model. The client will select some nodes running the specified project and model, sort them according to the strategy (RTT connection latency or GPU idle value, etc.), and send model requests to the nodes in turn until a correct response is obtained. If there are too many failures, an error will be reported.
 
 - request method: POST
 - request URL: http://127.0.0.1:6000/api/v0/chat/completion/proxy
@@ -277,7 +277,15 @@ This interface uses the project name to call the text-to-text model. The client 
       "role": "user",
       "content": "Hello"
     }
-  ]
+  ],
+  // If this is set to true, the returned data will be streamed in increments of one message at a time, and the data stream ends with data: [DONE].
+  "stream": false,
+  // User’s wallet public key
+  "wallet": "",
+  // Wallet signature
+  "signature": "",
+  // Original data hash
+  "hash": ""
 }
 ```
 - return example:
