@@ -6,31 +6,32 @@ import (
 	"testing"
 )
 
-type JsonTest struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
+type testJson struct {
+	Key    string `json:"key"`
+	Value  string `json:"value"`
+	EValue string `json:"evalue,omitempty"`
 }
 
-type Person struct {
+type testPerson struct {
 	Name string `json:"name"`
 	Age  int    `json:"age"`
 }
 
-func (p Person) Say() {
+func (p testPerson) Say() {
 	fmt.Println("I am Person struct")
 }
 
-type Student struct {
-	Person
+type testStudent struct {
+	testPerson
 	Grade int `json:"grade"`
 }
 
-func (p Student) Say() {
+func (p testStudent) Say() {
 	fmt.Println("I am Student struct")
 }
 
 func TestJsonStruct(t *testing.T) {
-	test := JsonTest{
+	test := testJson{
 		Key:   "Test",
 		Value: "value",
 	}
@@ -41,13 +42,13 @@ func TestJsonStruct(t *testing.T) {
 	t.Logf("orignal json %s", string(jsonData))
 
 	var value string = "{\"key\":\"Test\",\"Value\":\"value\"}"
-	js := JsonTest{}
+	js := testJson{}
 	if err := json.Unmarshal([]byte(value), &js); err != nil {
 		t.Fatalf("Unmarshal json %v", err)
 	}
 	t.Logf("Unmarshal json sucess %v", js)
 
-	test2 := JsonTest{
+	test2 := testJson{
 		Key: "Test",
 	}
 	jsonData, err = json.Marshal(test2)
@@ -58,7 +59,7 @@ func TestJsonStruct(t *testing.T) {
 }
 
 func TestComposition(t *testing.T) {
-	person := Person{
+	person := testPerson{
 		Name: "Test",
 		Age:  18,
 	}
@@ -69,15 +70,15 @@ func TestComposition(t *testing.T) {
 	}
 	t.Logf("orignal json %s", string(jsonData))
 
-	student := Student{
-		Person: Person{
+	student := testStudent{
+		testPerson: testPerson{
 			Name: "Test1",
 			Age:  15,
 		},
 		Grade: 12,
 	}
 	student.Say()
-	student.Person.Say()
+	student.testPerson.Say()
 	jsonData, err = json.Marshal(student)
 	if err != nil {
 		t.Fatalf("Marshal json %v", err)

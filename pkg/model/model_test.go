@@ -110,6 +110,7 @@ func StreamChatModel2(api string, chatReq types.ChatModelRequest) (code int, mes
 		message = "Marshal model request error"
 		return code, message
 	}
+	fmt.Println("Request: ", string(jsonData))
 	resp, err := http.Post(
 		api,
 		"application/json",
@@ -120,6 +121,7 @@ func StreamChatModel2(api string, chatReq types.ChatModelRequest) (code int, mes
 		return code, message
 	}
 	defer resp.Body.Close()
+	fmt.Println("Response Content-Type:", resp.Header.Get("Content-Type"))
 	sc := bufio.NewScanner(resp.Body)
 	for {
 		pack := types.StreamChatModelResponseData{}

@@ -44,9 +44,9 @@ type HostInfoResponse struct {
 }
 
 type WalletVerification struct {
-	Wallet    string `json:"wallet"`
-	Signature string `json:"signature"`
-	Hash      string `json:"hash"`
+	Wallet    string `json:"wallet,omitempty"`
+	Signature string `json:"signature,omitempty"`
+	Hash      string `json:"hash,omitempty"`
 }
 
 type ChatCompletionMessage struct {
@@ -316,6 +316,14 @@ func (req GetPeersOfAIProjectRequest) Validate() error {
 }
 
 func (req ChatModelRequest) RequestBody() (io.ReadCloser, int64, error) {
+	jsonData, err := json.Marshal(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	return io.NopCloser(bytes.NewBuffer(jsonData)), int64(len(jsonData)), nil
+}
+
+func (req ChatCompletionRequest) RequestBody() (io.ReadCloser, int64, error) {
 	jsonData, err := json.Marshal(req)
 	if err != nil {
 		return nil, 0, err

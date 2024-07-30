@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"time"
 
@@ -491,18 +492,134 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 }
 
 func (hs *httpService) chatCompletionProxyHandler(w http.ResponseWriter, r *http.Request) {
-	// if r.Method != http.MethodPost {
-	// 	http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
-	// 	return
-	// }
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
+		return
+	}
 	rsp := types.ChatCompletionResponse{
 		Code:    0,
 		Message: "ok",
 	}
-	w.Header().Set("Content-Type", "application/json")
 
-	rsp.Code = int(types.ErrCodeDeprecated)
-	rsp.Message = types.ErrCodeDeprecated.String()
+	var msg types.ChatCompletionRequest
+	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
+		rsp.Code = int(types.ErrCodeParse)
+		rsp.Message = types.ErrCodeParse.String()
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	if err := msg.Validate(); err != nil {
+		rsp.Code = int(types.ErrCodeParam)
+		rsp.Message = err.Error()
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	ids, code := db.GetPeersOfAIProjects(msg.Project, msg.Model, 20)
+	if code != 0 {
+		rsp.Code = int(types.ErrCodeProxy)
+		rsp.Message = types.ErrorCode(code).String()
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	peers := []types.AIProjectPeerInfo{}
+	for _, id := range ids {
+		conn := p2p.Hio.Connectedness(id)
+		if conn != 1 {
+			continue
+		}
+		latency := p2p.Hio.Latency(id).Milliseconds()
+		if latency == 0 {
+			continue
+		}
+		peers = append(peers, types.AIProjectPeerInfo{
+			NodeID:       id,
+			Connectivity: 1,
+			Latency:      latency,
+		})
+	}
+	if len(peers) == 0 {
+		rsp.Code = int(types.ErrCodeProxy)
+		rsp.Message = "Not enough available and directly connected nodes"
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	sort.Slice(peers, func(i, j int) bool {
+		return peers[i].Latency < peers[j].Latency
+	})
+
+	var err error = nil
+	failed_count := 0
+	for _, peer := range peers {
+		if failed_count >= 3 {
+			break
+		}
+		msg.NodeID = peer.NodeID
+		req := new(http.Request)
+		*req = *r
+		req.URL.Path = "/api/v0/chat/completion"
+		req.Body, req.ContentLength, err = msg.RequestBody()
+		if err != nil {
+			continue
+		}
+		resp, err := http.DefaultTransport.RoundTrip(req)
+		if err != nil || resp.StatusCode != 200 {
+			log.Logger.Warnf("Roundtrip chat completion proxy %v %v to %s in %d time", err, resp.StatusCode, peer.NodeID, failed_count)
+			failed_count += 1
+			continue
+		}
+		defer resp.Body.Close()
+		if msg.Stream {
+			contentType := resp.Header.Get("Content-Type")
+			if contentType == "application/json" {
+				body, _ := io.ReadAll(resp.Body)
+				log.Logger.Warnf("Transform chat completion proxy %v to %s in %d time", string(body), peer.NodeID, failed_count)
+				failed_count += 1
+				continue
+			} else {
+				for k, v := range resp.Header {
+					for _, s := range v {
+						w.Header().Add(k, s)
+					}
+				}
+				w.WriteHeader(resp.StatusCode)
+				io.Copy(w, resp.Body)
+				log.Logger.Infof("Handle chat completion proxy stream request to %s success in %d time", peer.NodeID, failed_count)
+				return
+			}
+		} else {
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				log.Logger.Warnf("Read chat completion proxy response json failed in %d time", failed_count)
+				failed_count += 1
+				continue
+			}
+			if err := json.Unmarshal(body, &rsp); err != nil {
+				log.Logger.Warnf("Parse chat completion proxy response json failed in %d time", failed_count)
+				failed_count += 1
+				continue
+			}
+			if rsp.Code != 0 {
+				log.Logger.Warnf("Handle chat completion proxy response %v in %d time", rsp.Message, failed_count)
+				failed_count += 1
+				continue
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(rsp)
+			return
+		}
+	}
+
+	rsp.Code = int(types.ErrCodeProxy)
+	rsp.Message = fmt.Sprintf("Failed %d times", failed_count)
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(rsp)
 }
 

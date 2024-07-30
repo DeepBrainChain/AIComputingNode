@@ -85,6 +85,8 @@ func TestHttpUrl(t *testing.T) {
 	t.Logf("Parse url success %s", u1.String())
 	fmt.Println(*u1)
 	fmt.Println(u1)
+	t.Logf("{Scheme: %s, Opaque: %s, Host: %s, Path: %s, RawPath: %s, OmitHost: %v, ForceQuery: %v, RawQuery: %v, Fragment: %v, RawFragment: %v}",
+		u1.Scheme, u1.Opaque, u1.Host, u1.Path, u1.RawPath, u1.OmitHost, u1.ForceQuery, u1.RawQuery, u1.Fragment, u1.RawFragment)
 
 	u2, err := url.ParseRequestURI(testUrl)
 	if err != nil {
