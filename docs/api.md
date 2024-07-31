@@ -369,11 +369,11 @@ This interface is used to call the text-to-image model.
 }
 ```
 
-### ~~Text generation image model(Use project name)~~
+### Text generation image model(Use project name)
 
-**This interface has been deprecated since v0.1.2.**
+**This interface has been deprecated since v0.1.2 and has been restored since v0.1.4.**
 
-This interface uses the project name to call the text-to-image model. The client will select some nodes running the specified project and model according to the strategy, send model requests to them respectively, and select a response with the correct result.
+This interface uses the project name to call the text-to-image model. The client will select some nodes running the specified project and model, sort them according to the strategy (RTT connection latency or GPU idle value, etc.), and send model requests to the nodes in turn until a correct response is obtained. If there are too many failures, an error will be reported.
 
 - request method: POST
 - request URL: http://127.0.0.1:6000/api/v0/image/gen/proxy
@@ -389,9 +389,18 @@ This interface uses the project name to call the text-to-image model. The client
   // The number of images to be generated, at least one
   "n": 1,
   // The size of the image to be generated
+  // v0.1.3 started to deprecate the size field, please use the width and height fields
   "size": "1024x1024",
+  "width": 1024,
+  "height": 1024,
   // IPFS storage node, each project can deploy its own IPFS storage server
-  "ipfs_node": ""
+  "ipfs_node": "",
+  // User’s wallet public key
+  "wallet": "",
+  // Wallet signature
+  "signature": "",
+  // Original data hash
+  "hash": ""
 }
 ```
 - return example:
