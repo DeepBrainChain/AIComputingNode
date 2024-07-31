@@ -241,6 +241,19 @@ func (req HostInfoRequest) Validate() error {
 	return nil
 }
 
+func (req WalletVerification) Validate() error {
+	if req.Wallet == "" {
+		return errors.New("empty wallet")
+	}
+	if req.Signature == "" {
+		return errors.New("empty signature")
+	}
+	if req.Hash == "" {
+		return errors.New("empty hash")
+	}
+	return nil
+}
+
 func (req ChatCompletionRequest) Validate() error {
 	if req.NodeID == "" {
 		return errors.New("empty node_id")
@@ -251,6 +264,9 @@ func (req ChatCompletionRequest) Validate() error {
 	if req.Model == "" {
 		return errors.New("empty model")
 	}
+	if err := req.ChatModelRequest.WalletVerification.Validate(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -260,6 +276,9 @@ func (req ChatCompletionProxyRequest) Validate() error {
 	}
 	if req.Model == "" {
 		return errors.New("empty model")
+	}
+	if err := req.ChatModelRequest.WalletVerification.Validate(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -274,6 +293,9 @@ func (req ImageGenerationRequest) Validate() error {
 	if req.Model == "" {
 		return errors.New("empty model")
 	}
+	if err := req.ImageGenModelRequest.WalletVerification.Validate(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -283,6 +305,9 @@ func (req ImageGenerationProxyRequest) Validate() error {
 	}
 	if req.Model == "" {
 		return errors.New("empty model")
+	}
+	if err := req.ImageGenModelRequest.WalletVerification.Validate(); err != nil {
+		return err
 	}
 	return nil
 }
