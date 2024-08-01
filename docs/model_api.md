@@ -23,7 +23,9 @@ Chat dialogue, text assistant
       "role": "user",
       "content": "Hello!"
     }
-  ]
+  ],
+  // If this is set to true, the returned data will be streamed in increments of one message at a time, and the data stream ends with data: [DONE].
+  "stream": false
 }
 ```
 - return example:
@@ -51,6 +53,24 @@ Chat dialogue, text assistant
   }
 }
 ```
+- streaming return example:
+```
+data: {"id":"cmpl-6ca706a597db48fdbfa084f61baa4771","object":"chat.completion.chunk","created":1722486241,"model":"Llama3-70B","choices":[{"index":0,"delta":{"role":"assistant"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"cmpl-6ca706a597db48fdbfa084f61baa4771","object":"chat.completion.chunk","created":1722486241,"model":"Llama3-70B","choices":[{"index":0,"delta":{"content":"Hello"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"cmpl-6ca706a597db48fdbfa084f61baa4771","object":"chat.completion.chunk","created":1722486241,"model":"Llama3-70B","choices":[{"index":0,"delta":{"content":"!"},"logprobs":null,"finish_reason":null}]}
+
+......
+
+data: {"id":"cmpl-6ca706a597db48fdbfa084f61baa4771","object":"chat.completion.chunk","created":1722486241,"model":"Llama3-70B","choices":[{"index":0,"delta":{"content":" discuss"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"cmpl-6ca706a597db48fdbfa084f61baa4771","object":"chat.completion.chunk","created":1722486241,"model":"Llama3-70B","choices":[{"index":0,"delta":{"content":"."},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"cmpl-6ca706a597db48fdbfa084f61baa4771","object":"chat.completion.chunk","created":1722486241,"model":"Llama3-70B","choices":[{"index":0,"delta":{"content":""},"finish_reason":"stop","stop_reason":128009}],"usage":{"prompt_tokens":22,"total_tokens":68,"completion_tokens":46}}
+
+data: [DONE]
+```
 
 ```shell
 curl http://127.0.0.1:1088/v1/chat/completions \
@@ -66,7 +86,8 @@ curl http://127.0.0.1:1088/v1/chat/completions \
         "role": "user",
         "content": "Hello!"
       }
-    ]
+    ],
+    "stream": false
   }'
 ```
 
