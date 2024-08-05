@@ -140,6 +140,7 @@ func main() {
 		libp2p.ProtocolVersion(ProtocolVersion),
 		libp2p.UserAgent(version),
 		libp2p.ConnectionGater(connGater),
+		libp2p.DefaultResourceManager,
 	}
 	if cfg.Swarm.ConnMgr.Type == "basic" {
 		gracePeriod, _ := time.ParseDuration(cfg.Swarm.ConnMgr.GracePeriod)
@@ -352,8 +353,6 @@ func main() {
 		PrivKey:         privKey,
 		Ctx:             ctx,
 		PingService:     pingService,
-		PingCtx:         pingCtx,
-		PingStopCancel:  pingStopCancel,
 		Dht:             kadDHT,
 		RD:              routingDiscovery,
 		Topic:           topic,
@@ -366,7 +365,7 @@ func main() {
 	timer.StartAITimer(heartbeatInterval, publishChan)
 	go ps.PubsubHandler(ctx, sub, publishChan)
 	serve.NewHttpServe(publishChan, *configPath)
-	p2p.Hio.StartPingService()
+	p2p.Hio.StartPingService(pingCtx)
 
 	log.Logger.Info("listening for connections")
 
@@ -374,7 +373,8 @@ func main() {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	// select {} // hang forever
 	<-stop
-	p2p.Hio.StopPingService()
+	// Stop PingService
+	pingStopCancel()
 	timer.StopAITimer()
 	serve.StopHttpService()
 	kadDHT.Close()

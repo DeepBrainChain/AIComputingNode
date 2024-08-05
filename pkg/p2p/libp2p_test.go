@@ -3,6 +3,7 @@ package p2p
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
@@ -42,6 +43,7 @@ func TestLatency(t *testing.T) {
 		),
 		libp2p.Ping(false),
 		libp2p.Identity(privKey1),
+		libp2p.DefaultResourceManager,
 	)
 	if err != nil {
 		t.Fatalf("create libp2p host %v", err)
@@ -52,6 +54,7 @@ func TestLatency(t *testing.T) {
 			"/ip4/0.0.0.0/udp/9001/quic", // a UDP endpoint for the QUIC transport
 		),
 		libp2p.Identity(privKey2),
+		libp2p.DefaultResourceManager,
 	)
 	if err != nil {
 		t.Fatalf("create libp2p host %v", err)
@@ -93,14 +96,26 @@ func TestLatency(t *testing.T) {
 	t.Logf("host1 latency of host2 %v", host1.Peerstore().LatencyEWMA(peer2).String())
 	t.Logf("host2 latency of host1 %v", host2.Peerstore().LatencyEWMA(peer1).String())
 
-	ch := pingService.Ping(context.Background(), peer2)
-	for i := 0; i < 5; i++ {
-		res := <-ch
-		if res.Error != nil {
-			t.Errorf("ping failed %v", res.Error)
-		} else {
-			t.Log("pinged", peer2.String(), "in", res.RTT)
+	for ii := 0; ii < 5; ii++ {
+		ctx, cancel := context.WithCancel(context.Background())
+		ch := pingService.Ping(ctx, peer2)
+		for i := 0; i < 5; i++ {
+			res := <-ch
+			if res.Error != nil {
+				t.Errorf("ping failed %v", res.Error)
+			} else {
+				t.Log("pinged", peer2.String(), "in", res.RTT)
+			}
 		}
+		cancel()
+
+		conns := host1.Network().Conns()
+		for _, conn := range conns {
+			t.Logf("host1 conn has %d streams with %s", len(conn.GetStreams()), conn.RemotePeer().String())
+		}
+		t.Logf("host1 latency of host2 %v", host1.Peerstore().LatencyEWMA(peer2).String())
+		t.Logf("host2 latency of host1 %v", host2.Peerstore().LatencyEWMA(peer1).String())
+		time.Sleep(3 * time.Second)
 	}
 	// for res := range ch {
 	// 	if res.Error != nil {
@@ -109,7 +124,4 @@ func TestLatency(t *testing.T) {
 	// 		t.Log("pinged", peer2.String(), "in", res.RTT)
 	// 	}
 	// }
-
-	t.Logf("host1 latency of host2 %v", host1.Peerstore().LatencyEWMA(peer2).String())
-	t.Logf("host2 latency of host1 %v", host2.Peerstore().LatencyEWMA(peer1).String())
 }

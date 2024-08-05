@@ -1,30 +1,32 @@
 package p2p
 
 import (
+	"context"
 	"time"
 
 	"AIComputingNode/pkg/log"
 )
 
-func (hio *HostInfo) StartPingService() {
+func (hio *HostInfo) StartPingService(ctx context.Context) {
 	if hio.PingService == nil {
 		return
 	}
 
 	go func() {
-		interval := 30 * time.Second
+		interval := 60 * time.Second
 		timer := time.NewTimer(interval)
 		defer timer.Stop()
 		for {
 			select {
-			case <-hio.PingCtx.Done():
+			case <-ctx.Done():
 				return
 			case <-timer.C:
 			}
 
 			conns := hio.Host.Network().Conns()
 			for _, conn := range conns {
-				ch := hio.PingService.Ping(hio.PingCtx, conn.RemotePeer())
+				pingCtx, pingStopCancel := context.WithCancel(ctx)
+				ch := hio.PingService.Ping(pingCtx, conn.RemotePeer())
 				for i := 0; i < 5; i++ {
 					res := <-ch
 					if res.Error != nil {
@@ -33,12 +35,9 @@ func (hio *HostInfo) StartPingService() {
 						log.Logger.Debugf("ping %s in %v", conn.RemotePeer().String(), res.RTT)
 					}
 				}
+				pingStopCancel()
 			}
 			timer.Reset(interval)
 		}
 	}()
-}
-
-func (hio *HostInfo) StopPingService() {
-	hio.PingStopCancel()
 }

@@ -36,9 +36,7 @@ type HostInfo struct {
 	PrivKey         crypto.PrivKey
 	Ctx             context.Context
 
-	PingService    *ping.PingService
-	PingCtx        context.Context
-	PingStopCancel context.CancelFunc
+	PingService *ping.PingService
 
 	Dht   *dht.IpfsDHT
 	RD    *drouting.RoutingDiscovery
