@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -17,12 +18,12 @@ var (
 	ErrNotSecp256k1PrivKey = fmt.Errorf("not secp256k1 private key")
 )
 
-func Encrypt(peerid string, plaintext []byte) ([]byte, error) {
+func Encrypt(ctx context.Context, peerid string, plaintext []byte) ([]byte, error) {
 	peer, err := peer.Decode(peerid)
 	if err != nil {
 		return plaintext, err
 	}
-	pubKey, err := Hio.GetPublicKey(peer)
+	pubKey, err := Hio.GetPublicKey(ctx, peer)
 	if err != nil {
 		return plaintext, err
 	}

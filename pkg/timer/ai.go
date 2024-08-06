@@ -18,24 +18,7 @@ type AITimer struct {
 	PublishChan chan<- []byte
 }
 
-var DoneChan = make(chan bool)
-
 var AIT *AITimer
-
-func (service AITimer) run(interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-DoneChan:
-			log.Logger.Info("ai timer goroutine over")
-			return
-		case <-ticker.C:
-			db.CleanExpiredPeerCollectInfo()
-			service.SendAIProjects()
-		}
-	}
-}
 
 func (service AITimer) SendAIProjects() {
 	projects := config.GC.GetAIProjectsOfNode()
@@ -114,13 +97,22 @@ func (service AITimer) HandleAIProjectMessage(node_id string, projects []types.A
 	db.UpdatePeerCollect(node_id, info)
 }
 
-func StartAITimer(interval time.Duration, pcn chan<- []byte) {
+func StartTimer(ctx context.Context, interval time.Duration, pcn chan<- []byte) {
 	AIT = &AITimer{
 		PublishChan: pcn,
 	}
-	go AIT.run(interval)
-}
-
-func StopAITimer() {
-	DoneChan <- true
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				log.Logger.Info("ai timer goroutine over")
+				return
+			case <-ticker.C:
+				db.CleanExpiredPeerCollectInfo()
+				AIT.SendAIProjects()
+			}
+		}
+	}()
 }

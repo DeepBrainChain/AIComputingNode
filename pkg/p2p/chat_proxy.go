@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"bufio"
+	"context"
 	"crypto/tls"
 	"net"
 	"net/http"
@@ -16,6 +17,8 @@ import (
 )
 
 const ChatProxyProtocol = "/chat-proxy/0.0.1"
+
+var ChatProxyStreamTimeout = 3 * time.Minute
 
 var DefaultTransport http.RoundTripper = &http.Transport{
 	// Proxy: ProxyFromEnvironment,
@@ -79,6 +82,7 @@ func NewHttpClientTrace() *httptrace.ClientTrace {
 // to parse, make on behalf of the original node, and then write the response
 // on the stream, before closing it.
 func ChatProxyStreamHandler(stream network.Stream) {
+	stream.SetDeadline(time.Now().Add(ChatProxyStreamTimeout))
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
@@ -150,7 +154,13 @@ func ChatProxyStreamHandler(stream network.Stream) {
 
 	// outreq := new(http.Request)
 	// *outreq = *req
-	outreq := req.WithContext(httptrace.WithClientTrace(Hio.Ctx, NewHttpClientTrace()))
+	ctx := req.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	pctx, cancel := context.WithTimeout(ctx, ChatProxyStreamTimeout)
+	defer cancel()
+	outreq := req.WithContext(httptrace.WithClientTrace(pctx, NewHttpClientTrace()))
 
 	// We now make the request
 	log.Logger.Infof("Making request to %s", req.URL)

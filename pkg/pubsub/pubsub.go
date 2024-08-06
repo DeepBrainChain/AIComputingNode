@@ -3,6 +3,7 @@ package ps
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -37,22 +38,32 @@ type ModelResult struct {
 
 func PublishToTopic(ctx context.Context, topic *pubsub.Topic, messageChan <-chan []byte) {
 	for {
-		message := <-messageChan
-		if err := topic.Publish(ctx, message); err != nil {
-			log.Logger.Errorf("Error when publish to topic %v", err)
-		} else {
-			log.Logger.Infof("Published %d bytes", len(message))
+		select {
+		case <-ctx.Done():
+			log.Logger.Info("Publish to topic goroutine end")
+			return
+		case message := <-messageChan:
+			if err := topic.Publish(ctx, message); err != nil {
+				log.Logger.Errorf("Error when publish to topic %v", err)
+			} else {
+				log.Logger.Infof("Published %d bytes", len(message))
+			}
 		}
 	}
 }
 
-func PubsubHandler(ctx context.Context, sub *pubsub.Subscription, publishChan chan<- []byte) {
+func ReadFromTopic(ctx context.Context, sub *pubsub.Subscription, publishChan chan<- []byte) {
 	defer sub.Cancel()
 	for {
 		msg, err := sub.Next(ctx)
 		if err != nil {
-			log.Logger.Warnf("Read PubSub: %v", err)
-			continue
+			if errors.Is(err, ctx.Err()) {
+				log.Logger.Info("Subscribe read goroutine end")
+				return
+			} else {
+				log.Logger.Warnf("Read PubSub: %v", err)
+				continue
+			}
 		}
 
 		pmsg := &protocol.Message{}
@@ -147,7 +158,7 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 				log.Logger.Errorf("Marshal Identity Response Body %v", err)
 				return
 			}
-			resBody, err = p2p.Encrypt(msg.Header.NodeId, resBody)
+			resBody, err = p2p.Encrypt(ctx, msg.Header.NodeId, resBody)
 			res := protocol.Message{
 				Header: &protocol.MessageHeader{
 					ClientVersion: p2p.Hio.UserAgent,
@@ -220,7 +231,7 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 				log.Logger.Errorf("Marshal Chat Completion Response Body %v", err)
 				return
 			}
-			resBody, err = p2p.Encrypt(msg.Header.NodeId, resBody)
+			resBody, err = p2p.Encrypt(ctx, msg.Header.NodeId, resBody)
 			res := protocol.Message{
 				Header: &protocol.MessageHeader{
 					ClientVersion: p2p.Hio.UserAgent,
@@ -309,7 +320,7 @@ func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, de
 				log.Logger.Errorf("Marshal Image Generation Response Body %v", err)
 				return
 			}
-			resBody, err = p2p.Encrypt(msg.Header.NodeId, resBody)
+			resBody, err = p2p.Encrypt(ctx, msg.Header.NodeId, resBody)
 			res := protocol.Message{
 				Header: &protocol.MessageHeader{
 					ClientVersion: p2p.Hio.UserAgent,
@@ -392,7 +403,7 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 				log.Logger.Warnf("Marshal HostInfo Response Body %v", err)
 				return
 			}
-			resBody, err = p2p.Encrypt(msg.Header.NodeId, resBody)
+			resBody, err = p2p.Encrypt(ctx, msg.Header.NodeId, resBody)
 			res := protocol.Message{
 				Header: &protocol.MessageHeader{
 					ClientVersion: p2p.Hio.UserAgent,
@@ -460,7 +471,7 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 				log.Logger.Warnf("Marshal AI Project Response Body %v", err)
 				return
 			}
-			resBody, err = p2p.Encrypt(msg.Header.NodeId, resBody)
+			resBody, err = p2p.Encrypt(ctx, msg.Header.NodeId, resBody)
 			res := protocol.Message{
 				Header: &protocol.MessageHeader{
 					ClientVersion: p2p.Hio.UserAgent,

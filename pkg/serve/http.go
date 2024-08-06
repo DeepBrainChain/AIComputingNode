@@ -162,7 +162,7 @@ func (hs *httpService) peerHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
-	body, err = p2p.Encrypt(msg.NodeID, body)
+	body, err = p2p.Encrypt(r.Context(), msg.NodeID, body)
 
 	req := &protocol.Message{
 		Header: &protocol.MessageHeader{
@@ -242,7 +242,7 @@ func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
-	body, err = p2p.Encrypt(msg.NodeID, body)
+	body, err = p2p.Encrypt(r.Context(), msg.NodeID, body)
 
 	req := &protocol.Message{
 		Header: &protocol.MessageHeader{
@@ -269,11 +269,13 @@ func (hs *httpService) rendezvousPeersHandler(w http.ResponseWriter, r *http.Req
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 		return
 	}
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
 	rsp := types.PeerListResponse{
 		Code:    0,
 		Message: "ok",
 	}
-	peerChan, err := p2p.Hio.FindPeers(config.GC.App.TopicName)
+	peerChan, err := p2p.Hio.FindPeers(ctx, config.GC.App.TopicName)
 	if err != nil {
 		log.Logger.Warnf("List peer message: %v", err)
 		rsp.Code = int(types.ErrCodeRendezvous)
@@ -335,7 +337,9 @@ func (hs *httpService) swarmConnectHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err := p2p.Hio.SwarmConnect(req.NodeAddr); err != nil {
+	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+	defer cancel()
+	if err := p2p.Hio.SwarmConnect(ctx, req.NodeAddr); err != nil {
 		rsp.Code = int(types.ErrCodeInternal)
 		rsp.Message = err.Error()
 	}
@@ -530,7 +534,7 @@ func (hs *httpService) getAIProjectOfNodeHandler(w http.ResponseWriter, r *http.
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
-	body, err = p2p.Encrypt(msg.NodeID, body)
+	body, err = p2p.Encrypt(r.Context(), msg.NodeID, body)
 
 	req := &protocol.Message{
 		Header: &protocol.MessageHeader{

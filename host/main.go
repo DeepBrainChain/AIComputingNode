@@ -126,6 +126,8 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	p2pCtx, p2pStopCancel := context.WithCancel(ctx)
+
 	var kadDHT *dht.IpfsDHT
 	var pingService *ping.PingService = nil
 
@@ -176,7 +178,7 @@ func main() {
 			if cfg.Routing.ProtocolPrefix != "" {
 				dhtOpts = append(dhtOpts, dht.ProtocolPrefix(protocol.ID(cfg.Routing.ProtocolPrefix)))
 			}
-			kadDHT, err = dht.New(ctx, h, dhtOpts...)
+			kadDHT, err = dht.New(p2pCtx, h, dhtOpts...)
 			return kadDHT, err
 		}))
 	}
@@ -225,7 +227,7 @@ func main() {
 	})
 
 	host.SetStreamHandler(p2p.ChatProxyProtocol, p2p.ChatProxyStreamHandler)
-	pingCtx, pingStopCancel := context.WithCancel(context.Background())
+	pingCtx, pingStopCancel := context.WithCancel(ctx)
 	if cfg.Swarm.RelayService.Enabled && cfg.App.PeersCollect.Enabled {
 		pingService = &ping.PingService{Host: host}
 		host.SetStreamHandler(ping.ID, pingService.PingHandler)
@@ -238,7 +240,7 @@ func main() {
 		if cfg.Routing.ProtocolPrefix != "" {
 			dhtOpts = append(dhtOpts, dht.ProtocolPrefix(protocol.ID(cfg.Routing.ProtocolPrefix)))
 		}
-		kadDHT, err = dht.New(ctx, host, dhtOpts...)
+		kadDHT, err = dht.New(p2pCtx, host, dhtOpts...)
 		if err != nil {
 			log.Logger.Fatalf("Create Kademlia DHT: %v", err)
 		}
@@ -262,9 +264,9 @@ func main() {
 		if cfg.Pubsub.FloodPublish {
 			psOpts = append(psOpts, pubsub.WithFloodPublish(true))
 		}
-		gs, err = pubsub.NewGossipSub(ctx, host, psOpts...)
+		gs, err = pubsub.NewGossipSub(p2pCtx, host, psOpts...)
 	} else {
-		gs, err = pubsub.NewFloodSub(ctx, host, psOpts...)
+		gs, err = pubsub.NewFloodSub(p2pCtx, host, psOpts...)
 	}
 	if err != nil {
 		log.Logger.Fatalf("New %s: %v", cfg.Pubsub.Router, err)
@@ -285,7 +287,7 @@ func main() {
 			if ispub {
 				host.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
 			}
-			if err := host.Connect(ctx, pi); err != nil {
+			if err := host.Connect(p2pCtx, pi); err != nil {
 				log.Logger.Warnf("Connect history node %v : %v", pi, err)
 				result.Success = false
 			} else {
@@ -317,7 +319,7 @@ func main() {
 				defer wg.Done()
 				if host.Network().Connectedness(pi.ID) != network.Connected {
 					host.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
-					if err := host.Connect(ctx, pi); err != nil {
+					if err := host.Connect(p2pCtx, pi); err != nil {
 						log.Logger.Warnf("Connect bootstrap node %v : %v", pi, err)
 					} else {
 						log.Logger.Info("Connection established with bootstrap node:", pi)
@@ -328,13 +330,13 @@ func main() {
 		wg.Wait()
 	}
 
-	err = kadDHT.Bootstrap(ctx)
+	err = kadDHT.Bootstrap(p2pCtx)
 	if err != nil {
 		log.Logger.Fatalf("Bootstrap the host: %v", err)
 	}
 
 	routingDiscovery := drouting.NewRoutingDiscovery(kadDHT)
-	dutil.Advertise(ctx, routingDiscovery, cfg.App.TopicName)
+	dutil.Advertise(p2pCtx, routingDiscovery, cfg.App.TopicName)
 
 	topic, err := gs.Join(cfg.App.TopicName)
 	if err != nil {
@@ -346,12 +348,15 @@ func main() {
 		log.Logger.Fatalf("Subscribe PubSub: %v", err)
 	}
 
+	pubCtx, pubStopCancel := context.WithCancel(ctx)
+	subCtx, subStopCancel := context.WithCancel(ctx)
+	timerCtx, timerStopCancel := context.WithCancel(ctx)
+
 	p2p.Hio = &p2p.HostInfo{
 		Host:            host,
 		UserAgent:       version,
 		ProtocolVersion: ProtocolVersion,
 		PrivKey:         privKey,
-		Ctx:             ctx,
 		PingService:     pingService,
 		Dht:             kadDHT,
 		RD:              routingDiscovery,
@@ -361,9 +366,9 @@ func main() {
 	// Topic publish channel
 	publishChan := make(chan []byte, 1024)
 	heartbeatInterval, _ := time.ParseDuration(cfg.App.PeersCollect.HeartbeatInterval)
-	go ps.PublishToTopic(ctx, topic, publishChan)
-	timer.StartAITimer(heartbeatInterval, publishChan)
-	go ps.PubsubHandler(ctx, sub, publishChan)
+	go ps.PublishToTopic(pubCtx, topic, publishChan)
+	timer.StartTimer(timerCtx, heartbeatInterval, publishChan)
+	go ps.ReadFromTopic(subCtx, sub, publishChan)
 	serve.NewHttpServe(publishChan, *configPath)
 	p2p.Hio.StartPingService(pingCtx)
 
@@ -375,8 +380,13 @@ func main() {
 	<-stop
 	// Stop PingService
 	pingStopCancel()
-	timer.StopAITimer()
 	serve.StopHttpService()
+	subStopCancel()
+	timerStopCancel()
+	pubStopCancel()
+
+	p2pStopCancel()
+
 	kadDHT.Close()
 	host.Close()
 

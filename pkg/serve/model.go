@@ -115,7 +115,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 
 	if msg.Stream {
 		log.Logger.Info("Received chat completion stream request")
-		stream, err := p2p.Hio.NewStream(msg.NodeID)
+		stream, err := p2p.Hio.NewStream(r.Context(), msg.NodeID)
 		if err != nil {
 			rsp.Code = int(types.ErrCodeStream)
 			rsp.Message = "Open stream with peer node failed"
@@ -124,6 +124,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 			json.NewEncoder(w).Encode(rsp)
 			return
 		}
+		stream.SetDeadline(time.Now().Add(p2p.ChatProxyStreamTimeout))
 		defer stream.Close()
 		log.Logger.Infof("Create libp2p stream with %s success", msg.NodeID)
 
@@ -219,7 +220,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
-	body, err = p2p.Encrypt(msg.NodeID, body)
+	body, err = p2p.Encrypt(r.Context(), msg.NodeID, body)
 	if err != nil {
 		rsp.Code = int(types.ErrCodeEncrypt)
 		rsp.Message = types.ErrCodeEncrypt.String()
@@ -455,7 +456,7 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
-	body, err = p2p.Encrypt(msg.NodeID, body)
+	body, err = p2p.Encrypt(r.Context(), msg.NodeID, body)
 	if err != nil {
 		rsp.Code = int(types.ErrCodeEncrypt)
 		rsp.Message = types.ErrCodeEncrypt.String()

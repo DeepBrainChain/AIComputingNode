@@ -34,7 +34,6 @@ type HostInfo struct {
 	UserAgent       string
 	ProtocolVersion string
 	PrivKey         crypto.PrivKey
-	Ctx             context.Context
 
 	PingService *ping.PingService
 
@@ -70,8 +69,8 @@ func (hio *HostInfo) GetIdentifyProtocol() types.IdentifyProtocol {
 	return id
 }
 
-func (hio *HostInfo) FindPeers(ns string) (<-chan peer.AddrInfo, error) {
-	return hio.RD.FindPeers(hio.Ctx, ns)
+func (hio *HostInfo) FindPeers(ctx context.Context, ns string) (<-chan peer.AddrInfo, error) {
+	return hio.RD.FindPeers(ctx, ns)
 }
 
 func (hio *HostInfo) SwarmPeers() []SwarmPeerInfo {
@@ -106,7 +105,7 @@ func (hio *HostInfo) SwarmAddrs() []PeerAddrInfo {
 	return addrs
 }
 
-func (hio *HostInfo) SwarmConnect(addr string) error {
+func (hio *HostInfo) SwarmConnect(ctx context.Context, addr string) error {
 	maddr, err := multiaddr.NewMultiaddr(addr)
 	if err != nil {
 		return err
@@ -118,7 +117,7 @@ func (hio *HostInfo) SwarmConnect(addr string) error {
 	if swrm, ok := hio.Host.Network().(*swarm.Swarm); ok {
 		swrm.Backoff().Clear(pi.ID)
 	}
-	if err := hio.Host.Connect(hio.Ctx, *pi); err != nil {
+	if err := hio.Host.Connect(ctx, *pi); err != nil {
 		return err
 	}
 	hio.Host.ConnManager().TagPeer(pi.ID, connectionManagerTag, connectionManagerWeight)
@@ -153,19 +152,19 @@ func (hio *HostInfo) PubsubPeers() []string {
 	return ids
 }
 
-func (hio *HostInfo) GetPublicKey(p peer.ID) (crypto.PubKey, error) {
+func (hio *HostInfo) GetPublicKey(ctx context.Context, p peer.ID) (crypto.PubKey, error) {
 	if pubKey := hio.Host.Peerstore().PubKey(p); pubKey != nil {
 		return pubKey, nil
 	}
-	return hio.Dht.GetPublicKey(hio.Ctx, p)
+	return hio.Dht.GetPublicKey(ctx, p)
 }
 
-func (hio *HostInfo) NewStream(nodeId string) (network.Stream, error) {
+func (hio *HostInfo) NewStream(ctx context.Context, nodeId string) (network.Stream, error) {
 	peer, err := peer.Decode(nodeId)
 	if err != nil {
 		return nil, err
 	}
-	return hio.Host.NewStream(hio.Ctx, peer, ChatProxyProtocol)
+	return hio.Host.NewStream(ctx, peer, ChatProxyProtocol)
 }
 
 func (hio *HostInfo) Connectedness(nodeId string) int {
