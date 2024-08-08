@@ -43,7 +43,7 @@ The bootstrap node, open ports, logs, etc. of this project can all be configured
       "Type": "basic",
       // GracePeriod is a time duration that new connections are immune from being closed by
       // the connection manager.
-      "GracePeriod": "20s",
+      "GracePeriod": "60s",
       // When a node using the basic connection manager reaches HighWater idle connections,
       // it will close the least useful ones until it reaches LowWater idle connections.
       "HighWater": 400,
@@ -196,7 +196,7 @@ This example is used for the client without a public IP address.
   "Swarm": {
     "ConnMgr": {
       "Type": "none",
-      "GracePeriod": "20s",
+      "GracePeriod": "60s",
       "HighWater": 400,
       "LowWater": 100
     },
@@ -273,7 +273,7 @@ This example is used for a client node or boot node with a public IP address.
   "Swarm": {
     "ConnMgr": {
       "Type": "basic",
-      "GracePeriod": "20s",
+      "GracePeriod": "60s",
       "HighWater": 400,
       "LowWater": 100
     },

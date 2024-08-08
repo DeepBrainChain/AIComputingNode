@@ -92,7 +92,7 @@ func Init(mode string) error {
 		Swarm: SwarmConfig{
 			ConnMgr: SwarmConnMgrConfig{
 				Type:        "basic",
-				GracePeriod: "20s",
+				GracePeriod: "60s",
 				HighWater:   400,
 				LowWater:    100,
 			},
@@ -108,7 +108,7 @@ func Init(mode string) error {
 		},
 		Pubsub: PubsubConfig{
 			Enabled:      true,
-			Router:       "gossipsub",
+			Router:       "floodsub",
 			FloodPublish: true,
 		},
 		Routing: RoutingConfig{
