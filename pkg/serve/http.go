@@ -19,6 +19,7 @@ import (
 	"AIComputingNode/pkg/types"
 
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -684,6 +685,9 @@ func NewHttpServe(pcn chan<- []byte, configFilePath string) {
 	mux.HandleFunc("/api/v0/ai/projects/list", hs.listAIProjectsHandler)
 	mux.HandleFunc("/api/v0/ai/projects/models", hs.getModelsOfAIProjectHandler)
 	mux.HandleFunc("/api/v0/ai/projects/peers", hs.getPeersOfAIProjectHandler)
+
+	// mux.Handle("/metrics", promhttp.Handler())
+	mux.Handle("/debug/metrics/prometheus", promhttp.Handler())
 
 	// Golang pprof
 	// mux.HandleFunc("/debug/pprof/", pprof.Index)

@@ -22,7 +22,6 @@ import (
 	"AIComputingNode/pkg/timer"
 
 	"github.com/libp2p/go-libp2p"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -31,10 +30,15 @@ import (
 	"github.com/libp2p/go-libp2p/core/routing"
 	drouting "github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	dutil "github.com/libp2p/go-libp2p/p2p/discovery/util"
+	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 
 	dht "github.com/libp2p/go-libp2p-kad-dht"
+
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var version string
@@ -134,6 +138,21 @@ func main() {
 	privKey, _ := p2p.PrivKeyFromString(cfg.Identity.PrivKey)
 	connGater := &conngater.ConnectionGater{}
 
+	// https://github.com/ipfs/kubo/issues/9322
+	// https://github.com/ipfs/kubo/pull/9351/files
+	// https://github.com/ipfs/kubo/issues/9432
+	rcmgr.MustRegisterWith(prometheus.DefaultRegisterer)
+	strpt, err := rcmgr.NewStatsTraceReporter()
+	if err != nil {
+		log.Logger.Fatalf("NewStatsTraceReporter: %v", err)
+	}
+	rclimits := rcmgr.DefaultLimits
+	libp2p.SetDefaultServiceLimits(&rclimits)
+	resmgr, err := rcmgr.NewResourceManager(rcmgr.NewFixedLimiter(rclimits.AutoScale()), rcmgr.WithTraceReporter(strpt))
+	if err != nil {
+		log.Logger.Fatalf("NewResourceManager: %v", err)
+	}
+
 	opts := []libp2p.Option{
 		libp2p.ListenAddrStrings(cfg.Addresses...),
 		libp2p.Identity(privKey),
@@ -142,7 +161,8 @@ func main() {
 		libp2p.ProtocolVersion(ProtocolVersion),
 		libp2p.UserAgent(version),
 		libp2p.ConnectionGater(connGater),
-		libp2p.DefaultResourceManager,
+		// libp2p.DefaultResourceManager,
+		libp2p.ResourceManager(resmgr),
 	}
 	if cfg.Swarm.ConnMgr.Type == "basic" {
 		gracePeriod, _ := time.ParseDuration(cfg.Swarm.ConnMgr.GracePeriod)

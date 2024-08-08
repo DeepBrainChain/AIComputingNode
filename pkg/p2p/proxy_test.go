@@ -34,6 +34,7 @@ var tlog = golog.Logger("AIComputingNode")
 // to parse, make on behalf of the original node, and then write the response
 // on the stream, before closing it.
 func ChatProxyStreamTestHandler(stream network.Stream) {
+	stream.SetDeadline(time.Now().Add(3 * time.Minute))
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
