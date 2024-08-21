@@ -43,7 +43,7 @@ func TestChatModel(t *testing.T) {
 	})
 	res := ChatModel(config.Models.Llama3.API, req)
 	if res.Code != 0 {
-		t.Fatalf("Execute model %s error %s", config.Models.Llama3.Name, res.Message)
+		t.Fatalf("Execute model %s error {code: %v, message: %s}", config.Models.Llama3.Name, res.Code, res.Message)
 	}
 	t.Logf("Execute model %s result %v", config.Models.Llama3.Name, res.Data)
 }
@@ -116,12 +116,34 @@ func StreamChatModel2(api string, chatReq types.ChatModelRequest) (code int, mes
 		"application/json",
 		bytes.NewBuffer(jsonData),
 	)
-	if err != nil || resp.StatusCode != 200 {
+	if err != nil {
+		fmt.Println("Post HTTP request error", err)
 		message = "Post HTTP request error"
 		return code, message
 	}
 	defer resp.Body.Close()
+	fmt.Println("HTTP response", resp.Status)
 	fmt.Println("Response Content-Type:", resp.Header.Get("Content-Type"))
+	if resp.Header.Get("Content-Type") == "application/json" {
+		result := &types.ChatCompletionResponse{
+			Code: int(types.ErrCodeModel),
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			result.Message = "Read model response error"
+			return result.Code, result.Message
+		}
+		if err := json.Unmarshal(body, &result); err != nil {
+			result.Message = "Unmarshal model response error"
+			return result.Code, result.Message
+		}
+		fmt.Printf("{code: %v, message: %v}\n", result.Code, result.Message)
+		return result.Code, result.Message
+	}
+	if resp.StatusCode != 200 {
+		message = "Post HTTP request error"
+		return code, message
+	}
 	sc := bufio.NewScanner(resp.Body)
 	for {
 		pack := types.StreamChatModelResponseData{}

@@ -10,6 +10,12 @@ import (
 	"AIComputingNode/pkg/types"
 )
 
+type ChatCompletionResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	types.ChatModelResponseData
+}
+
 type OldImageGenerationResponse struct {
 	Code     int    `json:"code"`
 	Status   string `json:"status"`
@@ -57,25 +63,30 @@ func ChatModel(api string, chatReq types.ChatModelRequest) *types.ChatCompletion
 		"application/json",
 		bytes.NewBuffer(jsonData),
 	)
-	if err != nil || resp.StatusCode != 200 {
-		if err == nil {
-			result.Message = fmt.Sprintf("Post HTTP request error, %s", resp.Status)
-		} else {
-			result.Message = "Post HTTP request error"
-		}
+	if err != nil {
+		result.Message = fmt.Sprintf("Post HTTP request error, %v", err)
 		return result
 	}
 	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		result.Message = "Read model response error"
-		return result
+	if resp.Header.Get("Content-Type") == "application/json" {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			result.Message = "Read model response error"
+			return result
+		}
+		chatRes := ChatCompletionResponse{}
+		if err := json.Unmarshal(body, &chatRes); err != nil {
+			result.Message = "Unmarshal model response error"
+			return result
+		}
+		result.Code = chatRes.Code
+		result.Message = chatRes.Message
+		result.Data = chatRes.ChatModelResponseData
+	} else if resp.StatusCode != 200 {
+		result.Message = fmt.Sprintf("Post HTTP request error, %s", resp.Status)
+	} else {
+		result.Message = "Model HTTP reponse is not JSON"
 	}
-	if err := json.Unmarshal(body, &result.Data); err != nil {
-		result.Message = "Unmarshal model response error"
-		return result
-	}
-	result.Code = 0
 	return result
 }
 

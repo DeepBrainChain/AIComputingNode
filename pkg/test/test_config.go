@@ -12,6 +12,7 @@ type ModelInfo struct {
 
 type Models struct {
 	Llama3     ModelInfo `json:"Llama3"`
+	Llama31    ModelInfo `json:"Llama3.1"`
 	Qwen2      ModelInfo `json:"Qwen2"`
 	SuperImage ModelInfo `json:"SuperImage"`
 }
