@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -21,6 +22,7 @@ import (
 	"AIComputingNode/pkg/serve"
 	"AIComputingNode/pkg/timer"
 
+	"github.com/gin-gonic/gin"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -48,6 +50,40 @@ const ProtocolVersion string = "aicn/0.0.1"
 type connectionResult struct {
 	IsPublic bool // Is it a public network node?
 	Success  bool // Is the connection successful?
+}
+
+func errorHandler(c *gin.Context) {
+	// catch and handle error using gin.Recovery middleware
+	c.Next()
+
+	if len(c.Errors) > 0 {
+		err := c.Errors.Last()
+		var statusCode int
+		var message string
+
+		switch err.Type {
+		case gin.ErrorTypePrivate:
+			statusCode = http.StatusInternalServerError
+			message = "Internal server error"
+		case gin.ErrorTypePublic:
+			statusCode = err.Meta.(int)
+			message = err.Error()
+		default:
+			statusCode = http.StatusInternalServerError
+			message = "Unknown error"
+		}
+
+		// default error code
+		if statusCode == 0 {
+			statusCode = http.StatusInternalServerError
+		}
+
+		c.JSON(statusCode, gin.H{
+			"code":    statusCode,
+			"message": message,
+		})
+		c.Abort()
+	}
 }
 
 func main() {
@@ -386,10 +422,46 @@ func main() {
 	// Topic publish channel
 	publishChan := make(chan []byte, 1024)
 	heartbeatInterval, _ := time.ParseDuration(cfg.App.PeersCollect.HeartbeatInterval)
+	router := gin.Default()
+	// router.Use(gin.Recovery())
+	router.Use(errorHandler)
+	// router.GET("/api/v0/id", serve.IdHandler)
+	v0 := router.Group("/api/v0")
+	{
+		v0.GET("/id", serve.IdHandler)
+		v0.GET("/peers", serve.PeersHandler)
+		v0.POST("/peer", func(ctx *gin.Context) {
+			serve.PeerHandler(ctx, publishChan)
+		})
+		v0.POST("/host/info", func(ctx *gin.Context) {
+			serve.HostInfoHandler(ctx, publishChan)
+		})
+		v0.GET("/rendezvous/peers", serve.RendezvousPeersHandler)
+		v0.GET("/swarm/peers", serve.SwarmPeersHandler)
+		v0.GET("/swarm/addrs", serve.SwarmAddrsHandler)
+		v0.POST("/swarm/connect", serve.SwarmConnectHandler)
+		v0.POST("/swarm/disconnect", serve.SwarmDisconnectHandler)
+		v0.GET("/pubsub/peers", serve.PubsubPeersHandler)
+	}
+	srv := &http.Server{
+		Addr:         cfg.API.Addr,
+		Handler:      router,
+		ReadTimeout:  20 * time.Second,
+		WriteTimeout: 150 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
 	go ps.PublishToTopic(pubCtx, topic, publishChan)
 	timer.StartTimer(timerCtx, heartbeatInterval, publishChan)
 	go ps.ReadFromTopic(subCtx, sub, publishChan)
-	serve.NewHttpServe(publishChan, *configPath)
+	// serve.NewHttpServe(router, publishChan, *configPath)
+	go func() {
+		log.Logger.Info("HTTP server is running on http://", cfg.API.Addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Logger.Fatalf("Start HTTP Server: %v", err)
+		}
+		log.Logger.Info("HTTP server is stopped")
+	}()
 	p2p.Hio.StartPingService(pingCtx)
 
 	log.Logger.Info("listening for connections")
@@ -400,7 +472,14 @@ func main() {
 	<-stop
 	// Stop PingService
 	pingStopCancel()
-	serve.StopHttpService()
+	// serve.StopHttpService()
+	httpStopCtx, httpStopCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer httpStopCancel()
+	if err := srv.Shutdown(httpStopCtx); err != nil {
+		log.Logger.Fatalf("Shutdown HTTP Server: %v", err)
+	} else {
+		log.Logger.Info("HTTP server is shutdown gracefully")
+	}
 	subStopCancel()
 	timerStopCancel()
 	pubStopCancel()

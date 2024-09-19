@@ -1,28 +1,6 @@
 package serve
 
-import (
-	"bufio"
-	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
-	"net/url"
-	"sort"
-	"strings"
-	"time"
-
-	"AIComputingNode/pkg/config"
-	"AIComputingNode/pkg/db"
-	"AIComputingNode/pkg/log"
-	"AIComputingNode/pkg/model"
-	"AIComputingNode/pkg/p2p"
-	"AIComputingNode/pkg/protocol"
-	"AIComputingNode/pkg/types"
-
-	"github.com/google/uuid"
-	"google.golang.org/protobuf/proto"
-)
-
+/*
 func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
@@ -624,3 +602,4 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(rsp)
 }
+*/

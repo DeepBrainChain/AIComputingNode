@@ -1,11 +1,11 @@
 package types
 
 type IdentifyProtocol struct {
-	ID              string   `json:"peer_id"`
-	ProtocolVersion string   `json:"protocol_version"`
-	AgentVersion    string   `json:"agent_version"`
-	Addresses       []string `json:"addresses"`
-	Protocols       []string `json:"protocols"`
+	ID              string   `json:"peer_id,omitempty"`
+	ProtocolVersion string   `json:"protocol_version,omitempty"`
+	AgentVersion    string   `json:"agent_version,omitempty"`
+	Addresses       []string `json:"addresses,omitempty"`
+	Protocols       []string `json:"protocols,omitempty"`
 }
 
 type NodeType uint32

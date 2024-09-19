@@ -1,11 +1,11 @@
 package types
 
 type HostInfo struct {
-	Os     OSInfo     `json:"os"`
-	Cpu    []CpuInfo  `json:"cpu"`
-	Memory MemoryInfo `json:"memory"`
-	Disk   []DiskInfo `json:"disk"`
-	Gpu    []GpuInfo  `json:"gpu"`
+	Os     OSInfo     `json:"os,omitempty"`
+	Cpu    []CpuInfo  `json:"cpu,omitempty"`
+	Memory MemoryInfo `json:"memory,omitempty"`
+	Disk   []DiskInfo `json:"disk,omitempty"`
+	Gpu    []GpuInfo  `json:"gpu,omitempty"`
 }
 
 type OSInfo struct {

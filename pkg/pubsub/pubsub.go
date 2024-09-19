@@ -130,9 +130,10 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 	pi := &protocol.PeerIdentityBody{}
 	if msg.ResultCode != 0 {
 		res := types.PeerResponse{
-			Code:    int(msg.ResultCode),
-			Message: msg.ResultMessage,
-			Data:    types.IdentifyProtocol{},
+			BaseHttpResponse: types.BaseHttpResponse{
+				Code:    int(msg.ResultCode),
+				Message: msg.ResultMessage,
+			},
 		}
 		notifyData, err := json.Marshal(res)
 		if err != nil {
@@ -183,9 +184,11 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 			log.Logger.Info("Sending Peer Identity Response")
 		} else if piRes := pi.GetRes(); piRes != nil {
 			res := types.PeerResponse{
-				Code:    0,
-				Message: "ok",
-				Data: types.IdentifyProtocol{
+				BaseHttpResponse: types.BaseHttpResponse{
+					Code:    int(msg.ResultCode),
+					Message: msg.ResultMessage,
+				},
+				IdentifyProtocol: types.IdentifyProtocol{
 					ID:              msg.Header.NodeId,
 					ProtocolVersion: piRes.ProtocolVersion,
 					AgentVersion:    piRes.AgentVersion,
@@ -374,8 +377,10 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 	hi := &protocol.HostInfoBody{}
 	if msg.ResultCode != 0 {
 		res := types.HostInfoResponse{
-			Code:    int(msg.ResultCode),
-			Message: msg.ResultMessage,
+			BaseHttpResponse: types.BaseHttpResponse{
+				Code:    int(msg.ResultCode),
+				Message: msg.ResultMessage,
+			},
 		}
 		notifyData, err := json.Marshal(res)
 		if err != nil {
@@ -387,7 +392,7 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 		if hiReq := hi.GetReq(); hiReq != nil {
 			hostInfo, err := host.GetHostInfo()
 			var code int32 = 0
-			var message string = "ok"
+			var message string = ""
 			if err != nil {
 				code = int32(types.ErrCodeHostInfo)
 				message = err.Error()
@@ -429,9 +434,11 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 			log.Logger.Info("Sending HostInfo Response")
 		} else if hiRes := hi.GetRes(); hiRes != nil {
 			res := types.HostInfoResponse{
-				Code:    int(msg.ResultCode),
-				Message: msg.ResultMessage,
-				Data:    *types.ProtocolMessage2HostInfo(hiRes),
+				BaseHttpResponse: types.BaseHttpResponse{
+					Code:    int(msg.ResultCode),
+					Message: msg.ResultMessage,
+				},
+				HostInfo: *types.ProtocolMessage2HostInfo(hiRes),
 			}
 			notifyData, err := json.Marshal(res)
 			if err != nil {

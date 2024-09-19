@@ -17,30 +17,27 @@ type BaseHttpRequest struct {
 }
 
 type BaseHttpResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
+	Code    int    `json:"code,omitempty"`
+	Message string `json:"message,omitempty"`
 }
 
 type PeerListResponse struct {
-	Code    int      `json:"code"`
-	Message string   `json:"message"`
-	Data    []string `json:"data"`
+	BaseHttpResponse
+	Data []string `json:"data"`
 }
 
 type PeerRequest BaseHttpRequest
 
 type PeerResponse struct {
-	Code    int              `json:"code"`
-	Message string           `json:"message"`
-	Data    IdentifyProtocol `json:"data"`
+	BaseHttpResponse
+	IdentifyProtocol
 }
 
 type HostInfoRequest BaseHttpRequest
 
 type HostInfoResponse struct {
-	Code    int      `json:"code"`
-	Message string   `json:"message"`
-	Data    HostInfo `json:"data"`
+	BaseHttpResponse
+	HostInfo
 }
 
 type WalletVerification struct {
