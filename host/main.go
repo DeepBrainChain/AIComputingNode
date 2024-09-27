@@ -422,9 +422,17 @@ func main() {
 	// Topic publish channel
 	publishChan := make(chan []byte, 1024)
 	heartbeatInterval, _ := time.ParseDuration(cfg.App.PeersCollect.HeartbeatInterval)
-	router := gin.Default()
+	// router := gin.Default()
 	// router.Use(gin.Recovery())
-	router.Use(errorHandler)
+	// router.Use(errorHandler)
+	router := gin.New()
+	router.Use(
+		log.GinzapWithConfig(&log.GinConfig{
+			SkipPaths: []string{},
+			Skip:      nil,
+		}),
+		log.GinzapRecovery(true),
+	)
 	// router.GET("/api/v0/id", serve.IdHandler)
 	v0 := router.Group("/api/v0")
 	{
