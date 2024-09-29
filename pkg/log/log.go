@@ -21,6 +21,38 @@ func InitLogging(levelString string, logFile string, logOutput string) error {
 	log.SetAllLoggers(logLevel)
 	log.SetLogLevel("AIComputingNode", levelString)
 
+	// multiWriteSyncer := make([]zapcore.WriteSyncer, 0)
+	// outputOptions := strings.Split(logOutput, "+")
+	// for _, opt := range outputOptions {
+	// 	switch opt {
+	// 	case "stdout":
+	// 		multiWriteSyncer = append(multiWriteSyncer, zapcore.AddSync(os.Stdout))
+	// 	case "stderr":
+	// 		multiWriteSyncer = append(multiWriteSyncer, zapcore.AddSync(os.Stderr))
+	// 	case "file":
+	// 		if logFile != "" {
+	// 			multiWriteSyncer = append(
+	// 				multiWriteSyncer,
+	// 				zapcore.AddSync(&lumberjack.Logger{
+	// 					Filename:   logFile,
+	// 					MaxSize:    10,   // Maximum file size (MB)
+	// 					MaxBackups: 30,   // Keep up to 30 backups
+	// 					MaxAge:     28,   // Maximum number of days to save files
+	// 					Compress:   true, // Whether to disable compression for old files
+	// 				}),
+	// 			)
+	// 		}
+	// 	}
+	// }
+	// encCfg := zap.NewProductionEncoderConfig()
+	// encCfg.EncodeTime = zapcore.ISO8601TimeEncoder
+	// encCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	// // encCfg.EncodeLevel = zapcore.CapitalLevelEncoder
+	// encoder := zapcore.NewConsoleEncoder(encCfg)
+	// core := zapcore.NewCore(encoder, zapcore.NewMultiWriteSyncer(multiWriteSyncer...), zap.InfoLevel)
+	// log.SetPrimaryCore(core)
+	// return nil
+
 	var outputStderr bool = false
 	var outputStdout bool = false
 	var outputFile bool = false
