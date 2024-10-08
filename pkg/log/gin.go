@@ -18,7 +18,7 @@ import (
 
 // https://github.com/gin-contrib/zap
 
-var logger = log.Logger("GIN")
+var ginLogger = log.Logger("GIN")
 
 type GinConfig struct {
 	// SkipPaths is an url path array which logs are not written.
@@ -72,7 +72,7 @@ func GinzapWithConfig(conf *GinConfig) gin.HandlerFunc {
 		}
 		if len(c.Errors) > 0 {
 			for _, e := range c.Errors.Errors() {
-				logger.Error(e, fields)
+				ginLogger.SugaredLogger.Desugar().Error(e, fields...)
 			}
 
 			// Replace gin's default error response - "AbortWithStatus" with JSON format
@@ -97,24 +97,28 @@ func GinzapWithConfig(conf *GinConfig) gin.HandlerFunc {
 				statusCode = http.StatusInternalServerError
 			}
 
-			c.JSON(statusCode, gin.H{
-				"code":    statusCode,
-				"message": message,
-			})
-			c.Abort()
+			c.AbortWithStatusJSON(
+				statusCode,
+				gin.H{
+					"code":    statusCode,
+					"message": message,
+				},
+			)
 		} else {
-			logger.Info(fields)
+			ginLogger.SugaredLogger.Desugar().Info(path, fields...)
 		}
 	}
 }
 
 func defaultHandleRecovery(c *gin.Context, _ any) {
 	// c.AbortWithStatus(http.StatusInternalServerError)
-	c.JSON(http.StatusInternalServerError, gin.H{
-		"code":    http.StatusInternalServerError,
-		"message": "Recovery from panic",
-	})
-	c.Abort()
+	c.AbortWithStatusJSON(
+		http.StatusInternalServerError,
+		gin.H{
+			"code":    http.StatusInternalServerError,
+			"message": "Recovery from panic",
+		},
+	)
 }
 
 // stack means whether output the stack info.
@@ -145,29 +149,31 @@ func CustomRecovery(stack bool, recovery gin.RecoveryFunc) gin.HandlerFunc {
 
 				httpRequest, _ := httputil.DumpRequest(c.Request, false)
 				if brokenPipe {
-					logger.Error(c.Request.URL.Path,
+					ginLogger.Errorw(c.Request.URL.Path,
 						zap.Any("error", err),
 						zap.String("request", string(httpRequest)),
 					)
 					// If the connection is dead, we can't write a status to it.
 					// c.Error(err.(error)) //nolint: errcheck
-					c.JSON(http.StatusInternalServerError, gin.H{
-						"code":    http.StatusInternalServerError,
-						"message": "connection is broken",
-					})
-					c.Abort()
+					c.AbortWithStatusJSON(
+						http.StatusInternalServerError,
+						gin.H{
+							"code":    http.StatusInternalServerError,
+							"message": "connection is broken",
+						},
+					)
 					return
 				}
 
 				if stack {
-					logger.Error("[Recovery from panic]",
+					ginLogger.Errorw("[Recovery from panic]",
 						zap.Time("time", time.Now()),
 						zap.Any("error", err),
 						zap.String("request", string(httpRequest)),
 						zap.String("stack", string(debug.Stack())),
 					)
 				} else {
-					logger.Error("[Recovery from panic]",
+					ginLogger.Errorw("[Recovery from panic]",
 						zap.Time("time", time.Now()),
 						zap.Any("error", err),
 						zap.String("request", string(httpRequest)),

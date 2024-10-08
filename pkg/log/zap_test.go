@@ -28,6 +28,19 @@ func TestZapSugaredLogger(t *testing.T) {
 		"attempt", 3,
 		"backoff", time.Second,
 	)
+	sugar.Infow(
+		"failed to fetch URL",
+		zap.String("url", "https://example.com"),
+		zap.Int("attempt", 3),
+		zap.Duration("backoff", time.Second),
+	)
+	fields := []zapcore.Field{
+		zap.String("url", "https://example.com"),
+		zap.Int("attempt", 3),
+		zap.Duration("backoff", time.Second),
+	}
+	sugar.Infow("failed to fetch URL", fields)
+	sugar.Desugar().Info("failed to fetch URL", fields...)
 }
 
 func TestZapProduction(t *testing.T) {

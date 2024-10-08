@@ -52,40 +52,6 @@ type connectionResult struct {
 	Success  bool // Is the connection successful?
 }
 
-func errorHandler(c *gin.Context) {
-	// catch and handle error using gin.Recovery middleware
-	c.Next()
-
-	if len(c.Errors) > 0 {
-		err := c.Errors.Last()
-		var statusCode int
-		var message string
-
-		switch err.Type {
-		case gin.ErrorTypePrivate:
-			statusCode = http.StatusInternalServerError
-			message = "Internal server error"
-		case gin.ErrorTypePublic:
-			statusCode = err.Meta.(int)
-			message = err.Error()
-		default:
-			statusCode = http.StatusInternalServerError
-			message = "Unknown error"
-		}
-
-		// default error code
-		if statusCode == 0 {
-			statusCode = http.StatusInternalServerError
-		}
-
-		c.JSON(statusCode, gin.H{
-			"code":    statusCode,
-			"message": message,
-		})
-		c.Abort()
-	}
-}
-
 func main() {
 	configPath := flag.String("config", "", "run using the configuration file")
 	versionFlag := flag.Bool("version", false, "show version number and exit")
