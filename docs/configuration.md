@@ -3,7 +3,7 @@
 The bootstrap node, open ports, logs, etc. of this project can all be configured in the JSON file. This article describes all configuration items in detail and provides two examples.
 
 You can use the command to automatically generate a JSON configuration file, and then manually add the bootstrap node to the configuration file.
-If the machine to be deployed has a public IP address, use the `host -init server` command, otherwise use the `host -init client` command.
+If the machine to be deployed has a public IP address, that is, deploying an Input node, please use the `host -init input` command. Otherwise, use the `host -init worker` command to deploy a Worker node.
 
 ## Configuration Items
 
@@ -176,9 +176,9 @@ If the machine to be deployed has a public IP address, use the `host -init serve
 }
 ```
 
-## Client Configuration Example
+## Worker Node Configuration Example
 
-This example is used for the client without a public IP address.
+This example is used for the worker node without a public IP address.
 
 ```json
 {
@@ -253,9 +253,7 @@ This example is used for the client without a public IP address.
 }
 ```
 
-## Server Configuration Example
-
-This example is used for a client node or boot node with a public IP address.
+## Input Node Configuration Example
 
 ```json
 {

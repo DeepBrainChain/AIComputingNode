@@ -256,7 +256,7 @@ This interface is used to call text to generate text models
 
 **This interface has been deprecated since v0.1.2 and has been restored since v0.1.4.**
 
-This interface uses the project name to call the text-to-text model. The client will select some nodes running the specified project and model, sort them according to the strategy (RTT connection latency or GPU idle value, etc.), and send model requests to the nodes in turn until a correct response is obtained. If there are too many failures, an error will be reported.
+This interface uses the project name to call the text-to-text model. The Input node selects some Worker nodes running the specified project and model, sort them according to the strategy (RTT connection latency or GPU idle value, etc.), and send model requests to the Worker nodes in turn until a correct response is obtained. If there are too many failures, an error will be reported.
 
 - request method: POST
 - request URL: http://127.0.0.1:6000/api/v0/chat/completion/proxy
@@ -373,7 +373,7 @@ This interface is used to call the text-to-image model.
 
 **This interface has been deprecated since v0.1.2 and has been restored since v0.1.4.**
 
-This interface uses the project name to call the text-to-image model. The client will select some nodes running the specified project and model, sort them according to the strategy (RTT connection latency or GPU idle value, etc.), and send model requests to the nodes in turn until a correct response is obtained. If there are too many failures, an error will be reported.
+This interface uses the project name to call the text-to-image model. The Input node selects some Worker nodes running the specified project and model, sort them according to the strategy (RTT connection latency or GPU idle value, etc.), and send model requests to the Worker nodes in turn until a correct response is obtained. If there are too many failures, an error will be reported.
 
 - request method: POST
 - request URL: http://127.0.0.1:6000/api/v0/image/gen/proxy

@@ -39,20 +39,20 @@ $ protoc -I=./pkg/protocol/ --go_out=./pkg/protocol/ ./pkg/protocol/protocol.pro
 - h: Show command line help
 - config: Run program using the specified configuration file
 - version: Show version number and exit
-- init: Initialize configuration in client/server mode
+- init: Initialize configuration in input/worker mode
 - peerkey: Parse or generate a key file based on the specified file path
 - psk: Generate a random Pre-Shared Key
 
 ```shell
-$ host.exe -init client
+$ host.exe -init worker
 Generate peer key success at D:\Code\AIComputingNode\host\peer.key
 Important notice: Please save this key file. You can use tools to retrieve the ID and private key in the future.
 Encode private key: CAISINAckM6QODvCrez5I0Q3RZyo9PeV4jDeB1L71AHnSU/H
 Encode public key: CAISIQNbA9ZWCwFM7X/eTUUBvwSRzTurMLkb9jg38wn5IRL4BQ==
 Transform Peer ID: 16Uiu2HAmJnGqxBqtWGkymSsy5WDKJY5A5NctcUduENADDptQFF4Y
 Create datastore directory at D:\Code\AIComputingNode\host\datastore
-Generate configuration success at D:\Code\AIComputingNode\host\client.json
-Run "host -config D:\Code\AIComputingNode\host\client.json" command to start the program
+Generate configuration success at D:\Code\AIComputingNode\host\worker.json
+Run "host -config D:\Code\AIComputingNode\host\worker.json" command to start the program
 $ 
 $ host.exe -peerkey D:\Code\AIComputingNode\host\peer.key
 Load peer key success
@@ -60,7 +60,7 @@ Encode private key: CAISINAckM6QODvCrez5I0Q3RZyo9PeV4jDeB1L71AHnSU/H
 Encode public key: CAISIQNbA9ZWCwFM7X/eTUUBvwSRzTurMLkb9jg38wn5IRL4BQ==
 Transform Peer ID: 16Uiu2HAmJnGqxBqtWGkymSsy5WDKJY5A5NctcUduENADDptQFF4Y
 $ 
-$ host.exe -config D:\Code\AIComputingNode\host\client.json
+$ host.exe -config D:\Code\AIComputingNode\host\worker.json
 2024-04-24T10:44:07.065+0800	INFO	AIComputingNode	host/main.go:97	################################################################
 2024-04-24T10:44:07.077+0800	INFO	AIComputingNode	host/main.go:98	#                          START                               #
 2024-04-24T10:44:07.077+0800	INFO	AIComputingNode	host/main.go:99	################################################################
@@ -82,6 +82,21 @@ $ host.exe -config D:\Code\AIComputingNode\host\client.json
 
 ## Node Deployment
 
+> ## Node type description
+> - Input node: A node with a public IP address, which is used to receive project HTTP API requests and return results (it would be better if domain name resolution is done well), and is responsible for node discovery and routing in a distributed network.
+> - Worker node: A node without a public IP address, which is deployed on the machine where the model is located, receives model requests sent to it from the Input node or the distributed network, forwards them to the model interface and returns the results.
+> - Bootstrap node: A concept inherited from the libp2p and IPFS projects, which is equivalent to the Input node in this project.
+
+```
+                  +----------------+                +----------------+             +----------------+
+ HTTP Request     |    DBC AI      |                |    DBC AI      |             |                |
++----------------->                | libp2p stream  |                |  HTTP       |                |
+                  |  Input Node    <---------------->  Worker Node   <------------->    AI Model    |
+<-----------------+                |                |                | Req & Resp  |                |
+  HTTP Response   |  CPU Machine   |                |  GPU Machine   |             |   GPU Machine  |
+                  +----------------+                +----------------+             +----------------+
+```
+
 The following steps describe how to deploy this distributed network communication node.
 
 ### Step 1, Download executable program
@@ -94,9 +109,9 @@ After downloading to the system, make sure that the executable program is used f
 
 ### Step 2, Generate JSON Configuration File
 
-If your machine has a public IP address, please run the `host -init server` command, which will generate a configuration file named `server.json` in the same path as the program.
+If your machine has a public IP address, please run the `host -init input` command, which will generate a configuration file named `input.json` in the same path as the program.
 
-If your machine does not have a public IP address, please run the `host -init xxx` command, which will generate a configuration file named `xxx.json` in the same path as the program.
+If your machine does not have a public IP address, please run the `host -init worker` command, which will generate a configuration file named `worker.json` in the same path as the program.
 
 After generating the JSON configuration file, you need to add some bootstrap nodes to the configuration file, and ensure that the open ports do not conflict and the API meets your needs.
 
@@ -104,7 +119,7 @@ Please refer to [JSON Configuration File](./docs/configuration.md) for detailed 
 
 ### Step 3, Run the program using the JSON configuration file
 
-Assuming that the JSON configuration file generated above is named `config.json`, run it with `host -config ./config.json`.
+Assuming that the JSON configuration file generated above is named `worker.json`, run it with `host -config ./worker.json`.
 
 ## Tools
 

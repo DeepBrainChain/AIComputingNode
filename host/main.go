@@ -53,7 +53,7 @@ type connectionResult struct {
 func main() {
 	configPath := flag.String("config", "", "run using the configuration file")
 	versionFlag := flag.Bool("version", false, "show version number and exit")
-	initFlag := flag.String("init", "", "initialize configuration in client/server mode")
+	initFlag := flag.String("init", "", "initialize configuration in input/worker mode")
 	peerKeyPath := flag.String("peerkey", "", "parse or generate a key file based on the specified file path")
 	pskFlag := flag.Bool("psk", false, "generate a random Pre-Shared Key")
 	flag.Parse()
@@ -63,11 +63,11 @@ func main() {
 		os.Exit(0)
 	}
 
-	if *initFlag == "client" || *initFlag == "server" {
+	if *initFlag == "client" || *initFlag == "server" || *initFlag == "input" || *initFlag == "worker" {
 		config.Init(*initFlag)
 		os.Exit(0)
 	} else if *initFlag != "" {
-		fmt.Println("only supports client or server mode")
+		fmt.Println("only supports input or worker mode")
 		os.Exit(0)
 	}
 

@@ -15,6 +15,7 @@ require (
 	github.com/libp2p/go-libp2p-pubsub v0.10.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/multiformats/go-multiaddr v0.12.2
+	github.com/prometheus/client_golang v1.18.0
 	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	go.uber.org/zap v1.27.0
@@ -115,7 +116,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/polydawn/refmt v0.89.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/prometheus/client_golang v1.18.0 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
 	github.com/prometheus/common v0.47.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
