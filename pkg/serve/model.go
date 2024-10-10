@@ -416,8 +416,14 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if msg.NodeID == config.GC.Identity.PeerID {
-		rsp.Code = int(types.ErrCodeParam)
-		rsp.Message = "Cannot be sent to the node itself"
+		modelAPI := config.GC.GetModelAPI(msg.Project, msg.Model)
+		if modelAPI == "" {
+			rsp.Code = int(types.ErrCodeModel)
+			rsp.Message = "Model API configuration is empty"
+			json.NewEncoder(w).Encode(rsp)
+			return
+		}
+		rsp = *model.ImageGenerationModel(modelAPI, msg.ImageGenModelRequest)
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
@@ -433,14 +439,14 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 	pi := &protocol.ImageGenerationBody{
 		Data: &protocol.ImageGenerationBody_Req{
 			Req: &protocol.ImageGenerationRequest{
-				Project:  msg.Project,
-				Model:    msg.Model,
-				Prompt:   msg.Prompt,
-				Number:   int32(msg.Number),
-				Size:     msg.Size,
-				Width:    int32(msg.Width),
-				Height:   int32(msg.Height),
-				IpfsNode: msg.IpfsNode,
+				Project:        msg.Project,
+				Model:          msg.Model,
+				Prompt:         msg.Prompt,
+				Number:         int32(msg.Number),
+				Size:           msg.Size,
+				Width:          int32(msg.Width),
+				Height:         int32(msg.Height),
+				ResponseFormat: msg.ResponseFormat,
 				Wallet: &protocol.WalletVerification{
 					Wallet:    msg.Wallet,
 					Signature: msg.Signature,
@@ -491,12 +497,12 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 		Code:    0,
 		Message: "ok",
 	}
+	w.Header().Set("Content-Type", "application/json")
 
 	var msg types.ImageGenerationProxyRequest
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
-		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
@@ -504,7 +510,6 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 	if err := msg.Validate(); err != nil {
 		rsp.Code = int(types.ErrCodeParam)
 		rsp.Message = err.Error()
-		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
@@ -513,7 +518,6 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 	if code != 0 {
 		rsp.Code = int(types.ErrCodeProxy)
 		rsp.Message = types.ErrorCode(code).String()
-		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
@@ -537,7 +541,6 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 	if len(peers) == 0 {
 		rsp.Code = int(types.ErrCodeProxy)
 		rsp.Message = "Not enough available and directly connected nodes"
-		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(rsp)
 		return
 	}
@@ -559,8 +562,8 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 		}
 		igReq := types.ImageGenerationRequest{
 			NodeID:               peer.NodeID,
+			Project:              msg.Project,
 			ImageGenModelRequest: msg.ImageGenModelRequest,
-			IpfsNode:             msg.IpfsNode,
 		}
 		req := r.Clone(r.Context())
 		req.URL.Host = r.Host
@@ -613,7 +616,6 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 			failed_count += 1
 			continue
 		}
-		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(rsp)
 		return
 		// }
@@ -621,6 +623,5 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 
 	rsp.Code = int(types.ErrCodeProxy)
 	rsp.Message = fmt.Sprintf("Failed %d times", failed_count)
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(rsp)
 }
