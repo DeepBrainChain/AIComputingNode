@@ -110,7 +110,9 @@ Generate pictures based on prompt words
   // v0.1.3 started to deprecate the size field, please use the width and height fields
   "size": "1024x1024",
   "width": 1024,
-  "height": 1024
+  "height": 1024,
+  // The format in which the generated images are returned. Must be one of url or b64_json
+  "response_format": "url"
 }
 ```
 - return example:
@@ -124,10 +126,10 @@ Generate pictures based on prompt words
   // The answer given by the AI ​​model must give at least one
   "data": [
     {
-      "url": "/home/AI_project/ImageGenerationAI/photos/v4xxidnrc9ol7m80.png"
+      "url": "https://..."
     },
     {
-      "url": "/home/AI_project/ImageGenerationAI/photos/bwjwyeqmz0yn6wjv.png"
+      "url": "https://..."
     }
   ]
 }
@@ -166,7 +168,9 @@ Modify images based on prompt words
   // v0.1.3 started to deprecate the size field, please use the width and height fields
   "size": "1024x1024",
   "width": 1024,
-  "height": 1024
+  "height": 1024,
+  // The format in which the generated images are returned. Must be one of url or b64_json
+  "response_format": "url"
 }
 ```
 - return example:
@@ -180,10 +184,10 @@ Modify images based on prompt words
   // The answer given by the AI ​​model must give at least one
   "data": [
     {
-      "url": "/home/AI_project/ImageGenerationAI/photos/v4xxidnrc9ol7m80.png"
+      "url": "https://..."
     },
     {
-      "url": "/home/AI_project/ImageGenerationAI/photos/bwjwyeqmz0yn6wjv.png"
+      "url": "https://..."
     }
   ]
 }

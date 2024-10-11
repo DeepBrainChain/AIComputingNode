@@ -334,14 +334,14 @@ This interface is used to call the text-to-image model.
   // Text description prompt words for the required image
   "prompt": "a bird flying in the sky",
   // The number of images to be generated, at least one
-  "n": 1,
+  "n": 2,
   // The size of the image to be generated
   // v0.1.3 started to deprecate the size field, please use the width and height fields
   "size": "1024x1024",
   "width": 1024,
   "height": 1024,
-  // IPFS storage node, each project can deploy its own IPFS storage server
-  "ipfs_node": "",
+  // The format in which the generated images are returned. Must be one of url or b64_json
+  "response_format": "url",
   // User’s wallet public key
   "wallet": "",
   // Wallet signature
@@ -358,11 +358,13 @@ This interface is used to call the text-to-image model.
   // Error message
   "message": "ok",
   "data": {
-    "ipfs_node": "http://122.99.183.54:4002",
+    "created": 1589478378,
     "choices": [
       {
-        "cid": "QmUsxJhQ13Gifj2iX9kTfzYDD6VsCL7UkdjqumPd9V2vKz",
-        "image_name": "knhfkmpilha9l5f2.png"
+        "url": "https://..."
+      },
+      {
+        "url": "https://..."
       }
     ]
   }
@@ -387,14 +389,14 @@ This interface uses the project name to call the text-to-image model. The Input 
   // Text description prompt words for the required image
   "prompt": "a bird flying in the sky",
   // The number of images to be generated, at least one
-  "n": 1,
+  "n": 2,
   // The size of the image to be generated
   // v0.1.3 started to deprecate the size field, please use the width and height fields
   "size": "1024x1024",
   "width": 1024,
   "height": 1024,
-  // IPFS storage node, each project can deploy its own IPFS storage server
-  "ipfs_node": "",
+  // The format in which the generated images are returned. Must be one of url or b64_json
+  "response_format": "url",
   // User’s wallet public key
   "wallet": "",
   // Wallet signature
@@ -411,11 +413,13 @@ This interface uses the project name to call the text-to-image model. The Input 
   // Error message
   "message": "ok",
   "data": {
-    "ipfs_node": "http://122.99.183.54:4002",
+    "created": 1589478378,
     "choices": [
       {
-        "cid": "QmUsxJhQ13Gifj2iX9kTfzYDD6VsCL7UkdjqumPd9V2vKz",
-        "image_name": "knhfkmpilha9l5f2.png"
+        "url": "https://..."
+      },
+      {
+        "url": "https://..."
       }
     ]
   }

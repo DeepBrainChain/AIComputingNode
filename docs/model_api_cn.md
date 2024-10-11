@@ -110,7 +110,9 @@ curl http://127.0.0.1:1088/v1/chat/completions \
   // v0.1.3 开始弃用 size 字段，请使用 width 和 height 字段
   "size": "1024x1024",
   "width": 1024,
-  "height": 1024
+  "height": 1024,
+  // 要生成图像的格式，必须是 url 或 b64_json 之一
+  "response_format": "url"
 }
 ```
 - 返回示例：
@@ -124,10 +126,10 @@ curl http://127.0.0.1:1088/v1/chat/completions \
   // AI 模型给出的回答，最少要给出一条
   "data": [
     {
-      "url": "/home/AI_project/ImageGenerationAI/photos/v4xxidnrc9ol7m80.png"
+      "url": "https://..."
     },
     {
-      "url": "/home/AI_project/ImageGenerationAI/photos/bwjwyeqmz0yn6wjv.png"
+      "url": "https://..."
     }
   ]
 }
@@ -166,7 +168,9 @@ curl http://127.0.0.1:1088/v1/images/generations \
   // v0.1.3 开始弃用 size 字段，请使用 width 和 height 字段
   "size": "1024x1024",
   "width": 1024,
-  "height": 1024
+  "height": 1024,
+  // 要生成图像的格式，必须是 url 或 b64_json 之一
+  "response_format": "url"
 }
 ```
 - 返回示例：
@@ -180,10 +184,10 @@ curl http://127.0.0.1:1088/v1/images/generations \
   // AI 模型给出的回答，最少要给出一条
   "data": [
     {
-      "url": "/home/AI_project/ImageGenerationAI/photos/v4xxidnrc9ol7m80.png"
+      "url": "https://..."
     },
     {
-      "url": "/home/AI_project/ImageGenerationAI/photos/bwjwyeqmz0yn6wjv.png"
+      "url": "https://..."
     }
   ]
 }
