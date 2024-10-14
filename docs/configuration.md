@@ -5,6 +5,8 @@ The bootstrap node, open ports, logs, etc. of this project can all be configured
 You can use the command to automatically generate a JSON configuration file, and then manually add the bootstrap node to the configuration file.
 If the machine to be deployed has a public IP address, that is, deploying an Input node, please use the `host -init input` command. Otherwise, use the `host -init worker` command to deploy a Worker node.
 
+Although the list of AI projects supported by the node is also saved in this configuration file, it is recommended to use the HTTP API interface to manage it, rather than directly editing the configuration file to modify this item.
+
 ## Configuration Items
 
 ```json

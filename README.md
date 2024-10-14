@@ -79,13 +79,13 @@ $ host.exe -config D:\Code\AIComputingNode\host\worker.json
 2024-04-24T10:44:07.169+0800	INFO	AIComputingNode	serve/http.go:386	HTTP server is running on http://127.0.0.1:7002
 ```
 
-## Node Deployment
+## Node type description
 
-> [!IMPORTANT]
-> ## Node type description
-> - Input node: A node with a public IP address, which is used to receive project HTTP API requests and return results (it would be better if domain name resolution is done well), and is responsible for node discovery and routing in a distributed network.
-> - Worker node: A node without a public IP address, which is deployed on the machine where the model is located, receives model requests sent to it from the Input node or the distributed network, forwards them to the model interface and returns the results.
-> - Bootstrap node: A concept inherited from the libp2p and IPFS projects, which is equivalent to the Input node in this project.
+- Input node: A node with a public IP address, which is used to receive project HTTP API requests and return results (it would be better if domain name resolution is done well), and is responsible for node discovery and routing in a distributed network.
+- Worker node: A node without a public IP address, which is deployed on the machine where the model is located, receives model requests sent to it from the Input node or the distributed network, forwards them to the model interface and returns the results.
+- Bootstrap node: A concept inherited from the libp2p and IPFS projects, which is equivalent to the Input node in this project.
+
+After the model is deployed, you need to register the model's calling interface and the project to which it belongs to the Worker node. The Worker node will propagate this information to the entire distributed communication network, and then you can call the deployed model through the Input node with a domain name or public IP address.
 
 ```
                   +----------------+                +----------------+             +----------------+
@@ -96,6 +96,12 @@ $ host.exe -config D:\Code\AIComputingNode\host\worker.json
   HTTP Response   |  CPU Machine   |                |  GPU Machine   |             |   GPU Machine  |
                   +----------------+                +----------------+             +----------------+
 ```
+
+1. If you have a GPU server, you need to deploy a Worker node.
+2. If you have a CPU machine and a domain name/public IP address, you can deploy an Input node.
+3. If the GPU machine itself has a domain name/public IP address, you can directly deploy an Input node and register the model interface to the Input node without a Worker node.
+
+## Node Deployment
 
 The following steps describe how to deploy this distributed network communication node.
 
@@ -109,9 +115,9 @@ After downloading to the system, make sure that the executable program is used f
 
 ### Step 2, Generate JSON Configuration File
 
-If your machine has a public IP address, please run the `host -init input` command, which will generate a configuration file named `input.json` in the same path as the program.
+If you need to deploy an Input node, please run the `host -init input` command, which will generate a configuration file named `input.json` in the same path as the program.
 
-If your machine does not have a public IP address, please run the `host -init worker` command, which will generate a configuration file named `worker.json` in the same path as the program.
+If you need to deploy a Worker node, please run the `host -init worker` command, which will generate a configuration file named `worker.json` in the same path as the program.
 
 After generating the JSON configuration file, you need to add some bootstrap nodes to the configuration file, and ensure that the open ports do not conflict and the API meets your needs.
 

@@ -79,13 +79,13 @@ $ host.exe -config D:\Code\AIComputingNode\host\worker.json
 2024-04-24T10:44:07.169+0800	INFO	AIComputingNode	serve/http.go:386	HTTP server is running on http://127.0.0.1:7002
 ```
 
-## 节点部署
+## 节点类型说明
 
-> [!IMPORTANT]
-> ## 节点类型说明
-> - Input 节点: 拥有公网 IP 地址的节点，用于接收项目 HTTP API 请求并返回结果的节点(做好域名解析会更好)，并且在分布式网络中承担节点发现和路由的功能。
-> - Worker 节点: 没有公网 IP 地址的节点，部署在模型所在的机器上，接收 Input 节点或者分布式网络中的发给自己的模型请求，转发给模型接口并将结果返回。
-> - Bootstrap 节点: 又名引导节点，是传承自 libp2p 和 IPFS 项目的概念，在本项目中等同于 Input 节点。
+- Input 节点: 拥有公网 IP 地址的节点，用于接收项目 HTTP API 请求并返回结果的节点(做好域名解析会更好)，并且在分布式网络中承担节点发现和路由的功能。
+- Worker 节点: 没有公网 IP 地址的节点，部署在模型所在的机器上，接收 Input 节点或者分布式网络中的发给自己的模型请求，转发给模型接口并将结果返回。
+- Bootstrap 节点: 又名引导节点，是传承自 libp2p 和 IPFS 项目的概念，在本项目中等同于 Input 节点。
+
+模型部署好后，需要将模型的调用接口和所属项目等信息注册到 Worker 节点，Worker 节点会将这些信息传播到整个分布式通信网络，然后就可以通过拥有域名或者公网 IP 地址的 Input 节点来调用部署的模型。
 
 ```
                   +----------------+                +----------------+             +----------------+
@@ -96,6 +96,12 @@ $ host.exe -config D:\Code\AIComputingNode\host\worker.json
   HTTP Response   |  CPU Machine   |                |  GPU Machine   |             |   GPU Machine  |
                   +----------------+                +----------------+             +----------------+
 ```
+
+1. 拥有 GPU 服务器，需要部署 Worker 节点。
+2. 拥有 CPU 机器且有域名/公网 IP 地址，可以部署 Input 节点。
+3. 如果 GPU 机器本身有域名/公网 IP 地址，可以直接部署 Input 节点，向 Input 节点注册模型接口，不需要 Worker 节点。
+
+## 节点部署
 
 以下步骤描述了如何部署此分布式网络通信节点。
 
@@ -109,9 +115,9 @@ $ host.exe -config D:\Code\AIComputingNode\host\worker.json
 
 ### 第二步，生成 JSON 配置文件
 
-如果您的机器有公网 IP，请运行 `host -init input` 命令，该命令会在与程序同路径下生成名为 `input.json` 的配置文件。
+如果需要部署 Input 节点，请运行 `host -init input` 命令，该命令会在与程序同路径下生成名为 `input.json` 的配置文件。
 
-如果您的机器没有公网 IP，请运行 `host -init worker` 命令，该命令会在与程序同路径下生成名为 `worker.json` 的配置文件。
+如果需要部署 Worker 节点，请运行 `host -init worker` 命令，该命令会在与程序同路径下生成名为 `worker.json` 的配置文件。
 
 生成 JSON 配置文件后，您需要在配置文件中添加一些 bootstrap 节点，确保开放的端口不冲突，API 符合您的需求。
 
