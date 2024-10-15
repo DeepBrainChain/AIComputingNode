@@ -418,6 +418,15 @@ func (hs *httpService) registerAIProjectHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	for _, model := range req.Models {
+		if err := model.Validate(); err != nil {
+			rsp.Code = int(types.ErrCodeParam)
+			rsp.Message = err.Error()
+			json.NewEncoder(w).Encode(rsp)
+			return
+		}
+	}
+
 	var find bool = false
 	for i := range config.GC.AIProjects {
 		if config.GC.AIProjects[i].Project == req.Project {

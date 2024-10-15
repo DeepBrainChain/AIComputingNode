@@ -1,6 +1,10 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+	"net"
+	"net/url"
+)
 
 type AIProject struct {
 	Project string    `json:"Project"`
@@ -32,5 +36,32 @@ func (config AIModel) Validate() error {
 	if config.API == "" {
 		return fmt.Errorf("model api can not be empty")
 	}
-	return nil
+	purl, err := url.Parse(config.API)
+	if err != nil {
+		return err
+	}
+	host := purl.Hostname()
+	if host == "localhost" {
+		return nil
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return fmt.Errorf("parse ip from model api failed")
+	}
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return fmt.Errorf("list interface addressess failed")
+	}
+	for _, addr := range addrs {
+		var ipNet *net.IPNet
+		var ok bool
+		if ipNet, ok = addr.(*net.IPNet); !ok {
+			continue
+		}
+
+		if ipNet.IP.Equal(ip) {
+			return nil
+		}
+	}
+	return fmt.Errorf("the AI model and the node are not on the same machine")
 }

@@ -249,6 +249,9 @@ curl http://127.0.0.1:1088/v1/models
 
 此接口用于接受 AI 项目和模型的注册与更新，并将其在分布式网络节点间共享。
 
+> [!NOTE]
+> AI 模型和注册的节点必须在同一台机器上。
+
 - 请求方式: POST
 - 请求 URL: http://127.0.0.1:6000/api/v0/ai/project/register
 - 请求 Body:

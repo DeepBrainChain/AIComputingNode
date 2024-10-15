@@ -249,6 +249,9 @@ When the model is running, it needs to be registered with the distributed networ
 
 This interface is used to accept registration and updates of AI projects and models, and share them among distributed network nodes.
 
+> [!NOTE]
+> The AI ​​model and the registered node must be on the same machine.
+
 - request method: POST
 - request URL: http://127.0.0.1:6000/api/v0/ai/project/register
 - request Body:
