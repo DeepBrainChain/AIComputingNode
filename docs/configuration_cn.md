@@ -3,7 +3,9 @@
 本项目的 bootstrap 节点、开放端口、日志等均可在 JSON 文件中进行配置，本文详细介绍了所有配置项，并提供了两个示例。
 
 可以使用命令来自动生成 JSON 配置文件，然后再手动向配置文件中添加引导节点即可。
-如果要部署的机器拥有公网 IP 地址，请使用 `host -init server` 命令，否则请使用 `host -init client` 命令。
+如果要部署的机器拥有公网 IP 地址，即部署 Input 节点，请使用 `host -init input` 命令，否则请使用 `host -init worker` 命令部署 Worker 节点。
+
+节点支持的 AI 项目列表虽然也保存在此配置文件中，但是推荐使用 HTTP API 接口来管理，不建议直接编辑配置文件来修改此项。
 
 ## 配置项
 
@@ -116,9 +118,6 @@
     // 数据存储文件夹持久化了成功连接的对等信息等信息，方便节点启动时快速重新连接网络。
     // 请提前创建此文件夹并确保本节点程序有读写权限。
     "Datastore": "./datastore",
-    // IPFS 存储节点的 HTTP RPC 接口，用于存储 AI 模型生成的图片资源。
-    // 执行 AI 模型的节点需要对此进行配置，但会优先使用用户请求中指定的存储节点。
-    "IpfsStorageAPI": "http://122.99.183.54:4002",
     // 收集节点广播的心跳信息，包括支持的AI项目和模型。
     "PeersCollect": {
       // 仅当节点拥有公网 IP 地址，且开启收集功能时，节点信息才会保存到 leveldb 数据库中。
@@ -156,9 +155,7 @@
 }
 ```
 
-## 客户端配置示例
-
-此示例用于没有公网 IP 地址的客户端。
+## Worker 节点配置示例
 
 ```json
 {
@@ -211,7 +208,6 @@
     "PreSharedKey": "f504f536a912a8cf7d00adacee8ed20270c5040d961d7f3da4fccbcbec0ec48a",
     "TopicName": "DeepBrainChain",
     "Datastore": "./datastore",
-    "IpfsStorageAPI": "http://122.99.183.54:4002",
     "PeersCollect": {
       "Enabled": false,
       "HeartbeatInterval": "180s",
@@ -233,9 +229,7 @@
 }
 ```
 
-## 服务器配置示例
-
-此示例用于有公网 IP 地址的服务器节点或引导启动节点。
+## Input 节点配置示例
 
 ```json
 {
@@ -288,7 +282,6 @@
     "PreSharedKey": "f504f536a912a8cf7d00adacee8ed20270c5040d961d7f3da4fccbcbec0ec48a",
     "TopicName": "DeepBrainChain",
     "Datastore": "./datastore",
-    "IpfsStorageAPI": "",
     "PeersCollect": {
       "Enabled": true,
       "HeartbeatInterval": "180s",

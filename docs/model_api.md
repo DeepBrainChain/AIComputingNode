@@ -110,7 +110,9 @@ Generate pictures based on prompt words
   // v0.1.3 started to deprecate the size field, please use the width and height fields
   "size": "1024x1024",
   "width": 1024,
-  "height": 1024
+  "height": 1024,
+  // The format in which the generated images are returned. Must be one of url or b64_json
+  "response_format": "url"
 }
 ```
 - return example:
@@ -124,10 +126,10 @@ Generate pictures based on prompt words
   // The answer given by the AI ​​model must give at least one
   "data": [
     {
-      "url": "/home/AI_project/ImageGenerationAI/photos/v4xxidnrc9ol7m80.png"
+      "url": "https://..."
     },
     {
-      "url": "/home/AI_project/ImageGenerationAI/photos/bwjwyeqmz0yn6wjv.png"
+      "url": "https://..."
     }
   ]
 }
@@ -166,7 +168,9 @@ Modify images based on prompt words
   // v0.1.3 started to deprecate the size field, please use the width and height fields
   "size": "1024x1024",
   "width": 1024,
-  "height": 1024
+  "height": 1024,
+  // The format in which the generated images are returned. Must be one of url or b64_json
+  "response_format": "url"
 }
 ```
 - return example:
@@ -180,10 +184,10 @@ Modify images based on prompt words
   // The answer given by the AI ​​model must give at least one
   "data": [
     {
-      "url": "/home/AI_project/ImageGenerationAI/photos/v4xxidnrc9ol7m80.png"
+      "url": "https://..."
     },
     {
-      "url": "/home/AI_project/ImageGenerationAI/photos/bwjwyeqmz0yn6wjv.png"
+      "url": "https://..."
     }
   ]
 }
@@ -244,6 +248,9 @@ When the model is running, it needs to be registered with the distributed networ
 ### Register AI project
 
 This interface is used to accept registration and updates of AI projects and models, and share them among distributed network nodes.
+
+> [!NOTE]
+> The AI ​​model and the registered node must be on the same machine.
 
 - request method: POST
 - request URL: http://127.0.0.1:6000/api/v0/ai/project/register

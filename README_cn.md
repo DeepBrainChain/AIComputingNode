@@ -2,16 +2,16 @@
 
 Distributed Inference Computing Network for AI
 
-## Table of Contents
+## 目录
 
-- [`Compiling`](#compiling)
+- [`编译`](#编译)
 - [`Protobuf`](#protobuf)
-- [`Command Line`](#command-line)
-- [`Node Deployment`](#node-deployment)
-- [`Tools`](#tools)
-- [`Document`](#document)
+- [`命令行`](#命令行)
+- [`节点部署`](#节点部署)
+- [`工具`](#工具)
+- [`文档`](#文档)
 
-## Compiling
+## 编译
 
 ```shell
 $ go mod tidy
@@ -31,16 +31,16 @@ $ export PATH=$PATH:/home/dbtu/go/bin
 $ protoc -I=./pkg/protocol/ --go_out=./pkg/protocol/ ./pkg/protocol/protocol.proto
 ```
 
-## Command Line
+## 命令行
 
 `host [-h] [-config ./config.json] [-version] [-init mode] [-peerkey ./peer.key] [-psk]`
 
-- h: Show command line help
-- config: Run program using the specified configuration file
-- version: Show version number and exit
-- init: Initialize configuration in input/worker mode
-- peerkey: Parse or generate a key file based on the specified file path
-- psk: Generate a random Pre-Shared Key
+- h: 显示命令行帮助
+- config: 使用指定的配置文件运行程序
+- version: 显示版本号并退出
+- init: 在 input/worker 模式下初始化和生成 JSON 配置文件
+- peerkey: 根据指定的文件路径解析或生成密钥文件
+- psk: 生成随机预共享密钥
 
 ```shell
 $ host.exe -init worker
@@ -79,13 +79,13 @@ $ host.exe -config D:\Code\AIComputingNode\host\worker.json
 2024-04-24T10:44:07.169+0800	INFO	AIComputingNode	serve/http.go:386	HTTP server is running on http://127.0.0.1:7002
 ```
 
-## Node type description
+## 节点类型说明
 
-- Input node: A node with a public IP address, which is used to receive project HTTP API requests and return results (it would be better if domain name resolution is done well), and is responsible for node discovery and routing in a distributed network.
-- Worker node: A node without a public IP address, which is deployed on the machine where the model is located, receives model requests sent to it from the Input node or the distributed network, forwards them to the model interface and returns the results.
-- Bootstrap node: A concept inherited from the libp2p and IPFS projects, which is equivalent to the Input node in this project.
+- Input 节点: 拥有公网 IP 地址的节点，用于接收项目 HTTP API 请求并返回结果的节点(做好域名解析会更好)，并且在分布式网络中承担节点发现和路由的功能。
+- Worker 节点: 没有公网 IP 地址的节点，部署在模型所在的机器上，接收 Input 节点或者分布式网络中的发给自己的模型请求，转发给模型接口并将结果返回。
+- Bootstrap 节点: 又名引导节点，是传承自 libp2p 和 IPFS 项目的概念，在本项目中等同于 Input 节点。
 
-After the model is deployed, you need to register the model's calling interface and the project to which it belongs to the Worker node. The Worker node will propagate this information to the entire distributed communication network, and then you can call the deployed model through the Input node with a domain name or public IP address.
+模型部署好后，需要将模型的调用接口和所属项目等信息注册到 Worker 节点，Worker 节点会将这些信息传播到整个分布式通信网络，然后就可以通过拥有域名或者公网 IP 地址的 Input 节点来调用部署的模型。
 
 ```
                   +----------------+                +----------------+             +----------------+
@@ -97,44 +97,44 @@ After the model is deployed, you need to register the model's calling interface 
                   +----------------+                +----------------+             +----------------+
 ```
 
-1. If you have a GPU server, you need to deploy a Worker node.
-2. If you have a CPU machine and a domain name/public IP address, you can deploy an Input node.
-3. If the GPU machine itself has a domain name/public IP address, you can directly deploy an Input node and register the model interface to the Input node without a Worker node.
+1. 拥有 GPU 服务器，需要部署 Worker 节点。
+2. 拥有 CPU 机器且有域名/公网 IP 地址，可以部署 Input 节点。
+3. 如果 GPU 机器本身有域名/公网 IP 地址，可以直接部署 Input 节点，向 Input 节点注册模型接口，不需要 Worker 节点。
 
-## Node Deployment
+## 节点部署
 
-The following steps describe how to deploy this distributed network communication node.
+以下步骤描述了如何部署此分布式网络通信节点。
 
-### Step 1, Download executable program
+### 第一步，下载可执行程序
 
-This project will automatically compile and upload the latest executable program, and supports Linux/Windows/macOS systems.
+本项目会自动编译并上传最新的可执行程序，支持 Linux/Windows/macOS 系统。
 
-Check the [latest version](https://github.com/DeepBrainChain/AIComputingNode/releases/latest) here and download the corresponding executable program according to the user's system.
+在此处查看 [最新版本](https://github.com/DeepBrainChain/AIComputingNode/releases/latest)，并根据用户的系统下载相应的可执行程序。
 
-After downloading to the system, make sure that the executable program is used for execution permissions.
+下载到系统后，请确保可执行程序具有执行权限。
 
-### Step 2, Generate JSON Configuration File
+### 第二步，生成 JSON 配置文件
 
-If you need to deploy an Input node, please run the `host -init input` command, which will generate a configuration file named `input.json` in the same path as the program.
+如果需要部署 Input 节点，请运行 `host -init input` 命令，该命令会在与程序同路径下生成名为 `input.json` 的配置文件。
 
-If you need to deploy a Worker node, please run the `host -init worker` command, which will generate a configuration file named `worker.json` in the same path as the program.
+如果需要部署 Worker 节点，请运行 `host -init worker` 命令，该命令会在与程序同路径下生成名为 `worker.json` 的配置文件。
 
-After generating the JSON configuration file, you need to add some bootstrap nodes to the configuration file, and ensure that the open ports do not conflict and the API meets your needs.
+生成 JSON 配置文件后，您需要在配置文件中添加一些 bootstrap 节点，确保开放的端口不冲突，API 符合您的需求。
 
-Please refer to [JSON Configuration File](./docs/configuration.md) for detailed configuration items.
+详细配置项请参考 [JSON 配置文件](./docs/configuration_cn.md)。
 
-### Step 3, Run the program using the JSON configuration file
+### 第三步，使用 JSON 配置文件运行程序
 
-Assuming that the JSON configuration file generated above is named `worker.json`, run it with `host -config ./worker.json`.
+假设上面生成的 JSON 配置文件名为 `worker.json`，则使用 `host -config ./worker.json` 运行程序即可。
 
-## Tools
+## 工具
 
 [Ipfs](./tools/ipfs/README.md)
 
-## Document
+## 文档
 
-[AI Model Interface Standard Documentation](./docs/model_api.md)
+[AI 模型接口标准文档](./docs/model_api_cn.md)
 
-[AIComputingNode HTTP API Interface Documentation](./docs/api.md)
+[AIComputingNode HTTP API 接口文档](./docs/api_cn.md)
 
-[JSON Configuration File](./docs/configuration.md)
+[JSON 配置文件](./docs/configuration_cn.md)

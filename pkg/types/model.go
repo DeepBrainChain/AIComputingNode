@@ -19,5 +19,4 @@ type ModelHistory struct {
 	ImagePrompt string `json:"image_prompt"`
 	// Image Generation Response
 	ImageChoices []ImageResponseChoice `json:"image_choices"`
-	IpfsAddr     string                `json:"ipfs_addr"`
 }

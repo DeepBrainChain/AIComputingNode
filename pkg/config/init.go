@@ -116,13 +116,12 @@ func Init(mode string) error {
 			ProtocolPrefix: ProtocolPrefix,
 		},
 		App: AppConfig{
-			LogLevel:       "info",
-			LogFile:        filepath.Join(cwd, "host.log"),
-			LogOutput:      "file",
-			PreSharedKey:   PreSharedKey,
-			TopicName:      TopicName,
-			Datastore:      dataPath,
-			IpfsStorageAPI: "",
+			LogLevel:     "info",
+			LogFile:      filepath.Join(cwd, "host.log"),
+			LogOutput:    "file",
+			PreSharedKey: PreSharedKey,
+			TopicName:    TopicName,
+			Datastore:    dataPath,
 			PeersCollect: AppPeersCollectConfig{
 				Enabled:           false,
 				HeartbeatInterval: "180s",
@@ -131,7 +130,7 @@ func Init(mode string) error {
 		},
 		AIProjects: []types.AIProject{},
 	}
-	if mode == "server" {
+	if mode == "server" || mode == "input" {
 		config.Swarm.DisableNatPortMap = true
 		config.Swarm.RelayService.Enabled = true
 		config.Pubsub.Router = "floodsub"

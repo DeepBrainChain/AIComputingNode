@@ -106,38 +106,39 @@ type ChatCompletionResponse struct {
 }
 
 type ImageResponseChoice struct {
-	CID       string `json:"cid"`
-	ImageName string `json:"image_name"`
+	B64Json       string `json:"b64_json"`
+	Url           string `json:"url"`
+	RevisedPrompt string `json:"revised_prompt"`
 }
 
 type ImageGenModelRequest struct {
-	Project string `json:"project"`
-	Model   string `json:"model"`
-	Prompt  string `json:"prompt"`
-	Number  int    `json:"n"`
-	Size    string `json:"size"`
-	Width   int    `json:"width"`
-	Height  int    `json:"height"`
+	Model          string `json:"model"`
+	Prompt         string `json:"prompt"`
+	Number         int    `json:"n"`
+	Size           string `json:"size"`
+	Width          int    `json:"width"`
+	Height         int    `json:"height"`
+	ResponseFormat string `json:"response_format"`
 	WalletVerification
 }
 
 type ImageGenerationRequest struct {
-	NodeID string `json:"node_id"`
+	NodeID  string `json:"node_id"`
+	Project string `json:"project"`
 	ImageGenModelRequest
-	IpfsNode string `json:"ipfs_node"`
 }
 
 type ImageGenerationProxyRequest struct {
+	Project string `json:"project"`
 	ImageGenModelRequest
-	IpfsNode string `json:"ipfs_node"`
 }
 
 type ImageGenerationResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Data    struct {
-		IpfsNode string                `json:"ipfs_node"`
-		Choices  []ImageResponseChoice `json:"choices"`
+		Created int64                 `json:"created"`
+		Choices []ImageResponseChoice `json:"choices"`
 	} `json:"data"`
 }
 

@@ -256,7 +256,7 @@ This interface is used to call text to generate text models
 
 **This interface has been deprecated since v0.1.2 and has been restored since v0.1.4.**
 
-This interface uses the project name to call the text-to-text model. The client will select some nodes running the specified project and model, sort them according to the strategy (RTT connection latency or GPU idle value, etc.), and send model requests to the nodes in turn until a correct response is obtained. If there are too many failures, an error will be reported.
+This interface uses the project name to call the text-to-text model. The Input node selects some Worker nodes running the specified project and model, sort them according to the strategy (RTT connection latency or GPU idle value, etc.), and send model requests to the Worker nodes in turn until a correct response is obtained. If there are too many failures, an error will be reported.
 
 - request method: POST
 - request URL: http://127.0.0.1:6000/api/v0/chat/completion/proxy
@@ -334,14 +334,14 @@ This interface is used to call the text-to-image model.
   // Text description prompt words for the required image
   "prompt": "a bird flying in the sky",
   // The number of images to be generated, at least one
-  "n": 1,
+  "n": 2,
   // The size of the image to be generated
   // v0.1.3 started to deprecate the size field, please use the width and height fields
   "size": "1024x1024",
   "width": 1024,
   "height": 1024,
-  // IPFS storage node, each project can deploy its own IPFS storage server
-  "ipfs_node": "",
+  // The format in which the generated images are returned. Must be one of url or b64_json
+  "response_format": "url",
   // User’s wallet public key
   "wallet": "",
   // Wallet signature
@@ -358,11 +358,13 @@ This interface is used to call the text-to-image model.
   // Error message
   "message": "ok",
   "data": {
-    "ipfs_node": "http://122.99.183.54:4002",
+    "created": 1589478378,
     "choices": [
       {
-        "cid": "QmUsxJhQ13Gifj2iX9kTfzYDD6VsCL7UkdjqumPd9V2vKz",
-        "image_name": "knhfkmpilha9l5f2.png"
+        "url": "https://..."
+      },
+      {
+        "url": "https://..."
       }
     ]
   }
@@ -373,7 +375,7 @@ This interface is used to call the text-to-image model.
 
 **This interface has been deprecated since v0.1.2 and has been restored since v0.1.4.**
 
-This interface uses the project name to call the text-to-image model. The client will select some nodes running the specified project and model, sort them according to the strategy (RTT connection latency or GPU idle value, etc.), and send model requests to the nodes in turn until a correct response is obtained. If there are too many failures, an error will be reported.
+This interface uses the project name to call the text-to-image model. The Input node selects some Worker nodes running the specified project and model, sort them according to the strategy (RTT connection latency or GPU idle value, etc.), and send model requests to the Worker nodes in turn until a correct response is obtained. If there are too many failures, an error will be reported.
 
 - request method: POST
 - request URL: http://127.0.0.1:6000/api/v0/image/gen/proxy
@@ -387,14 +389,14 @@ This interface uses the project name to call the text-to-image model. The client
   // Text description prompt words for the required image
   "prompt": "a bird flying in the sky",
   // The number of images to be generated, at least one
-  "n": 1,
+  "n": 2,
   // The size of the image to be generated
   // v0.1.3 started to deprecate the size field, please use the width and height fields
   "size": "1024x1024",
   "width": 1024,
   "height": 1024,
-  // IPFS storage node, each project can deploy its own IPFS storage server
-  "ipfs_node": "",
+  // The format in which the generated images are returned. Must be one of url or b64_json
+  "response_format": "url",
   // User’s wallet public key
   "wallet": "",
   // Wallet signature
@@ -411,11 +413,13 @@ This interface uses the project name to call the text-to-image model. The client
   // Error message
   "message": "ok",
   "data": {
-    "ipfs_node": "http://122.99.183.54:4002",
+    "created": 1589478378,
     "choices": [
       {
-        "cid": "QmUsxJhQ13Gifj2iX9kTfzYDD6VsCL7UkdjqumPd9V2vKz",
-        "image_name": "knhfkmpilha9l5f2.png"
+        "url": "https://..."
+      },
+      {
+        "url": "https://..."
       }
     ]
   }

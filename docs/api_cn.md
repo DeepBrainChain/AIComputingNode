@@ -256,7 +256,7 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 
 **此接口从 v0.1.2 版本开始被弃用，从 v0.1.4 版本开始恢复使用。**
 
-此接口使用项目名称来调用文生文模型。客户端会选择一些运行指定项目和模型的节点，根据策略(RTT连接时延或者GPU空闲值等)排序，依次向节点发送模型请求直到获得正确的应答，失败次数过多时会报错。
+此接口使用项目名称来调用文生文模型。Input 节点会选择一些运行指定项目和模型的 Worker 节点，根据策略(RTT连接时延或者GPU空闲值等)排序，依次向 Worker 节点发送模型请求直到获得正确的应答，失败次数过多时会报错。
 
 - 请求方式: POST
 - 请求 URL: http://127.0.0.1:6000/api/v0/chat/completion/proxy
@@ -334,14 +334,14 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
   // 所需图片的描述或者提示词
   "prompt": "a bird flying in the sky",
   // 要生成的图像数量，最少一个
-  "n": 1,
+  "n": 2,
   // 要生成图像的大小
   // v0.1.3 开始弃用 size 字段，请使用 width 和 height 字段
   "size": "1024x1024",
   "width": 1024,
   "height": 1024,
-  // IPFS 存储节点，每个项目可以自行部署 IPFS 存储服务器
-  "ipfs_node": "",
+  // 要生成图像的格式，必须是 url 或 b64_json 之一
+  "response_format": "url",
   // 用户的钱包公钥
   "wallet": "",
   // 钱包签名
@@ -358,11 +358,13 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
   // 错误信息
   "message": "ok",
   "data": {
-    "ipfs_node": "http://122.99.183.54:4002",
+    "created": 1589478378,
     "choices": [
       {
-        "cid": "QmUsxJhQ13Gifj2iX9kTfzYDD6VsCL7UkdjqumPd9V2vKz",
-        "image_name": "knhfkmpilha9l5f2.png"
+        "url": "https://..."
+      },
+      {
+        "url": "https://..."
       }
     ]
   }
@@ -373,7 +375,7 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 
 **此接口从 v0.1.2 版本开始被弃用，从 v0.1.4 版本开始恢复使用。**
 
-此接口用来调用文生图模型。客户端会选择一些运行指定项目和模型的节点，根据策略(RTT连接时延或者GPU空闲值等)排序，依次向节点发送模型请求直到获得正确的应答，失败次数过多时会报错。
+此接口用来调用文生图模型。Input 节点会选择一些运行指定项目和模型的 Worker 节点，根据策略(RTT连接时延或者GPU空闲值等)排序，依次向 Worker 节点发送模型请求直到获得正确的应答，失败次数过多时会报错。
 
 - 请求方式: POST
 - 请求 URL: http://127.0.0.1:6000/api/v0/image/gen/proxy
@@ -387,14 +389,14 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
   // 所需图片的描述或者提示词
   "prompt": "a bird flying in the sky",
   // 要生成的图像数量，最少一个
-  "n": 1,
+  "n": 2,
   // 要生成图像的大小
   // v0.1.3 开始弃用 size 字段，请使用 width 和 height 字段
   "size": "1024x1024",
   "width": 1024,
   "height": 1024,
-  // IPFS 存储节点，每个项目可以自行部署 IPFS 存储服务器
-  "ipfs_node": "",
+  // 要生成图像的格式，必须是 url 或 b64_json 之一
+  "response_format": "url",
   // 用户的钱包公钥
   "wallet": "",
   // 钱包签名
@@ -411,11 +413,13 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
   // 错误信息
   "message": "ok",
   "data": {
-    "ipfs_node": "http://122.99.183.54:4002",
+    "created": 1589478378,
     "choices": [
       {
-        "cid": "QmUsxJhQ13Gifj2iX9kTfzYDD6VsCL7UkdjqumPd9V2vKz",
-        "image_name": "knhfkmpilha9l5f2.png"
+        "url": "https://..."
+      },
+      {
+        "url": "https://..."
       }
     ]
   }

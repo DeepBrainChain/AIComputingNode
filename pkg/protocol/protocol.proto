@@ -69,17 +69,18 @@ message ImageGenerationRequest {
   string size = 5;
   int32 width = 6;
   int32 height = 7;
-  reserved 8 to 15;
-  string ipfs_node = 16;
-  WalletVerification wallet = 17;
+  string response_format = 8;
+  reserved 9 to 15;
+  WalletVerification wallet = 16;
 }
 
 message ImageGenerationResponse {
-  string ipfs_node = 1;
   message ImageResponseChoice {
-    string cid = 1;
-    string image_name = 2;
+    string url = 1;
+    string b64_json = 2;
+    string revised_prompt = 3;
   }
+  int64 created = 1;
   repeated ImageResponseChoice choices = 2;
 }
 
