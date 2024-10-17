@@ -416,6 +416,18 @@ func main() {
 		v0.POST("/swarm/connect", serve.SwarmConnectHandler)
 		v0.POST("/swarm/disconnect", serve.SwarmDisconnectHandler)
 		v0.GET("/pubsub/peers", serve.PubsubPeersHandler)
+		v0.POST("/ai/project/register", func(ctx *gin.Context) {
+			serve.RegisterAIProjectHandler(ctx, *configPath)
+		})
+		v0.POST("/ai/project/unregister", func(ctx *gin.Context) {
+			serve.UnregisterAIProjectHandler(ctx, *configPath)
+		})
+		v0.POST("/ai/project/peer", func(ctx *gin.Context) {
+			serve.GetAIProjectOfNodeHandler(ctx, publishChan)
+		})
+		v0.GET("/ai/projects/list", serve.ListAIProjectsHandler)
+		v0.GET("/ai/projects/models", serve.GetModelsOfAIProjectHandler)
+		v0.GET("/ai/projects/peers", serve.GetPeersOfAIProjectHandler)
 	}
 	srv := &http.Server{
 		Addr:         cfg.API.Addr,

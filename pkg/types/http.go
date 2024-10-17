@@ -151,9 +151,8 @@ type SwarmConnectResponse BaseHttpResponse
 type AIProjectListRequest BaseHttpRequest
 
 type AIProjectListResponse struct {
-	Code    int               `json:"code"`
-	Message string            `json:"message"`
-	Data    []AIProjectOfNode `json:"data"`
+	BaseHttpResponse
+	Data []AIProjectOfNode `json:"data"`
 }
 
 type GetModelsOfAIProjectRequest struct {
@@ -172,9 +171,8 @@ type AIProjectPeerInfo struct {
 }
 
 type GetPeersOfAIProjectResponse struct {
-	Code    int                 `json:"code"`
-	Message string              `json:"message"`
-	Data    []AIProjectPeerInfo `json:"data"`
+	BaseHttpResponse
+	Data []AIProjectPeerInfo `json:"data"`
 }
 
 func (res *BaseHttpResponse) SetCode(code int) {

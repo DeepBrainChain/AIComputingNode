@@ -3,7 +3,9 @@ package serve
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"AIComputingNode/pkg/config"
@@ -12,6 +14,7 @@ import (
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/p2p"
 	"AIComputingNode/pkg/protocol"
+	"AIComputingNode/pkg/timer"
 	"AIComputingNode/pkg/types"
 
 	"github.com/gin-gonic/gin"
@@ -353,31 +356,24 @@ func PubsubPeersHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, rsp)
 }
 
-/*
-func (hs *httpService) registerAIProjectHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
-		return
-	}
-
+func RegisterAIProjectHandler(c *gin.Context, configPath string) {
 	rsp := types.BaseHttpResponse{
 		Code:    0,
 		Message: "ok",
 	}
-	w.Header().Set("Content-Type", "application/json")
 
 	var req types.AIProject
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
-		json.NewEncoder(w).Encode(rsp)
+		c.JSON(http.StatusBadRequest, rsp)
 		return
 	}
 
 	if err := req.Validate(); err != nil {
 		rsp.Code = int(types.ErrCodeParam)
 		rsp.Message = err.Error()
-		json.NewEncoder(w).Encode(rsp)
+		c.JSON(http.StatusBadRequest, rsp)
 		return
 	}
 
@@ -385,10 +381,13 @@ func (hs *httpService) registerAIProjectHandler(w http.ResponseWriter, r *http.R
 		if err := model.Validate(); err != nil {
 			rsp.Code = int(types.ErrCodeParam)
 			rsp.Message = err.Error()
-			json.NewEncoder(w).Encode(rsp)
+			c.JSON(http.StatusBadRequest, rsp)
 			return
 		}
 	}
+
+	backup := make([]types.AIProject, len(config.GC.AIProjects))
+	copy(backup, config.GC.AIProjects)
 
 	var find bool = false
 	for i := range config.GC.AIProjects {
@@ -401,40 +400,40 @@ func (hs *httpService) registerAIProjectHandler(w http.ResponseWriter, r *http.R
 		config.GC.AIProjects = append(config.GC.AIProjects, req)
 	}
 
-	if err := config.GC.SaveConfig(hs.configPath); err != nil {
+	if err := config.GC.SaveConfig(configPath); err != nil {
 		rsp.Code = int(types.ErrCodeInternal)
 		rsp.Message = fmt.Sprintf("config save err %v", err)
+		c.JSON(http.StatusInternalServerError, rsp)
+		config.GC.AIProjects = backup
+		return
 	}
-	json.NewEncoder(w).Encode(rsp)
+	c.JSON(http.StatusOK, rsp)
 	timer.AIT.SendAIProjects()
 }
 
-func (hs *httpService) unregisterAIProjectHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
-		return
-	}
-
+func UnregisterAIProjectHandler(c *gin.Context, configPath string) {
 	rsp := types.BaseHttpResponse{
 		Code:    0,
 		Message: "ok",
 	}
-	w.Header().Set("Content-Type", "application/json")
 
 	var req types.AIProject
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
-		json.NewEncoder(w).Encode(rsp)
+		c.JSON(http.StatusBadRequest, rsp)
 		return
 	}
 
 	if err := req.Validate(); err != nil {
 		rsp.Code = int(types.ErrCodeParam)
 		rsp.Message = err.Error()
-		json.NewEncoder(w).Encode(rsp)
+		c.JSON(http.StatusBadRequest, rsp)
 		return
 	}
+
+	backup := make([]types.AIProject, len(config.GC.AIProjects))
+	copy(backup, config.GC.AIProjects)
 
 	var find bool = false
 	for i := range config.GC.AIProjects {
@@ -445,45 +444,42 @@ func (hs *httpService) unregisterAIProjectHandler(w http.ResponseWriter, r *http
 	}
 	if !find {
 		rsp.Message = "not existed"
+		c.JSON(http.StatusOK, rsp)
+		return
 	}
 
-	if err := config.GC.SaveConfig(hs.configPath); err != nil {
+	if err := config.GC.SaveConfig(configPath); err != nil {
 		rsp.Code = int(types.ErrCodeInternal)
 		rsp.Message = fmt.Sprintf("config save err %v", err)
+		c.JSON(http.StatusInternalServerError, rsp)
+		config.GC.AIProjects = backup
+		return
 	}
-	json.NewEncoder(w).Encode(rsp)
+	c.JSON(http.StatusOK, rsp)
 	timer.AIT.SendAIProjects()
 }
 
-func (hs *httpService) getAIProjectOfNodeHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
-		return
-	}
-	rsp := types.AIProjectListResponse{
-		Code:    0,
-		Message: "ok",
-	}
-	w.Header().Set("Content-Type", "application/json")
+func GetAIProjectOfNodeHandler(c *gin.Context, publishChan chan<- []byte) {
+	rsp := types.AIProjectListResponse{}
 
 	var msg types.AIProjectListRequest
-	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
+	if err := c.ShouldBindJSON(&msg); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
-		json.NewEncoder(w).Encode(rsp)
+		c.JSON(http.StatusBadRequest, rsp)
 		return
 	}
 
 	if err := msg.Validate(); err != nil {
 		rsp.Code = int(types.ErrCodeParam)
 		rsp.Message = err.Error()
-		json.NewEncoder(w).Encode(rsp)
+		c.JSON(http.StatusBadRequest, rsp)
 		return
 	}
 
 	if msg.NodeID == config.GC.Identity.PeerID {
 		rsp.Data = config.GC.GetAIProjectsOfNode()
-		json.NewEncoder(w).Encode(rsp)
+		c.JSON(http.StatusOK, rsp)
 		return
 	}
 
@@ -491,7 +487,7 @@ func (hs *httpService) getAIProjectOfNodeHandler(w http.ResponseWriter, r *http.
 	if err != nil {
 		rsp.Code = int(types.ErrCodeUUID)
 		rsp.Message = err.Error()
-		json.NewEncoder(w).Encode(rsp)
+		c.JSON(http.StatusInternalServerError, rsp)
 		return
 	}
 
@@ -504,10 +500,10 @@ func (hs *httpService) getAIProjectOfNodeHandler(w http.ResponseWriter, r *http.
 	if err != nil {
 		rsp.SetCode(int(types.ErrCodeProtobuf))
 		rsp.SetMessage(err.Error())
-		json.NewEncoder(w).Encode(rsp)
+		c.JSON(http.StatusInternalServerError, rsp)
 		return
 	}
-	body, err = p2p.Encrypt(r.Context(), msg.NodeID, body)
+	body, err = p2p.Encrypt(c.Request.Context(), msg.NodeID, body)
 
 	req := &protocol.Message{
 		Header: &protocol.MessageHeader{
@@ -526,85 +522,78 @@ func (hs *httpService) getAIProjectOfNodeHandler(w http.ResponseWriter, r *http.
 	if err == nil {
 		req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
 	}
-	hs.handleRequest(w, r, req, &rsp)
+	handleRequest(c, publishChan, req, &rsp)
 }
 
-func (hs *httpService) listAIProjectsHandler(w http.ResponseWriter, r *http.Request) {
-	// if r.Method != http.MethodGet {
-	// 	http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
-	// 	return
-	// }
-	rsp := types.PeerListResponse{
-		Code:    0,
-		Message: "ok",
-	}
+func ListAIProjectsHandler(c *gin.Context) {
+	rsp := types.PeerListResponse{}
 	rsp.Data, rsp.Code = db.ListAIProjects(100)
 	if rsp.Code != 0 {
 		rsp.Message = types.ErrorCode(rsp.Code).String()
+		c.JSON(http.StatusInternalServerError, rsp)
+		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(rsp)
+	c.JSON(http.StatusOK, rsp)
 }
 
-func (hs *httpService) getModelsOfAIProjectHandler(w http.ResponseWriter, r *http.Request) {
-	rsp := types.PeerListResponse{
-		Code:    0,
-		Message: "ok",
-	}
-	w.Header().Set("Content-Type", "application/json")
+func GetModelsOfAIProjectHandler(c *gin.Context) {
+	rsp := types.PeerListResponse{}
 
 	var req types.GetModelsOfAIProjectRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
-		json.NewEncoder(w).Encode(rsp)
+		c.JSON(http.StatusBadRequest, rsp)
 		return
 	}
 
 	if err := req.Validate(); err != nil {
 		rsp.Code = int(types.ErrCodeParam)
 		rsp.Message = err.Error()
-		json.NewEncoder(w).Encode(rsp)
+		c.JSON(http.StatusBadRequest, rsp)
 		return
 	}
 
 	rsp.Data, rsp.Code = db.GetModelsOfAIProjects(req.Project, 100)
 	if rsp.Code != 0 {
 		rsp.Message = types.ErrorCode(rsp.Code).String()
+		c.JSON(http.StatusInternalServerError, rsp)
+		return
 	}
-	json.NewEncoder(w).Encode(rsp)
+	c.JSON(http.StatusOK, rsp)
 }
 
-func (hs *httpService) getPeersOfAIProjectHandler(w http.ResponseWriter, r *http.Request) {
+func GetPeersOfAIProjectHandler(c *gin.Context) {
 	rsp := types.GetPeersOfAIProjectResponse{
-		Code:    0,
-		Message: "ok",
-		Data:    make([]types.AIProjectPeerInfo, 0),
+		BaseHttpResponse: types.BaseHttpResponse{
+			Code:    0,
+			Message: "",
+		},
+		Data: make([]types.AIProjectPeerInfo, 0),
 	}
-	w.Header().Set("Content-Type", "application/json")
 
 	var req types.GetPeersOfAIProjectRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
-		json.NewEncoder(w).Encode(rsp)
+		c.JSON(http.StatusBadRequest, rsp)
 		return
 	}
 
 	if err := req.Validate(); err != nil {
 		rsp.Code = int(types.ErrCodeParam)
 		rsp.Message = err.Error()
-		json.NewEncoder(w).Encode(rsp)
+		c.JSON(http.StatusBadRequest, rsp)
 		return
 	}
 
 	number := 20
-	if r.URL.Query().Has("number") {
-		num := r.URL.Query().Get("number")
+	if num, ok := c.GetQuery("number"); ok {
+		// num := c.Query("number")
 		if rnum, err := strconv.Atoi(num); err != nil || rnum <= 0 {
 			rsp.Code = int(types.ErrCodeParse)
 			rsp.Message = types.ErrCodeParse.String()
-			json.NewEncoder(w).Encode(rsp)
+			c.JSON(http.StatusBadRequest, rsp)
 			return
 		} else {
 			number = rnum
@@ -618,7 +607,7 @@ func (hs *httpService) getPeersOfAIProjectHandler(w http.ResponseWriter, r *http
 	if code != 0 {
 		rsp.Code = code
 		rsp.Message = types.ErrorCode(code).String()
-		json.NewEncoder(w).Encode(rsp)
+		c.JSON(http.StatusInternalServerError, rsp)
 		return
 	}
 	for _, id := range ids {
@@ -628,9 +617,9 @@ func (hs *httpService) getPeersOfAIProjectHandler(w http.ResponseWriter, r *http
 			Latency:      p2p.Hio.Latency(id).Microseconds(),
 		})
 	}
-	json.NewEncoder(w).Encode(rsp)
+	c.JSON(http.StatusOK, rsp)
 }
-*/
+
 // func NewHttpServe(router *gin.Engine, pcn chan<- []byte, configFilePath string) {
 // 	hs := &httpService{
 // 		publishChan: pcn,

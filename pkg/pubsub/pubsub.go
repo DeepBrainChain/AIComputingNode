@@ -442,8 +442,10 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 	aip := &protocol.AIProjectBody{}
 	if msg.ResultCode != 0 {
 		res := types.AIProjectListResponse{
-			Code:    int(msg.ResultCode),
-			Message: msg.ResultMessage,
+			BaseHttpResponse: types.BaseHttpResponse{
+				Code:    int(msg.ResultCode),
+				Message: msg.ResultMessage,
+			},
 		}
 		notifyData, err := json.Marshal(res)
 		if err != nil {
@@ -476,7 +478,7 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 				Type:          protocol.MessageType_AI_PROJECT,
 				Body:          resBody,
 				ResultCode:    0,
-				ResultMessage: "ok",
+				ResultMessage: "",
 			}
 			if err == nil {
 				res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
@@ -490,9 +492,11 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 			log.Logger.Info("Sending AI Project Response")
 		} else if aiRes := aip.GetRes(); aiRes != nil {
 			res := types.AIProjectListResponse{
-				Code:    int(msg.ResultCode),
-				Message: msg.ResultMessage,
-				Data:    types.ProtocolMessage2AIProject(aiRes),
+				BaseHttpResponse: types.BaseHttpResponse{
+					Code:    int(msg.ResultCode),
+					Message: msg.ResultMessage,
+				},
+				Data: types.ProtocolMessage2AIProject(aiRes),
 			}
 			notifyData, err := json.Marshal(res)
 			if err != nil {
