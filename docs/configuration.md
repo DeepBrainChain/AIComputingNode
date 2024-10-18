@@ -15,7 +15,7 @@ Although the list of AI projects supported by the node is also saved in this con
   // a public network server, preferably with a domain name
   "Bootstrap": [
     "/ip4/122.99.183.54/tcp/6001/p2p/16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM",
-    "/ip4/82.157.50.32/tcp/6001/p2p/16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
+    "/ip4/8.219.75.114/tcp/6001/p2p/16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
   ],
   // Listening address for node connection communication
   "Addresses": [
@@ -182,7 +182,7 @@ This example is used for the worker node without a public IP address.
 {
   "Bootstrap": [
     "/ip4/122.99.183.54/tcp/6001/p2p/16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM",
-    "/ip4/82.157.50.32/tcp/6001/p2p/16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
+    "/ip4/8.219.75.114/tcp/6001/p2p/16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
   ],
   "Addresses": [
     "/ip4/0.0.0.0/tcp/6001",
@@ -256,7 +256,7 @@ This example is used for the worker node without a public IP address.
 {
   "Bootstrap": [
     "/ip4/122.99.183.54/tcp/6001/p2p/16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM",
-    "/ip4/82.157.50.32/tcp/6001/p2p/16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
+    "/ip4/8.219.75.114/tcp/6001/p2p/16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
   ],
   "Addresses": [
     "/ip4/0.0.0.0/tcp/6001",

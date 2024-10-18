@@ -14,7 +14,7 @@
   // 引导节点列表，用于节点发现和路由功能，需要部署在有公网 IP 地址的服务器上，最好带域名。
   "Bootstrap": [
     "/ip4/122.99.183.54/tcp/6001/p2p/16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM",
-    "/ip4/82.157.50.32/tcp/6001/p2p/16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
+    "/ip4/8.219.75.114/tcp/6001/p2p/16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
   ],
   // 用于节点连接和通信的监听地址
   "Addresses": [
@@ -161,7 +161,7 @@
 {
   "Bootstrap": [
     "/ip4/122.99.183.54/tcp/6001/p2p/16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM",
-    "/ip4/82.157.50.32/tcp/6001/p2p/16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
+    "/ip4/8.219.75.114/tcp/6001/p2p/16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
   ],
   "Addresses": [
     "/ip4/0.0.0.0/tcp/6001",
@@ -235,7 +235,7 @@
 {
   "Bootstrap": [
     "/ip4/122.99.183.54/tcp/6001/p2p/16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM",
-    "/ip4/82.157.50.32/tcp/6001/p2p/16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
+    "/ip4/8.219.75.114/tcp/6001/p2p/16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"
   ],
   "Addresses": [
     "/ip4/0.0.0.0/tcp/6001",
