@@ -568,7 +568,7 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 		req := r.Clone(r.Context())
 		req.URL.Host = r.Host
 		req.URL.Scheme = urlScheme
-		req.URL.Path = "/api/v0/chat/completion"
+		req.URL.Path = "/api/v0/image/gen"
 		req.Body, req.ContentLength, err = igReq.RequestBody()
 		if err != nil {
 			log.Logger.Warnf("Make image gen proxy request body %v in %d time", err, failed_count)
