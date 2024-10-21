@@ -100,15 +100,8 @@ type StreamChatModelResponseData struct {
 }
 
 type ChatCompletionResponse struct {
-	Code    int                   `json:"code"`
-	Message string                `json:"message"`
-	Data    ChatModelResponseData `json:"data"`
-}
-
-type ImageResponseChoice struct {
-	B64Json       string `json:"b64_json"`
-	Url           string `json:"url"`
-	RevisedPrompt string `json:"revised_prompt"`
+	BaseHttpResponse
+	ChatModelResponseData
 }
 
 type ImageGenModelRequest struct {
@@ -133,13 +126,20 @@ type ImageGenerationProxyRequest struct {
 	ImageGenModelRequest
 }
 
+type ImageResponseChoice struct {
+	B64Json       string `json:"b64_json,omitempty"`
+	Url           string `json:"url,omitempty"`
+	RevisedPrompt string `json:"revised_prompt,omitempty"`
+}
+
+type ImageModelResponse struct {
+	Created int64                 `json:"created,omitempty"`
+	Choices []ImageResponseChoice `json:"data,omitempty"`
+}
+
 type ImageGenerationResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Data    struct {
-		Created int64                 `json:"created"`
-		Choices []ImageResponseChoice `json:"choices"`
-	} `json:"data"`
+	BaseHttpResponse
+	ImageModelResponse
 }
 
 type SwarmConnectRequest struct {

@@ -416,6 +416,16 @@ func main() {
 		v0.POST("/swarm/connect", serve.SwarmConnectHandler)
 		v0.POST("/swarm/disconnect", serve.SwarmDisconnectHandler)
 		v0.GET("/pubsub/peers", serve.PubsubPeersHandler)
+
+		v0.POST("/chat/completion", func(ctx *gin.Context) {
+			serve.ChatCompletionHandler(ctx, publishChan)
+		})
+		v0.POST("/chat/completion/proxy", serve.ChatCompletionProxyHandler)
+		v0.POST("/image/gen", func(ctx *gin.Context) {
+			serve.ImageGenHandler(ctx, publishChan)
+		})
+		v0.POST("/image/gen/proxy", serve.ImageGenProxyHandler)
+
 		v0.POST("/ai/project/register", func(ctx *gin.Context) {
 			serve.RegisterAIProjectHandler(ctx, *configPath)
 		})

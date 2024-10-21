@@ -10,19 +10,6 @@ import (
 	"AIComputingNode/pkg/types"
 )
 
-type ChatCompletionResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	types.ChatModelResponseData
-}
-
-type ImageGenerationResponse struct {
-	Code    int                         `json:"code"`
-	Message string                      `json:"message"`
-	Created int64                       `json:"created"`
-	Data    []types.ImageResponseChoice `json:"data"`
-}
-
 //	curl http://127.0.0.1:1042/v1/chat/completions -H "Content-Type: application/json" -d "{
 //	   \"model\": \"Llama3-8B\",
 //	   \"messages\": [
@@ -38,7 +25,9 @@ type ImageGenerationResponse struct {
 //	 }"
 func ChatModel(api string, chatReq types.ChatModelRequest) *types.ChatCompletionResponse {
 	result := &types.ChatCompletionResponse{
-		Code: int(types.ErrCodeModel),
+		BaseHttpResponse: types.BaseHttpResponse{
+			Code: int(types.ErrCodeModel),
+		},
 	}
 	if api == "" {
 		result.Message = "Model API configuration is empty"
@@ -65,14 +54,13 @@ func ChatModel(api string, chatReq types.ChatModelRequest) *types.ChatCompletion
 			result.Message = "Read model response error"
 			return result
 		}
-		chatRes := ChatCompletionResponse{}
+		chatRes := types.ChatCompletionResponse{}
 		if err := json.Unmarshal(body, &chatRes); err != nil {
 			result.Message = "Unmarshal model response error"
 			return result
 		}
-		result.Code = chatRes.Code
-		result.Message = chatRes.Message
-		result.Data = chatRes.ChatModelResponseData
+		result.BaseHttpResponse = chatRes.BaseHttpResponse
+		result.ChatModelResponseData = chatRes.ChatModelResponseData
 	} else if resp.StatusCode != 200 {
 		result.Message = fmt.Sprintf("Post HTTP request error, %s", resp.Status)
 	} else {
@@ -85,7 +73,9 @@ func ChatModel(api string, chatReq types.ChatModelRequest) *types.ChatCompletion
 // curl -X POST "http://127.0.0.1:1088/v1/images/generations" -H "Content-Type: application/json" -d "{\"model\":\"superimage\",\"prompt\":\"bird\",\"n\":1,\"size\":\"1024x1024\"}"
 func ImageGenerationModel(api string, req types.ImageGenModelRequest) *types.ImageGenerationResponse {
 	result := &types.ImageGenerationResponse{
-		Code: int(types.ErrCodeModel),
+		BaseHttpResponse: types.BaseHttpResponse{
+			Code: int(types.ErrCodeModel),
+		},
 	}
 	if api == "" {
 		result.Message = "Model API configuration is empty"
@@ -112,15 +102,13 @@ func ImageGenerationModel(api string, req types.ImageGenModelRequest) *types.Ima
 			result.Message = "Read model response error"
 			return result
 		}
-		response := ImageGenerationResponse{}
+		response := types.ImageGenerationResponse{}
 		if err := json.Unmarshal(body, &response); err != nil {
 			result.Message = "Unmarshal model response error"
 			return result
 		}
-		result.Code = response.Code
-		result.Message = response.Message
-		result.Data.Created = response.Created
-		result.Data.Choices = response.Data
+		result.BaseHttpResponse = response.BaseHttpResponse
+		result.ImageModelResponse = response.ImageModelResponse
 	} else if resp.StatusCode != 200 {
 		result.Message = fmt.Sprintf("Post HTTP request error, %s", resp.Status)
 	} else {

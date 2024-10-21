@@ -45,7 +45,7 @@ func TestChatModel(t *testing.T) {
 	if res.Code != 0 {
 		t.Fatalf("Execute model %s error {code: %v, message: %s}", config.Models.Llama3.Name, res.Code, res.Message)
 	}
-	t.Logf("Execute model %s result %v", config.Models.Llama3.Name, res.Data)
+	t.Logf("Execute model %s result %v", config.Models.Llama3.Name, res.ChatModelResponseData)
 }
 
 // https://blog.csdn.net/QSTARTmachine/article/details/131993746
@@ -126,7 +126,9 @@ func StreamChatModel2(api string, chatReq types.ChatModelRequest) (code int, mes
 	fmt.Println("Response Content-Type:", resp.Header.Get("Content-Type"))
 	if resp.Header.Get("Content-Type") == "application/json" {
 		result := &types.ChatCompletionResponse{
-			Code: int(types.ErrCodeModel),
+			BaseHttpResponse: types.BaseHttpResponse{
+				Code: int(types.ErrCodeModel),
+			},
 		}
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
@@ -295,5 +297,5 @@ func TestImageModel(t *testing.T) {
 	if res.Code != 0 {
 		t.Fatalf("Execute model %s with %q error {code: %v, message: %s}", config.Models.SuperImage.Name, prompt, res.Code, res.Message)
 	}
-	t.Logf("Execute model %s with %q result %v", config.Models.SuperImage.Name, prompt, res.Data)
+	t.Logf("Execute model %s with %q result %v", config.Models.SuperImage.Name, prompt, res.ImageModelResponse)
 }

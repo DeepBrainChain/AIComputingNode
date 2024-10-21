@@ -200,8 +200,10 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 	ccb := &protocol.ChatCompletionBody{}
 	if msg.ResultCode != 0 {
 		res := types.ChatCompletionResponse{
-			Code:    int(msg.ResultCode),
-			Message: msg.ResultMessage,
+			BaseHttpResponse: types.BaseHttpResponse{
+				Code:    int(msg.ResultCode),
+				Message: msg.ResultMessage,
+			},
 		}
 		notifyData, err := json.Marshal(res)
 		if err != nil {
@@ -248,23 +250,25 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 			log.Logger.Info("Sending Chat Completion Response")
 		} else if chatRes := ccb.GetRes(); chatRes != nil {
 			res := types.ChatCompletionResponse{
-				Code:    int(msg.ResultCode),
-				Message: msg.ResultMessage,
+				BaseHttpResponse: types.BaseHttpResponse{
+					Code:    int(msg.ResultCode),
+					Message: msg.ResultMessage,
+				},
 			}
 			if msg.ResultCode == 0 {
-				res.Data.Created = chatRes.Created
+				res.Created = chatRes.Created
 				for _, choice := range chatRes.Choices {
 					ccmsg := types.ChatCompletionMessage{
 						Role:    choice.GetMessage().GetRole(),
 						Content: choice.GetMessage().GetContent(),
 					}
-					res.Data.Choices = append(res.Data.Choices, types.ChatResponseChoice{
+					res.Choices = append(res.Choices, types.ChatResponseChoice{
 						Index:        int(choice.GetIndex()),
 						Message:      ccmsg,
 						FinishReason: choice.GetFinishReason(),
 					})
 				}
-				res.Data.Usage = types.ChatResponseUsage{
+				res.Usage = types.ChatResponseUsage{
 					CompletionTokens: int(chatRes.Usage.CompletionTokens),
 					PromptTokens:     int(chatRes.Usage.PromptTokens),
 					TotalTokens:      int(chatRes.Usage.TotalTokens),
@@ -286,8 +290,10 @@ func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, de
 	ig := &protocol.ImageGenerationBody{}
 	if msg.ResultCode != 0 {
 		res := types.ImageGenerationResponse{
-			Code:    int(msg.ResultCode),
-			Message: msg.ResultMessage,
+			BaseHttpResponse: types.BaseHttpResponse{
+				Code:    int(msg.ResultCode),
+				Message: msg.ResultMessage,
+			},
 		}
 		notifyData, err := json.Marshal(res)
 		if err != nil {
@@ -334,13 +340,15 @@ func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, de
 			log.Logger.Info("Sending Image Generation Response")
 		} else if igRes := ig.GetRes(); igRes != nil {
 			res := types.ImageGenerationResponse{
-				Code:    int(msg.ResultCode),
-				Message: msg.ResultMessage,
+				BaseHttpResponse: types.BaseHttpResponse{
+					Code:    int(msg.ResultCode),
+					Message: msg.ResultMessage,
+				},
 			}
 			if msg.ResultCode == 0 {
-				res.Data.Created = igRes.Created
+				res.Created = igRes.Created
 				for _, choice := range igRes.GetChoices() {
-					res.Data.Choices = append(res.Data.Choices, types.ImageResponseChoice{
+					res.Choices = append(res.Choices, types.ImageResponseChoice{
 						Url:           choice.Url,
 						B64Json:       choice.B64Json,
 						RevisedPrompt: choice.RevisedPrompt,
@@ -549,7 +557,7 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 
 	log.Logger.Infof("Execute model %s in %s result {code:%d, message:%s}", req.Project, req.Model, chatRes.Code, chatRes.Message)
 	modelHistory := &types.ModelHistory{
-		TimeStamp:    chatRes.Data.Created,
+		TimeStamp:    chatRes.Created,
 		ReqId:        reqHeader.Id,
 		ReqNodeId:    reqHeader.NodeId,
 		ResNodeId:    reqHeader.Receiver,
@@ -558,8 +566,8 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 		Project:      req.GetProject(),
 		Model:        req.GetModel(),
 		ChatMessages: chatReq.Messages,
-		ChatChoices:  chatRes.Data.Choices,
-		ChatUsage:    chatRes.Data.Usage,
+		ChatChoices:  chatRes.Choices,
+		ChatUsage:    chatRes.Usage,
 		ImagePrompt:  "",
 		ImageChoices: []types.ImageResponseChoice{},
 	}
@@ -569,8 +577,8 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 	if chatRes.Code != 0 {
 		return chatRes.Code, chatRes.Message, response
 	}
-	response.Created = chatRes.Data.Created
-	for _, choice := range chatRes.Data.Choices {
+	response.Created = chatRes.Created
+	for _, choice := range chatRes.Choices {
 		response.Choices = append(response.Choices, &protocol.ChatCompletionResponse_ChatResponseChoice{
 			Index: int32(choice.Index),
 			Message: &protocol.ChatCompletionMessage{
@@ -581,9 +589,9 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 		})
 	}
 	response.Usage = &protocol.ChatCompletionResponse_ChatResponseUsage{
-		CompletionTokens: int32(chatRes.Data.Usage.CompletionTokens),
-		PromptTokens:     int32(chatRes.Data.Usage.PromptTokens),
-		TotalTokens:      int32(chatRes.Data.Usage.TotalTokens),
+		CompletionTokens: int32(chatRes.Usage.CompletionTokens),
+		PromptTokens:     int32(chatRes.Usage.PromptTokens),
+		TotalTokens:      int32(chatRes.Usage.TotalTokens),
 	}
 	return chatRes.Code, chatRes.Message, response
 }
@@ -607,13 +615,13 @@ func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenera
 
 	if igRes.Code == 0 {
 		log.Logger.Infof("Execute model %s with (%q, %d, %s) result %v",
-			req.GetModel(), req.GetPrompt(), req.GetNumber(), req.GetSize(), igRes.Data.Choices)
+			req.GetModel(), req.GetPrompt(), req.GetNumber(), req.GetSize(), igRes.Choices)
 	} else {
 		log.Logger.Errorf("Execute model %s with (%q, %d, %s) error {code:%d, message:%s}",
 			req.GetModel(), req.GetPrompt(), req.GetNumber(), req.GetSize(), igRes.Code, igRes.Message)
 	}
 	modelHistory := &types.ModelHistory{
-		TimeStamp:    igRes.Data.Created,
+		TimeStamp:    igRes.Created,
 		ReqId:        reqHeader.Id,
 		ReqNodeId:    reqHeader.NodeId,
 		ResNodeId:    reqHeader.Receiver,
@@ -625,7 +633,7 @@ func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenera
 		ChatChoices:  []types.ChatResponseChoice{},
 		ChatUsage:    types.ChatResponseUsage{},
 		ImagePrompt:  req.GetPrompt(),
-		ImageChoices: igRes.Data.Choices,
+		ImageChoices: igRes.Choices,
 	}
 	_ = db.WriteModelHistory(modelHistory)
 
@@ -633,8 +641,8 @@ func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenera
 	if igRes.Code != 0 {
 		return igRes.Code, igRes.Message, response
 	}
-	response.Created = igRes.Data.Created
-	for _, choice := range igRes.Data.Choices {
+	response.Created = igRes.Created
+	for _, choice := range igRes.Choices {
 		response.Choices = append(response.Choices, &protocol.ImageGenerationResponse_ImageResponseChoice{
 			Url:           choice.Url,
 			B64Json:       choice.B64Json,
