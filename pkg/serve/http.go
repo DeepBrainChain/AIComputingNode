@@ -58,15 +58,11 @@ func PeersHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, rsp)
 }
 
-func handleRequest(c *gin.Context, publishChan chan<- []byte, req *protocol.Message, rsp any) {
+func handleRequest(publishChan chan<- []byte, req *protocol.Message, rsp any) (int, int, string) {
 	requestID := req.Header.Id
 	reqBytes, err := proto.Marshal(req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, types.BaseHttpResponse{
-			Code:    int(types.ErrCodeProtobuf),
-			Message: err.Error(),
-		})
-		return
+		return http.StatusInternalServerError, int(types.ErrCodeProtobuf), err.Error()
 	}
 
 	notifyChan := make(chan []byte, 1024)
@@ -84,25 +80,15 @@ func handleRequest(c *gin.Context, publishChan chan<- []byte, req *protocol.Mess
 	case notifyData, ok := <-notifyChan:
 		if ok {
 			if err := json.Unmarshal(notifyData, &rsp); err != nil {
-				c.JSON(http.StatusInternalServerError, types.BaseHttpResponse{
-					Code:    int(types.ErrCodeParse),
-					Message: "parse pubsub reponse error",
-				})
+				return http.StatusInternalServerError, int(types.ErrCodeParse), "parse pubsub reponse error"
 			} else {
-				c.JSON(http.StatusOK, rsp)
+				return http.StatusOK, 0, ""
 			}
 		} else {
-			c.JSON(http.StatusInternalServerError, types.BaseHttpResponse{
-				Code:    int(types.ErrCodeInternal),
-				Message: "pubsub channel error",
-			})
+			return http.StatusInternalServerError, int(types.ErrCodeInternal), "pubsub channel error"
 		}
 	case <-time.After(2 * time.Minute):
 		log.Logger.Warnf("request id %s message type %s timeout", requestID, req.Type)
-		c.JSON(http.StatusGatewayTimeout, types.BaseHttpResponse{
-			Code:    int(types.ErrCodeTimeout),
-			Message: types.ErrCodeTimeout.String(),
-		})
 		QueueLock.Lock()
 		for i, item := range RequestQueue {
 			if item.ID == requestID {
@@ -112,6 +98,7 @@ func handleRequest(c *gin.Context, publishChan chan<- []byte, req *protocol.Mess
 		}
 		QueueLock.Unlock()
 		close(notifyChan)
+		return http.StatusGatewayTimeout, int(types.ErrCodeTimeout), types.ErrCodeTimeout.String()
 	}
 }
 
@@ -182,7 +169,17 @@ func PeerHandler(c *gin.Context, publishChan chan<- []byte) {
 	if err == nil {
 		req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
 	}
-	handleRequest(c, publishChan, req, &rsp)
+	status, code, message := handleRequest(publishChan, req, &rsp)
+	if code != 0 {
+		c.JSON(status, types.BaseHttpResponse{
+			Code:    code,
+			Message: message,
+		})
+	} else if rsp.Code != 0 {
+		c.JSON(http.StatusInternalServerError, rsp)
+	} else {
+		c.JSON(http.StatusOK, rsp)
+	}
 }
 
 func HostInfoHandler(c *gin.Context, publishChan chan<- []byte) {
@@ -255,7 +252,17 @@ func HostInfoHandler(c *gin.Context, publishChan chan<- []byte) {
 	if err == nil {
 		req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
 	}
-	handleRequest(c, publishChan, req, &rsp)
+	status, code, message := handleRequest(publishChan, req, &rsp)
+	if code != 0 {
+		c.JSON(status, types.BaseHttpResponse{
+			Code:    code,
+			Message: message,
+		})
+	} else if rsp.Code != 0 {
+		c.JSON(http.StatusInternalServerError, rsp)
+	} else {
+		c.JSON(http.StatusOK, rsp)
+	}
 }
 
 func RendezvousPeersHandler(c *gin.Context) {
@@ -522,7 +529,17 @@ func GetAIProjectOfNodeHandler(c *gin.Context, publishChan chan<- []byte) {
 	if err == nil {
 		req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
 	}
-	handleRequest(c, publishChan, req, &rsp)
+	status, code, message := handleRequest(publishChan, req, &rsp)
+	if code != 0 {
+		c.JSON(status, types.BaseHttpResponse{
+			Code:    code,
+			Message: message,
+		})
+	} else if rsp.Code != 0 {
+		c.JSON(http.StatusInternalServerError, rsp)
+	} else {
+		c.JSON(http.StatusOK, rsp)
+	}
 }
 
 func ListAIProjectsHandler(c *gin.Context) {

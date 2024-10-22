@@ -238,7 +238,17 @@ func ChatCompletionHandler(c *gin.Context, publishChan chan<- []byte) {
 		ResultCode: 0,
 	}
 	req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
-	handleRequest(c, publishChan, req, &rsp)
+	status, code, message := handleRequest(publishChan, req, &rsp)
+	if code != 0 {
+		c.JSON(status, types.BaseHttpResponse{
+			Code:    code,
+			Message: message,
+		})
+	} else if rsp.Code != 0 {
+		c.JSON(http.StatusInternalServerError, rsp)
+	} else {
+		c.JSON(http.StatusOK, rsp)
+	}
 }
 
 func ChatCompletionProxyHandler(c *gin.Context) {
@@ -459,7 +469,17 @@ func ImageGenHandler(c *gin.Context, publishChan chan<- []byte) {
 		ResultCode: 0,
 	}
 	req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
-	handleRequest(c, publishChan, req, &rsp)
+	status, code, message := handleRequest(publishChan, req, &rsp)
+	if code != 0 {
+		c.JSON(status, types.BaseHttpResponse{
+			Code:    code,
+			Message: message,
+		})
+	} else if rsp.Code != 0 {
+		c.JSON(http.StatusInternalServerError, rsp)
+	} else {
+		c.JSON(http.StatusOK, rsp)
+	}
 }
 
 func ImageGenProxyHandler(c *gin.Context) {

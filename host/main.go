@@ -41,6 +41,7 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var version string
@@ -438,6 +439,8 @@ func main() {
 		v0.GET("/ai/projects/list", serve.ListAIProjectsHandler)
 		v0.GET("/ai/projects/models", serve.GetModelsOfAIProjectHandler)
 		v0.GET("/ai/projects/peers", serve.GetPeersOfAIProjectHandler)
+
+		v0.GET("/debug/metrics/prometheus", gin.WrapH(promhttp.Handler()))
 	}
 	srv := &http.Server{
 		Addr:         cfg.API.Addr,
