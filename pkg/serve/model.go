@@ -168,7 +168,7 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 
 		for k, v := range resp.Header {
 			for _, s := range v {
-				w.Header().Add(k, s)
+				w.Header().Set(k, s)
 			}
 		}
 
@@ -288,7 +288,7 @@ func (hs *httpService) chatCompletionProxyHandler(w http.ResponseWriter, r *http
 		if conn != 1 {
 			continue
 		}
-		latency := p2p.Hio.Latency(id).Milliseconds()
+		latency := p2p.Hio.Latency(id).Nanoseconds()
 		if latency == 0 {
 			continue
 		}
@@ -428,6 +428,70 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if msg.ResponseFormat == "b64_json" {
+		log.Logger.Info("Received image gen b64_json request")
+		stream, err := p2p.Hio.NewStream(r.Context(), msg.NodeID)
+		if err != nil {
+			rsp.Code = int(types.ErrCodeStream)
+			rsp.Message = "Open stream with peer node failed"
+			log.Logger.Errorf("Open stream with peer node failed: %v", err)
+			json.NewEncoder(w).Encode(rsp)
+			return
+		}
+		stream.SetDeadline(time.Now().Add(p2p.ChatProxyStreamTimeout))
+		defer stream.Close()
+		log.Logger.Infof("Create libp2p stream with %s success", msg.NodeID)
+
+		r.Body, r.ContentLength, err = msg.ImageGenModelRequest.RequestBody()
+		if err != nil {
+			rsp.Code = int(types.ErrCodeStream)
+			rsp.Message = "Copy http request body failed"
+			log.Logger.Errorf("Copy http request body failed: %v", err)
+			json.NewEncoder(w).Encode(rsp)
+			return
+		}
+		queryValues := r.URL.Query()
+		queryValues.Add("project", msg.Project)
+		queryValues.Add("model", msg.Model)
+		r.URL.RawQuery = queryValues.Encode()
+
+		err = r.Write(stream)
+		if err != nil {
+			stream.Reset()
+			rsp.Code = int(types.ErrCodeStream)
+			rsp.Message = "Write image stream failed"
+			log.Logger.Errorf("Write image stream failed: %v", err)
+			json.NewEncoder(w).Encode(rsp)
+			return
+		}
+
+		log.Logger.Info("Read the response that was send from dest peer")
+		buf := bufio.NewReader(stream)
+		resp, err := http.ReadResponse(buf, r)
+		if err != nil {
+			stream.Reset()
+			rsp.Code = int(types.ErrCodeStream)
+			rsp.Message = "Read image stream failed"
+			log.Logger.Errorf("Read image stream failed: %v", err)
+			json.NewEncoder(w).Encode(rsp)
+			return
+		}
+
+		for k, v := range resp.Header {
+			for _, s := range v {
+				w.Header().Set(k, s)
+			}
+		}
+
+		w.WriteHeader(resp.StatusCode)
+
+		log.Logger.Info("Copy the body from libp2p stream")
+		io.Copy(w, resp.Body)
+		resp.Body.Close()
+		log.Logger.Info("Handle image completion stream request over")
+		return
+	}
+
 	requestID, err := uuid.NewRandom()
 	if err != nil {
 		rsp.Code = int(types.ErrCodeUUID)
@@ -528,13 +592,13 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 		// if conn != 1 {
 		// 	continue
 		// }
-		latency := p2p.Hio.Latency(id).Milliseconds()
+		latency := p2p.Hio.Latency(id).Nanoseconds()
 		if latency == 0 {
 			continue
 		}
 		peers = append(peers, types.AIProjectPeerInfo{
 			NodeID:       id,
-			Connectivity: 1,
+			Connectivity: p2p.Hio.Connectedness(id),
 			Latency:      latency,
 		})
 	}
@@ -546,7 +610,14 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	sort.Slice(peers, func(i, j int) bool {
-		return peers[i].Latency < peers[j].Latency
+		if (peers[i].Connectivity == 1 && peers[j].Connectivity == 1) ||
+			(peers[i].Connectivity != 1 && peers[j].Connectivity != 1) {
+			return peers[i].Latency < peers[j].Latency
+		}
+		if peers[i].Connectivity == 1 {
+			return true
+		}
+		return false
 	})
 
 	urlScheme := "http"
