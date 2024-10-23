@@ -70,13 +70,12 @@ func (hs *httpService) peersHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(rsp)
 }
 
-func (hs *httpService) handleRequest(w http.ResponseWriter, r *http.Request, req *protocol.Message, rsp types.HttpResponse) {
+func (hs *httpService) handleRequest(req *protocol.Message, rsp types.HttpResponse) {
 	requestID := req.Header.Id
 	reqBytes, err := proto.Marshal(req)
 	if err != nil {
 		rsp.SetCode(int(types.ErrCodeProtobuf))
 		rsp.SetMessage(err.Error())
-		json.NewEncoder(w).Encode(rsp)
 		return
 	}
 
@@ -108,7 +107,6 @@ func (hs *httpService) handleRequest(w http.ResponseWriter, r *http.Request, req
 		QueueLock.Unlock()
 		close(notifyChan)
 	}
-	json.NewEncoder(w).Encode(rsp)
 }
 
 func (hs *httpService) peerHandler(w http.ResponseWriter, r *http.Request) {
@@ -182,7 +180,8 @@ func (hs *httpService) peerHandler(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
 	}
-	hs.handleRequest(w, r, req, &rsp)
+	hs.handleRequest(req, &rsp)
+	json.NewEncoder(w).Encode(rsp)
 }
 
 func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
@@ -262,7 +261,8 @@ func (hs *httpService) hostInfoHandler(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
 	}
-	hs.handleRequest(w, r, req, &rsp)
+	hs.handleRequest(req, &rsp)
+	json.NewEncoder(w).Encode(rsp)
 }
 
 func (hs *httpService) rendezvousPeersHandler(w http.ResponseWriter, r *http.Request) {
@@ -563,7 +563,8 @@ func (hs *httpService) getAIProjectOfNodeHandler(w http.ResponseWriter, r *http.
 	if err == nil {
 		req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
 	}
-	hs.handleRequest(w, r, req, &rsp)
+	hs.handleRequest(req, &rsp)
+	json.NewEncoder(w).Encode(rsp)
 }
 
 func (hs *httpService) listAIProjectsHandler(w http.ResponseWriter, r *http.Request) {

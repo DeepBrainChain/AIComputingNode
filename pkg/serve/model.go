@@ -2,6 +2,8 @@ package serve
 
 import (
 	"bufio"
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -243,7 +245,8 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 		ResultCode: 0,
 	}
 	req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
-	hs.handleRequest(w, r, req, &rsp)
+	hs.handleRequest(req, &rsp)
+	json.NewEncoder(w).Encode(rsp)
 }
 
 func (hs *httpService) chatCompletionProxyHandler(w http.ResponseWriter, r *http.Request) {
@@ -389,6 +392,154 @@ func (hs *httpService) chatCompletionProxyHandler(w http.ResponseWriter, r *http
 	json.NewEncoder(w).Encode(rsp)
 }
 
+func (hs *httpService) handleImageGenRequest(ctx context.Context, req *types.ImageGenerationRequest, rsp *types.ImageGenerationResponse) {
+	if req.NodeID == config.GC.Identity.PeerID {
+		modelAPI := config.GC.GetModelAPI(req.Project, req.Model)
+		if modelAPI == "" {
+			rsp.Code = int(types.ErrCodeModel)
+			rsp.Message = "Model API configuration is empty"
+			return
+		}
+		*rsp = *model.ImageGenerationModel(modelAPI, req.ImageGenModelRequest)
+		return
+	}
+
+	if req.ResponseFormat == "b64_json" {
+		log.Logger.Info("Received image gen b64_json request")
+		stream, err := p2p.Hio.NewStream(ctx, req.NodeID)
+		if err != nil {
+			rsp.Code = int(types.ErrCodeStream)
+			rsp.Message = "Open stream with peer node failed"
+			log.Logger.Errorf("Open stream with peer node failed: %v", err)
+			return
+		}
+		stream.SetDeadline(time.Now().Add(p2p.ChatProxyStreamTimeout))
+		defer stream.Close()
+		log.Logger.Infof("Create libp2p stream with %s success", req.NodeID)
+
+		jsonData, err := json.Marshal(req.ImageGenModelRequest)
+		if err != nil {
+			rsp.Code = int(types.ErrCodeStream)
+			rsp.Message = "Copy http request body failed"
+			log.Logger.Errorf("Copy http request body failed: %v", err)
+			return
+		}
+		hreq, err := http.NewRequestWithContext(ctx, "POST", "http://127.0.0.1:8080/api/v0/image/gen", bytes.NewBuffer(jsonData))
+		if err != nil {
+			rsp.Code = int(types.ErrCodeStream)
+			rsp.Message = "Create http request for stream failed"
+			log.Logger.Errorf("Create http request for stream failed: %v", err)
+			return
+		}
+
+		queryValues := hreq.URL.Query()
+		queryValues.Add("project", req.Project)
+		queryValues.Add("model", req.Model)
+		hreq.URL.RawQuery = queryValues.Encode()
+
+		err = hreq.Write(stream)
+		if err != nil {
+			stream.Reset()
+			rsp.Code = int(types.ErrCodeStream)
+			rsp.Message = "Write image stream failed"
+			log.Logger.Errorf("Write image stream failed: %v", err)
+			return
+		}
+
+		log.Logger.Info("Read the response that was send from dest peer")
+		buf := bufio.NewReader(stream)
+		resp, err := http.ReadResponse(buf, hreq)
+		if err != nil {
+			stream.Reset()
+			rsp.Code = int(types.ErrCodeStream)
+			rsp.Message = "Read image stream failed"
+			log.Logger.Errorf("Read image stream failed: %v", err)
+			return
+		}
+
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			stream.Reset()
+			rsp.Code = int(types.ErrCodeStream)
+			rsp.Message = "Read image reponse from stream failed"
+			log.Logger.Errorf("Read image reponse from stream failed: %v", err)
+			return
+		}
+
+		response := types.ImageGenModelResponse{}
+		if err := json.Unmarshal(body, &response); err != nil {
+			stream.Reset()
+			rsp.Code = int(types.ErrCodeStream)
+			rsp.Message = "Unmarshal image response from stream error"
+			log.Logger.Errorf("Unmarshal image response from stream error: %v", err)
+			return
+		}
+		rsp.Code = response.Code
+		rsp.Message = response.Message
+		rsp.Data.Created = response.Created
+		rsp.Data.Choices = response.Data
+		log.Logger.Info("Handle image gen stream request over")
+		return
+	}
+
+	requestID, err := uuid.NewRandom()
+	if err != nil {
+		rsp.Code = int(types.ErrCodeUUID)
+		rsp.Message = err.Error()
+		return
+	}
+
+	pi := &protocol.ImageGenerationBody{
+		Data: &protocol.ImageGenerationBody_Req{
+			Req: &protocol.ImageGenerationRequest{
+				Project:        req.Project,
+				Model:          req.Model,
+				Prompt:         req.Prompt,
+				Number:         int32(req.Number),
+				Size:           req.Size,
+				Width:          int32(req.Width),
+				Height:         int32(req.Height),
+				ResponseFormat: req.ResponseFormat,
+				Wallet: &protocol.WalletVerification{
+					Wallet:    req.Wallet,
+					Signature: req.Signature,
+					Hash:      req.Hash,
+				},
+			},
+		},
+	}
+	body, err := proto.Marshal(pi)
+	if err != nil {
+		rsp.SetCode(int(types.ErrCodeProtobuf))
+		rsp.SetMessage(err.Error())
+		return
+	}
+	body, err = p2p.Encrypt(ctx, req.NodeID, body)
+	if err != nil {
+		rsp.Code = int(types.ErrCodeEncrypt)
+		rsp.Message = types.ErrCodeEncrypt.String()
+		return
+	}
+
+	msg := &protocol.Message{
+		Header: &protocol.MessageHeader{
+			ClientVersion: p2p.Hio.UserAgent,
+			Timestamp:     time.Now().Unix(),
+			Id:            requestID.String(),
+			NodeId:        config.GC.Identity.PeerID,
+			Receiver:      req.NodeID,
+			NodePubKey:    nil,
+			Sign:          nil,
+		},
+		Type:       *protocol.MessageType_IMAGE_GENERATION.Enum(),
+		Body:       body,
+		ResultCode: 0,
+	}
+	msg.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+	hs.handleRequest(msg, rsp)
+}
+
 func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
@@ -415,141 +566,8 @@ func (hs *httpService) imageGenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg.NodeID == config.GC.Identity.PeerID {
-		modelAPI := config.GC.GetModelAPI(msg.Project, msg.Model)
-		if modelAPI == "" {
-			rsp.Code = int(types.ErrCodeModel)
-			rsp.Message = "Model API configuration is empty"
-			json.NewEncoder(w).Encode(rsp)
-			return
-		}
-		rsp = *model.ImageGenerationModel(modelAPI, msg.ImageGenModelRequest)
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
-
-	if msg.ResponseFormat == "b64_json" {
-		log.Logger.Info("Received image gen b64_json request")
-		stream, err := p2p.Hio.NewStream(r.Context(), msg.NodeID)
-		if err != nil {
-			rsp.Code = int(types.ErrCodeStream)
-			rsp.Message = "Open stream with peer node failed"
-			log.Logger.Errorf("Open stream with peer node failed: %v", err)
-			json.NewEncoder(w).Encode(rsp)
-			return
-		}
-		stream.SetDeadline(time.Now().Add(p2p.ChatProxyStreamTimeout))
-		defer stream.Close()
-		log.Logger.Infof("Create libp2p stream with %s success", msg.NodeID)
-
-		r.Body, r.ContentLength, err = msg.ImageGenModelRequest.RequestBody()
-		if err != nil {
-			rsp.Code = int(types.ErrCodeStream)
-			rsp.Message = "Copy http request body failed"
-			log.Logger.Errorf("Copy http request body failed: %v", err)
-			json.NewEncoder(w).Encode(rsp)
-			return
-		}
-		queryValues := r.URL.Query()
-		queryValues.Add("project", msg.Project)
-		queryValues.Add("model", msg.Model)
-		r.URL.RawQuery = queryValues.Encode()
-
-		err = r.Write(stream)
-		if err != nil {
-			stream.Reset()
-			rsp.Code = int(types.ErrCodeStream)
-			rsp.Message = "Write image stream failed"
-			log.Logger.Errorf("Write image stream failed: %v", err)
-			json.NewEncoder(w).Encode(rsp)
-			return
-		}
-
-		log.Logger.Info("Read the response that was send from dest peer")
-		buf := bufio.NewReader(stream)
-		resp, err := http.ReadResponse(buf, r)
-		if err != nil {
-			stream.Reset()
-			rsp.Code = int(types.ErrCodeStream)
-			rsp.Message = "Read image stream failed"
-			log.Logger.Errorf("Read image stream failed: %v", err)
-			json.NewEncoder(w).Encode(rsp)
-			return
-		}
-
-		for k, v := range resp.Header {
-			for _, s := range v {
-				w.Header().Set(k, s)
-			}
-		}
-
-		w.WriteHeader(resp.StatusCode)
-
-		log.Logger.Info("Copy the body from libp2p stream")
-		io.Copy(w, resp.Body)
-		resp.Body.Close()
-		log.Logger.Info("Handle image completion stream request over")
-		return
-	}
-
-	requestID, err := uuid.NewRandom()
-	if err != nil {
-		rsp.Code = int(types.ErrCodeUUID)
-		rsp.Message = err.Error()
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
-
-	pi := &protocol.ImageGenerationBody{
-		Data: &protocol.ImageGenerationBody_Req{
-			Req: &protocol.ImageGenerationRequest{
-				Project:        msg.Project,
-				Model:          msg.Model,
-				Prompt:         msg.Prompt,
-				Number:         int32(msg.Number),
-				Size:           msg.Size,
-				Width:          int32(msg.Width),
-				Height:         int32(msg.Height),
-				ResponseFormat: msg.ResponseFormat,
-				Wallet: &protocol.WalletVerification{
-					Wallet:    msg.Wallet,
-					Signature: msg.Signature,
-					Hash:      msg.Hash,
-				},
-			},
-		},
-	}
-	body, err := proto.Marshal(pi)
-	if err != nil {
-		rsp.SetCode(int(types.ErrCodeProtobuf))
-		rsp.SetMessage(err.Error())
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
-	body, err = p2p.Encrypt(r.Context(), msg.NodeID, body)
-	if err != nil {
-		rsp.Code = int(types.ErrCodeEncrypt)
-		rsp.Message = types.ErrCodeEncrypt.String()
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
-
-	req := &protocol.Message{
-		Header: &protocol.MessageHeader{
-			ClientVersion: p2p.Hio.UserAgent,
-			Timestamp:     time.Now().Unix(),
-			Id:            requestID.String(),
-			NodeId:        config.GC.Identity.PeerID,
-			Receiver:      msg.NodeID,
-			NodePubKey:    nil,
-			Sign:          nil,
-		},
-		Type:       *protocol.MessageType_IMAGE_GENERATION.Enum(),
-		Body:       body,
-		ResultCode: 0,
-	}
-	req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
-	hs.handleRequest(w, r, req, &rsp)
+	hs.handleImageGenRequest(r.Context(), &msg, &rsp)
+	json.NewEncoder(w).Encode(rsp)
 }
 
 func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Request) {
@@ -620,12 +638,6 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 		return false
 	})
 
-	urlScheme := "http"
-	hp := strings.Split(r.Host, ":")
-	if len(hp) > 1 && hp[1] == "443" {
-		urlScheme = "https"
-	}
-	var err error = nil
 	failed_count := 0
 	for _, peer := range peers {
 		if failed_count >= 3 {
@@ -636,60 +648,15 @@ func (hs *httpService) imageGenProxyHandler(w http.ResponseWriter, r *http.Reque
 			Project:              msg.Project,
 			ImageGenModelRequest: msg.ImageGenModelRequest,
 		}
-		req := r.Clone(r.Context())
-		req.URL.Host = r.Host
-		req.URL.Scheme = urlScheme
-		req.URL.Path = "/api/v0/image/gen"
-		req.Body, req.ContentLength, err = igReq.RequestBody()
-		if err != nil {
-			log.Logger.Warnf("Make image gen proxy request body %v in %d time", err, failed_count)
-			continue
-		}
-		resp, err := http.DefaultTransport.RoundTrip(req)
-		if err != nil || resp.StatusCode != 200 {
-			log.Logger.Warnf("Roundtrip image gen proxy %v %v to %s in %d time", err, resp.StatusCode, peer.NodeID, failed_count)
-			failed_count += 1
-			continue
-		}
-		defer resp.Body.Close()
-		// if msg.Stream {
-		// 	contentType := resp.Header.Get("Content-Type")
-		// 	if contentType == "application/json" {
-		// 		body, _ := io.ReadAll(resp.Body)
-		// 		log.Logger.Warnf("Transform image gen proxy %v to %s in %d time", string(body), peer.NodeID, failed_count)
-		// 		failed_count += 1
-		// 		continue
-		// 	} else {
-		// 		for k, v := range resp.Header {
-		// 			for _, s := range v {
-		// 				w.Header().Add(k, s)
-		// 			}
-		// 		}
-		// 		w.WriteHeader(resp.StatusCode)
-		// 		io.Copy(w, resp.Body)
-		// 		log.Logger.Infof("Handle image gen proxy stream request to %s success in %d time", peer.NodeID, failed_count)
-		// 		return
-		// 	}
-		// } else {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Logger.Warnf("Read image gen proxy response json failed in %d time", failed_count)
-			failed_count += 1
-			continue
-		}
-		if err := json.Unmarshal(body, &rsp); err != nil {
-			log.Logger.Warnf("Parse image gen proxy response json failed in %d time", failed_count)
-			failed_count += 1
-			continue
-		}
+		hs.handleImageGenRequest(r.Context(), &igReq, &rsp)
 		if rsp.Code != 0 {
-			log.Logger.Warnf("Handle image gen proxy response %v in %d time", rsp.Message, failed_count)
+			log.Logger.Warnf("Handle image gen proxy response %v %v to %v in %d time",
+				rsp.Code, rsp.Message, peer.NodeID, failed_count)
 			failed_count += 1
 			continue
 		}
 		json.NewEncoder(w).Encode(rsp)
 		return
-		// }
 	}
 
 	rsp.Code = int(types.ErrCodeProxy)

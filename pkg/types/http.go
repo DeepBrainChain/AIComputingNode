@@ -136,6 +136,13 @@ type ImageGenerationProxyRequest struct {
 	ImageGenModelRequest
 }
 
+type ImageGenModelResponse struct {
+	Code    int                   `json:"code"`
+	Message string                `json:"message"`
+	Created int64                 `json:"created"`
+	Data    []ImageResponseChoice `json:"data"`
+}
+
 type ImageGenerationResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`

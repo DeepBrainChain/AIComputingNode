@@ -16,13 +16,6 @@ type ChatCompletionResponse struct {
 	types.ChatModelResponseData
 }
 
-type ImageGenerationResponse struct {
-	Code    int                         `json:"code"`
-	Message string                      `json:"message"`
-	Created int64                       `json:"created"`
-	Data    []types.ImageResponseChoice `json:"data"`
-}
-
 //	curl http://127.0.0.1:1042/v1/chat/completions -H "Content-Type: application/json" -d "{
 //	   \"model\": \"Llama3-8B\",
 //	   \"messages\": [
@@ -112,7 +105,7 @@ func ImageGenerationModel(api string, req types.ImageGenModelRequest) *types.Ima
 			result.Message = "Read model response error"
 			return result
 		}
-		response := ImageGenerationResponse{}
+		response := types.ImageGenModelResponse{}
 		if err := json.Unmarshal(body, &response); err != nil {
 			result.Message = "Unmarshal model response error"
 			return result
