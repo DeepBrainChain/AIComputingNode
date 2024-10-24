@@ -449,81 +449,77 @@ func (hs *httpService) handleImageGenRequest(ctx context.Context, req *types.Ima
 		log.Logger.Info("Write image gen request into libp2p stream success")
 
 		reader := bufio.NewReader(stream)
-		responseCh := make(chan *http.Response, 1)
-		errorCh := make(chan error, 1)
+		responseCh := make(chan *types.ImageGenModelResponse, 1)
 
 		go func() {
+			response := &types.ImageGenModelResponse{}
 			select {
 			case <-ctx.Done():
+				response.Code = int(types.ErrCodeStream)
+				response.Message = fmt.Sprintf("Context canceled or timed out: %v", ctx.Err())
+				log.Logger.Errorf("Context canceled or timed out: %v", ctx.Err())
+				responseCh <- response
 				return
 			default:
 				resp, err := http.ReadResponse(reader, hreq)
 				select {
 				case <-ctx.Done():
+					response.Code = int(types.ErrCodeStream)
+					response.Message = fmt.Sprintf("Context canceled or timed out: %v", ctx.Err())
+					log.Logger.Errorf("Context canceled or timed out: %v", ctx.Err())
+					responseCh <- response
 					return
-				case responseCh <- resp:
-				}
-				select {
-				case <-ctx.Done():
-					return
-				case errorCh <- err:
+				default:
+					if err != nil {
+						stream.Reset()
+						response.Code = int(types.ErrCodeStream)
+						response.Message = "Read image gen response from libp2p stream failed"
+						log.Logger.Errorf("Read image gen response from libp2p stream failed: %v", err)
+						responseCh <- response
+						return
+					}
+					log.Logger.Info("Read image gen response from libp2p stream success")
+
+					defer resp.Body.Close()
+					body, err := io.ReadAll(resp.Body)
+					if err != nil {
+						stream.Reset()
+						response.Code = int(types.ErrCodeStream)
+						response.Message = "Read image response body failed"
+						log.Logger.Errorf("Read image response body failed: %v", err)
+						responseCh <- response
+						return
+					}
+					log.Logger.Info("Read image response body success")
+
+					// response := types.ImageGenModelResponse{}
+					if err := json.Unmarshal(body, &response); err != nil {
+						stream.Reset()
+						response.Code = int(types.ErrCodeStream)
+						response.Message = "Unmarshal image response from stream error"
+						log.Logger.Errorf("Unmarshal image response from stream error: %v", err)
+						responseCh <- response
+						return
+					}
+					responseCh <- response
 				}
 			}
 		}()
 
-		var resp *http.Response
 		select {
 		case <-ctx.Done():
 			rsp.Code = int(types.ErrCodeStream)
 			rsp.Message = fmt.Sprintf("Context canceled or timed out: %v", ctx.Err())
-			log.Logger.Errorf("Context canceled or timed out: %v", ctx.Err())
+			log.Logger.Errorf("Handle image gen stream request time out: %v", ctx.Err())
 			return
-		case resp = <-responseCh:
-		}
-		select {
-		case <-ctx.Done():
-			rsp.Code = int(types.ErrCodeStream)
-			rsp.Message = fmt.Sprintf("Context canceled or timed out: %v", ctx.Err())
-			log.Logger.Errorf("Context canceled or timed out: %v", ctx.Err())
-			return
-		case err = <-errorCh:
-		}
-
-		// resp, err := http.ReadResponse(reader, hreq)
-		if err != nil {
-			stream.Reset()
-			rsp.Code = int(types.ErrCodeStream)
-			rsp.Message = "Read image gen response from libp2p stream failed"
-			log.Logger.Errorf("Read image gen response from libp2p stream failed: %v", err)
+		case resp := <-responseCh:
+			rsp.Code = resp.Code
+			rsp.Message = resp.Message
+			rsp.Data.Created = resp.Created
+			rsp.Data.Choices = resp.Data
+			log.Logger.Info("Handle image gen stream request over")
 			return
 		}
-		log.Logger.Info("Read image gen response from libp2p stream success")
-
-		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			stream.Reset()
-			rsp.Code = int(types.ErrCodeStream)
-			rsp.Message = "Read image response body failed"
-			log.Logger.Errorf("Read image response body failed: %v", err)
-			return
-		}
-		log.Logger.Info("Read image response body success")
-
-		response := types.ImageGenModelResponse{}
-		if err := json.Unmarshal(body, &response); err != nil {
-			stream.Reset()
-			rsp.Code = int(types.ErrCodeStream)
-			rsp.Message = "Unmarshal image response from stream error"
-			log.Logger.Errorf("Unmarshal image response from stream error: %v", err)
-			return
-		}
-		rsp.Code = response.Code
-		rsp.Message = response.Message
-		rsp.Data.Created = response.Created
-		rsp.Data.Choices = response.Data
-		log.Logger.Info("Handle image gen stream request over")
-		return
 	}
 
 	requestID, err := uuid.NewRandom()
