@@ -425,7 +425,9 @@ func main() {
 		v0.POST("/image/gen", func(ctx *gin.Context) {
 			serve.ImageGenHandler(ctx, publishChan)
 		})
-		v0.POST("/image/gen/proxy", serve.ImageGenProxyHandler)
+		v0.POST("/image/gen/proxy", func(ctx *gin.Context) {
+			serve.ImageGenProxyHandler(ctx, publishChan)
+		})
 
 		v0.POST("/ai/project/register", func(ctx *gin.Context) {
 			serve.RegisterAIProjectHandler(ctx, *configPath)
