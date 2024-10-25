@@ -107,7 +107,6 @@ Generate pictures based on prompt words
   // The number of images to be generated, at least one
   "n": 2,
   // The size of the image to be generated
-  // v0.1.3 started to deprecate the size field, please use the width and height fields
   "size": "1024x1024",
   "width": 1024,
   "height": 1024,
@@ -126,10 +125,14 @@ Generate pictures based on prompt words
   // The answer given by the AI ​​model must give at least one
   "data": [
     {
-      "url": "https://..."
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
     },
     {
-      "url": "https://..."
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
     }
   ]
 }
@@ -142,6 +145,7 @@ curl http://127.0.0.1:1088/v1/images/generations \
     "model": "SuperImage",
     "prompt": "A cute baby sea otter",
     "n": 1,
+    "size": "1024x1024",
     "width": 1024,
     "height": 1024
   }'
@@ -165,7 +169,6 @@ Modify images based on prompt words
   // The number of images to be generated, at least one
   "n": 2,
   // The size of the image to be generated
-  // v0.1.3 started to deprecate the size field, please use the width and height fields
   "size": "1024x1024",
   "width": 1024,
   "height": 1024,
@@ -184,10 +187,14 @@ Modify images based on prompt words
   // The answer given by the AI ​​model must give at least one
   "data": [
     {
-      "url": "https://..."
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
     },
     {
-      "url": "https://..."
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
     }
   ]
 }
@@ -201,6 +208,7 @@ curl http://127.0.0.1:1088/v1/images/edits \
     "image": "https://...",
     "prompt": "A cute baby sea otter wearing a beret",
     "n": 1,
+    "size": "1024x1024",
     "width": 1024,
     "height": 1024
   }'
