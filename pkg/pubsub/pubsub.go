@@ -62,16 +62,16 @@ func ReadFromTopic(ctx context.Context, sub *pubsub.Subscription, publishChan ch
 
 		if pmsg.Header.GetId() == "" && pmsg.Header.GetReceiver() == "" {
 			timer.AIT.HandleBroadcastMessage(ctx, pmsg)
-			log.Logger.Infof("Received heartbeat message type %s from %s", pmsg.Type, pmsg.Header.NodeId)
+			log.Logger.Infof("Received heartbeat message type %s from %s", pmsg.Type, pmsg.Header.GetNodeId())
 			continue
-		} else if pmsg.Header.NodeId == config.GC.Identity.PeerID {
+		} else if pmsg.Header.GetNodeId() == config.GC.Identity.PeerID {
 			log.Logger.Infof("Received message type %s from the node itself", pmsg.Type)
 			continue
-		} else if pmsg.Header.Receiver != config.GC.Identity.PeerID {
-			log.Logger.Infof("Gossip message type %s from %s to %s", pmsg.Type, pmsg.Header.NodeId, pmsg.Header.Receiver)
+		} else if pmsg.Header.GetReceiver() != config.GC.Identity.PeerID {
+			log.Logger.Infof("Gossip message type %s from %s to %s", pmsg.Type, pmsg.Header.GetNodeId(), pmsg.Header.GetReceiver())
 			continue
 		} else {
-			log.Logger.Infof("Received message type %s from %s", pmsg.Type, pmsg.Header.NodeId)
+			log.Logger.Infof("Received message type %s from %s", pmsg.Type, pmsg.Header.GetNodeId())
 		}
 
 		go handleBroadcastMessage(ctx, pmsg, publishChan)
@@ -79,7 +79,7 @@ func ReadFromTopic(ctx context.Context, sub *pubsub.Subscription, publishChan ch
 }
 
 func handleBroadcastMessage(ctx context.Context, msg *protocol.Message, publishChan chan<- []byte) {
-	msgBody, err := p2p.Decrypt(msg.Header.NodePubKey, msg.Body)
+	msgBody, err := p2p.Decrypt(msg.Header.GetNodePubKey(), msg.Body)
 	if err != nil {
 		res := TransformErrorResponse(msg, int32(types.ErrCodeDecrypt), types.ErrCodeDecrypt.String())
 		resBytes, err := proto.Marshal(res)
@@ -128,7 +128,7 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 			log.Logger.Errorf("Marshal Identity Protocol %v", err)
 			return
 		}
-		serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
+		serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
 	} else if err := proto.Unmarshal(decBody, pi); err == nil {
 		if piReq := pi.GetReq(); piReq != nil {
 			idp := p2p.Hio.GetIdentifyProtocol()
@@ -147,14 +147,14 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 				log.Logger.Errorf("Marshal Identity Response Body %v", err)
 				return
 			}
-			resBody, err = p2p.Encrypt(ctx, msg.Header.NodeId, resBody)
+			resBody, err = p2p.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
 			res := protocol.Message{
 				Header: &protocol.MessageHeader{
 					ClientVersion: p2p.Hio.UserAgent,
 					Timestamp:     time.Now().Unix(),
-					Id:            msg.Header.Id,
+					Id:            msg.Header.GetId(),
 					NodeId:        config.GC.Identity.PeerID,
-					Receiver:      msg.Header.NodeId,
+					Receiver:      msg.Header.GetNodeId(),
 				},
 				Type:       protocol.MessageType_PEER_IDENTITY,
 				Body:       resBody,
@@ -177,7 +177,7 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 					Message: msg.ResultMessage,
 				},
 				IdentifyProtocol: types.IdentifyProtocol{
-					ID:              msg.Header.NodeId,
+					ID:              msg.Header.GetNodeId(),
 					ProtocolVersion: piRes.ProtocolVersion,
 					AgentVersion:    piRes.AgentVersion,
 					Addresses:       piRes.ListenAddrs,
@@ -189,7 +189,7 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 				log.Logger.Errorf("Marshal Identity Protocol %v", err)
 				return
 			}
-			serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
+			serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
 		}
 	} else {
 		log.Logger.Warn("Message type and body do not match")
@@ -210,7 +210,7 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 			log.Logger.Errorf("Marshal Chat Completion Protocol %v", err)
 			return
 		}
-		serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
+		serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
 	} else if err := proto.Unmarshal(decBody, ccb); err == nil {
 		if chatReq := ccb.GetReq(); chatReq != nil {
 			code, message, chatRes := handleChatCompletionRequest(ctx, chatReq, msg.Header)
@@ -224,14 +224,14 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 				log.Logger.Errorf("Marshal Chat Completion Response Body %v", err)
 				return
 			}
-			resBody, err = p2p.Encrypt(ctx, msg.Header.NodeId, resBody)
+			resBody, err = p2p.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
 			res := protocol.Message{
 				Header: &protocol.MessageHeader{
 					ClientVersion: p2p.Hio.UserAgent,
-					Timestamp:     chatRes.Created,
-					Id:            msg.Header.Id,
+					Timestamp:     chatRes.GetCreated(),
+					Id:            msg.Header.GetId(),
 					NodeId:        config.GC.Identity.PeerID,
-					Receiver:      msg.Header.NodeId,
+					Receiver:      msg.Header.GetNodeId(),
 				},
 				Type:          protocol.MessageType_CHAT_COMPLETION,
 				Body:          resBody,
@@ -256,7 +256,7 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 				},
 			}
 			if msg.ResultCode == 0 {
-				res.Created = chatRes.Created
+				res.Created = chatRes.GetCreated()
 				for _, choice := range chatRes.Choices {
 					ccmsg := types.ChatCompletionMessage{
 						Role:    choice.GetMessage().GetRole(),
@@ -269,9 +269,9 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 					})
 				}
 				res.Usage = types.ChatResponseUsage{
-					CompletionTokens: int(chatRes.Usage.CompletionTokens),
-					PromptTokens:     int(chatRes.Usage.PromptTokens),
-					TotalTokens:      int(chatRes.Usage.TotalTokens),
+					CompletionTokens: int(chatRes.GetUsage().GetCompletionTokens()),
+					PromptTokens:     int(chatRes.GetUsage().GetPromptTokens()),
+					TotalTokens:      int(chatRes.GetUsage().GetTotalTokens()),
 				}
 			}
 			notifyData, err := json.Marshal(res)
@@ -279,7 +279,7 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 				log.Logger.Errorf("Marshal Chat Completion Response %v", err)
 				return
 			}
-			serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
+			serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
 		}
 	} else {
 		log.Logger.Warn("Message type and body do not match")
@@ -300,7 +300,7 @@ func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, de
 			log.Logger.Errorf("Marshal Image Generation Protocol %v", err)
 			return
 		}
-		serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
+		serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
 	} else if err := proto.Unmarshal(decBody, ig); err == nil {
 		if igReq := ig.GetReq(); igReq != nil {
 			code, message, igRes := handleImageGenerationRequest(ctx, igReq, msg.Header)
@@ -314,14 +314,14 @@ func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, de
 				log.Logger.Errorf("Marshal Image Generation Response Body %v", err)
 				return
 			}
-			resBody, err = p2p.Encrypt(ctx, msg.Header.NodeId, resBody)
+			resBody, err = p2p.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
 			res := protocol.Message{
 				Header: &protocol.MessageHeader{
 					ClientVersion: p2p.Hio.UserAgent,
-					Timestamp:     igRes.Created,
-					Id:            msg.Header.Id,
+					Timestamp:     igRes.GetCreated(),
+					Id:            msg.Header.GetId(),
 					NodeId:        config.GC.Identity.PeerID,
-					Receiver:      msg.Header.NodeId,
+					Receiver:      msg.Header.GetNodeId(),
 				},
 				Type:          protocol.MessageType_IMAGE_GENERATION,
 				Body:          resBody,
@@ -346,12 +346,12 @@ func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, de
 				},
 			}
 			if msg.ResultCode == 0 {
-				res.Created = igRes.Created
+				res.Created = igRes.GetCreated()
 				for _, choice := range igRes.GetChoices() {
 					res.Choices = append(res.Choices, types.ImageResponseChoice{
-						Url:           choice.Url,
-						B64Json:       choice.B64Json,
-						RevisedPrompt: choice.RevisedPrompt,
+						Url:           choice.GetUrl(),
+						B64Json:       choice.GetB64Json(),
+						RevisedPrompt: choice.GetRevisedPrompt(),
 					})
 				}
 			}
@@ -360,7 +360,7 @@ func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, de
 				log.Logger.Errorf("Marshal Image Generation Response %v", err)
 				return
 			}
-			serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
+			serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
 		}
 	} else {
 		log.Logger.Warn("Message type and body do not match")
@@ -381,7 +381,7 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 			log.Logger.Errorf("Marshal Host Info Protocol %v", err)
 			return
 		}
-		serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
+		serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
 	} else if err := proto.Unmarshal(decBody, hi); err == nil {
 		if hiReq := hi.GetReq(); hiReq != nil {
 			hostInfo, err := host.GetHostInfo()
@@ -402,14 +402,14 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 				log.Logger.Warnf("Marshal HostInfo Response Body %v", err)
 				return
 			}
-			resBody, err = p2p.Encrypt(ctx, msg.Header.NodeId, resBody)
+			resBody, err = p2p.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
 			res := protocol.Message{
 				Header: &protocol.MessageHeader{
 					ClientVersion: p2p.Hio.UserAgent,
 					Timestamp:     time.Now().Unix(),
-					Id:            msg.Header.Id,
+					Id:            msg.Header.GetId(),
 					NodeId:        config.GC.Identity.PeerID,
-					Receiver:      msg.Header.NodeId,
+					Receiver:      msg.Header.GetNodeId(),
 				},
 				Type:          protocol.MessageType_HOST_INFO,
 				Body:          resBody,
@@ -439,7 +439,7 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 				log.Logger.Errorf("Marshal HostInfo Protocol %v", err)
 				return
 			}
-			serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
+			serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
 		}
 	} else {
 		log.Logger.Warn("Message type and body do not match")
@@ -460,7 +460,7 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 			log.Logger.Errorf("Marshal AI Project Protocol %v", err)
 			return
 		}
-		serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
+		serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
 	} else if err := proto.Unmarshal(decBody, aip); err == nil {
 		if aiReq := aip.GetReq(); aiReq != nil {
 			projects := config.GC.GetAIProjectsOfNode()
@@ -474,14 +474,14 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 				log.Logger.Warnf("Marshal AI Project Response Body %v", err)
 				return
 			}
-			resBody, err = p2p.Encrypt(ctx, msg.Header.NodeId, resBody)
+			resBody, err = p2p.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
 			res := protocol.Message{
 				Header: &protocol.MessageHeader{
 					ClientVersion: p2p.Hio.UserAgent,
 					Timestamp:     time.Now().Unix(),
-					Id:            msg.Header.Id,
+					Id:            msg.Header.GetId(),
 					NodeId:        config.GC.Identity.PeerID,
-					Receiver:      msg.Header.NodeId,
+					Receiver:      msg.Header.GetNodeId(),
 				},
 				Type:          protocol.MessageType_AI_PROJECT,
 				Body:          resBody,
@@ -511,7 +511,7 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 				log.Logger.Errorf("Marshal AI Project Protocol %v", err)
 				return
 			}
-			serve.WriteAndDeleteRequestItem(msg.Header.Id, notifyData)
+			serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
 		}
 	} else {
 		log.Logger.Warn("Message type and body do not match")
@@ -523,9 +523,9 @@ func TransformErrorResponse(msg *protocol.Message, code int32, message string) *
 		Header: &protocol.MessageHeader{
 			ClientVersion: p2p.Hio.UserAgent,
 			Timestamp:     time.Now().Unix(),
-			Id:            msg.Header.Id,
+			Id:            msg.Header.GetId(),
 			NodeId:        config.GC.Identity.PeerID,
-			Receiver:      msg.Header.NodeId,
+			Receiver:      msg.Header.GetNodeId(),
 			NodePubKey:    nil,
 			Sign:          nil,
 		},
@@ -539,28 +539,28 @@ func TransformErrorResponse(msg *protocol.Message, code int32, message string) *
 
 func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompletionRequest, reqHeader *protocol.MessageHeader) (int, string, *protocol.ChatCompletionResponse) {
 	chatReq := types.ChatModelRequest{
-		Model:  req.Model,
-		Stream: req.Stream,
+		Model:  req.GetModel(),
+		Stream: req.GetStream(),
 		WalletVerification: types.WalletVerification{
-			Wallet:    req.Wallet.Wallet,
-			Signature: req.Wallet.Signature,
-			Hash:      req.Wallet.Hash,
+			Wallet:    req.GetWallet().GetWallet(),
+			Signature: req.GetWallet().GetSignature(),
+			Hash:      req.GetWallet().GetHash(),
 		},
 	}
 	for _, ccm := range req.Messages {
 		chatReq.Messages = append(chatReq.Messages, types.ChatCompletionMessage{
-			Role:    ccm.Role,
-			Content: ccm.Content,
+			Role:    ccm.GetRole(),
+			Content: ccm.GetContent(),
 		})
 	}
-	chatRes := model.ChatModel(config.GC.GetModelAPI(req.Project, req.Model), chatReq)
+	chatRes := model.ChatModel(config.GC.GetModelAPI(req.GetProject(), req.GetModel()), chatReq)
 
-	log.Logger.Infof("Execute model %s in %s result {code:%d, message:%s}", req.Project, req.Model, chatRes.Code, chatRes.Message)
+	log.Logger.Infof("Execute model %s in %s result {code:%d, message:%s}", req.GetProject(), req.GetModel(), chatRes.Code, chatRes.Message)
 	modelHistory := &types.ModelHistory{
 		TimeStamp:    chatRes.Created,
-		ReqId:        reqHeader.Id,
-		ReqNodeId:    reqHeader.NodeId,
-		ResNodeId:    reqHeader.Receiver,
+		ReqId:        reqHeader.GetId(),
+		ReqNodeId:    reqHeader.GetNodeId(),
+		ResNodeId:    reqHeader.GetReceiver(),
 		Code:         chatRes.Code,
 		Message:      chatRes.Message,
 		Project:      req.GetProject(),
@@ -606,9 +606,9 @@ func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenera
 		Height:         int(req.GetHeight()),
 		ResponseFormat: req.GetResponseFormat(),
 		WalletVerification: types.WalletVerification{
-			Wallet:    req.Wallet.Wallet,
-			Signature: req.Wallet.Signature,
-			Hash:      req.Wallet.Hash,
+			Wallet:    req.GetWallet().GetWallet(),
+			Signature: req.GetWallet().GetSignature(),
+			Hash:      req.GetWallet().GetHash(),
 		},
 	}
 	igRes := model.ImageGenerationModel(config.GC.GetModelAPI(req.GetProject(), req.GetModel()), igReq)
@@ -622,9 +622,9 @@ func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenera
 	}
 	modelHistory := &types.ModelHistory{
 		TimeStamp:    igRes.Created,
-		ReqId:        reqHeader.Id,
-		ReqNodeId:    reqHeader.NodeId,
-		ResNodeId:    reqHeader.Receiver,
+		ReqId:        reqHeader.GetId(),
+		ReqNodeId:    reqHeader.GetNodeId(),
+		ResNodeId:    reqHeader.GetReceiver(),
 		Code:         igRes.Code,
 		Message:      igRes.Message,
 		Project:      req.GetProject(),

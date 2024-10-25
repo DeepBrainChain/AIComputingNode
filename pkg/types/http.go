@@ -352,6 +352,14 @@ func (req ChatCompletionRequest) RequestBody() (io.ReadCloser, int64, error) {
 	return io.NopCloser(bytes.NewBuffer(jsonData)), int64(len(jsonData)), nil
 }
 
+func (req ImageGenModelRequest) RequestBody() (io.ReadCloser, int64, error) {
+	jsonData, err := json.Marshal(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	return io.NopCloser(bytes.NewBuffer(jsonData)), int64(len(jsonData)), nil
+}
+
 func (req ImageGenerationRequest) RequestBody() (io.ReadCloser, int64, error) {
 	jsonData, err := json.Marshal(req)
 	if err != nil {

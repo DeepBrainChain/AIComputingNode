@@ -44,37 +44,37 @@ func HostInfo2ProtocolMessage(hostInfo *HostInfo) *protocol.HostInfoResponse {
 func ProtocolMessage2HostInfo(res *protocol.HostInfoResponse) *HostInfo {
 	hostInfo := &HostInfo{
 		Os: OSInfo{
-			OS:              res.Os.Os,
-			Platform:        res.Os.Platform,
-			PlatformFamily:  res.Os.PlatformFamily,
-			PlatformVersion: res.Os.PlatformVersion,
-			KernelVersion:   res.Os.KernelVersion,
-			KernelArch:      res.Os.KernelArch,
+			OS:              res.Os.GetOs(),
+			Platform:        res.Os.GetPlatform(),
+			PlatformFamily:  res.Os.GetPlatformFamily(),
+			PlatformVersion: res.Os.GetPlatformVersion(),
+			KernelVersion:   res.Os.GetKernelVersion(),
+			KernelArch:      res.Os.GetKernelArch(),
 		},
 		Memory: MemoryInfo{
-			TotalPhysicalBytes: res.Memory.TotalPhysicalBytes,
-			TotalUsableBytes:   res.Memory.TotalUsableBytes,
+			TotalPhysicalBytes: res.Memory.GetTotalPhysicalBytes(),
+			TotalUsableBytes:   res.Memory.GetTotalUsableBytes(),
 		},
 	}
 	for _, cpu := range res.Cpu {
 		hostInfo.Cpu = append(hostInfo.Cpu, CpuInfo{
-			ModelName: cpu.ModelName,
-			Cores:     cpu.TotalCores,
-			Threads:   cpu.TotalThreads,
+			ModelName: cpu.GetModelName(),
+			Cores:     cpu.GetTotalCores(),
+			Threads:   cpu.GetTotalThreads(),
 		})
 	}
 	for _, disk := range res.Disk {
 		hostInfo.Disk = append(hostInfo.Disk, DiskInfo{
-			DriveType:    disk.DriveType,
-			SizeBytes:    disk.SizeBytes,
-			Model:        disk.Model,
-			SerialNumber: disk.SerialNumber,
+			DriveType:    disk.GetDriveType(),
+			SizeBytes:    disk.GetSizeBytes(),
+			Model:        disk.GetModel(),
+			SerialNumber: disk.GetSerialNumber(),
 		})
 	}
 	for _, gpu := range res.Gpu {
 		hostInfo.Gpu = append(hostInfo.Gpu, GpuInfo{
-			Vendor:  gpu.Vendor,
-			Product: gpu.Product,
+			Vendor:  gpu.GetVendor(),
+			Product: gpu.GetProduct(),
 		})
 	}
 	return hostInfo
@@ -96,8 +96,8 @@ func AIProject2ProtocolMessage(projs []AIProjectOfNode, nt uint32) *protocol.AIP
 func ProtocolMessage2AIProject(res *protocol.AIProjectResponse) []AIProjectOfNode {
 	projects := make([]AIProjectOfNode, len(res.Projects))
 	for i, project := range res.Projects {
-		projects[i].Project = project.Project
-		projects[i].Models = project.Models
+		projects[i].Project = project.GetProject()
+		projects[i].Models = project.GetModels()
 	}
 	return projects
 }

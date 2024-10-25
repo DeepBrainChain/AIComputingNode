@@ -50,3 +50,42 @@ func TestMarshal(t *testing.T) {
 		t.Log("Unmarshal nil body return nil")
 	}
 }
+
+type TestWallet struct {
+	Wallet    string
+	Signature string
+}
+
+func (x *TestWallet) GetWallet() string {
+	if x != nil {
+		return x.Wallet
+	}
+	return ""
+}
+
+func (x *TestWallet) GetSignature() string {
+	if x != nil {
+		return x.Signature
+	}
+	return ""
+}
+
+type TestProtoGen struct {
+	Wallet *TestWallet
+}
+
+func (x *TestProtoGen) GetWallet() *TestWallet {
+	if x != nil {
+		return x.Wallet
+	}
+	return nil
+}
+
+func TestProtobufStruct(t *testing.T) {
+	tpg := TestProtoGen{
+		Wallet: nil,
+	}
+	t.Log("Whether it crashes ?", tpg.GetWallet().GetWallet())
+	t.Log("Whether it crashes ?", tpg.Wallet.GetWallet())
+	t.Log("Whether it crashes ?", tpg.Wallet.Wallet)
+}

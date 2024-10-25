@@ -29,6 +29,8 @@ type httpService struct {
 
 var httpServer *http.Server
 
+var requestProcessTimeout = 2 * time.Minute
+
 func httpStatus(code types.ErrorCode) int {
 	switch code {
 	case 0:
@@ -87,7 +89,7 @@ func handleRequest(publishChan chan<- []byte, req *protocol.Message, rsp any) (i
 		} else {
 			return http.StatusInternalServerError, int(types.ErrCodeInternal), "pubsub channel error"
 		}
-	case <-time.After(2 * time.Minute):
+	case <-time.After(requestProcessTimeout):
 		log.Logger.Warnf("request id %s message type %s timeout", requestID, req.Type)
 		QueueLock.Lock()
 		for i, item := range RequestQueue {
@@ -680,8 +682,8 @@ func GetPeersOfAIProjectHandler(c *gin.Context) {
 // 		Addr:         config.GC.API.Addr,
 // 		Handler:      mux,
 // 		ReadTimeout:  20 * time.Second,
-// 		WriteTimeout: 90 * time.Second,
-// 		IdleTimeout:  90 * time.Second,
+// 		WriteTimeout: 150 * time.Second,
+// 		IdleTimeout:  150 * time.Second,
 // 	}
 // 	go func() {
 // 		log.Logger.Info("HTTP server is running on http://", httpServer.Addr)
