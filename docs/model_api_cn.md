@@ -107,7 +107,6 @@ curl http://127.0.0.1:1088/v1/chat/completions \
   // 要生成的图像数量，最少一个
   "n": 2,
   // 要生成图像的大小
-  // v0.1.3 开始弃用 size 字段，请使用 width 和 height 字段
   "size": "1024x1024",
   "width": 1024,
   "height": 1024,
@@ -126,10 +125,14 @@ curl http://127.0.0.1:1088/v1/chat/completions \
   // AI 模型给出的回答，最少要给出一条
   "data": [
     {
-      "url": "https://..."
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
     },
     {
-      "url": "https://..."
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
     }
   ]
 }
@@ -142,6 +145,7 @@ curl http://127.0.0.1:1088/v1/images/generations \
     "model": "SuperImage",
     "prompt": "A cute baby sea otter",
     "n": 1,
+    "size": "1024x1024",
     "width": 1024,
     "height": 1024
   }'
@@ -165,7 +169,6 @@ curl http://127.0.0.1:1088/v1/images/generations \
   // 要生成的图像数量
   "n": 2,
   // 要生成图像的大小
-  // v0.1.3 开始弃用 size 字段，请使用 width 和 height 字段
   "size": "1024x1024",
   "width": 1024,
   "height": 1024,
@@ -184,10 +187,14 @@ curl http://127.0.0.1:1088/v1/images/generations \
   // AI 模型给出的回答，最少要给出一条
   "data": [
     {
-      "url": "https://..."
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
     },
     {
-      "url": "https://..."
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
     }
   ]
 }
@@ -201,6 +208,7 @@ curl http://127.0.0.1:1088/v1/images/edits \
     "image": "https://...",
     "prompt": "A cute baby sea otter wearing a beret",
     "n": 1,
+    "size": "1024x1024",
     "width": 1024,
     "height": 1024
   }'

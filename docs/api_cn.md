@@ -336,7 +336,6 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
   // 要生成的图像数量，最少一个
   "n": 2,
   // 要生成图像的大小
-  // v0.1.3 开始弃用 size 字段，请使用 width 和 height 字段
   "size": "1024x1024",
   "width": 1024,
   "height": 1024,
@@ -361,10 +360,14 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
     "created": 1589478378,
     "choices": [
       {
-        "url": "https://..."
+        "b64_json": "",
+        "url": "https://...",
+        "revised_prompt": "..."
       },
       {
-        "url": "https://..."
+        "b64_json": "",
+        "url": "https://...",
+        "revised_prompt": "..."
       }
     ]
   }
@@ -391,7 +394,6 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
   // 要生成的图像数量，最少一个
   "n": 2,
   // 要生成图像的大小
-  // v0.1.3 开始弃用 size 字段，请使用 width 和 height 字段
   "size": "1024x1024",
   "width": 1024,
   "height": 1024,
@@ -416,10 +418,14 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
     "created": 1589478378,
     "choices": [
       {
-        "url": "https://..."
+        "b64_json": "",
+        "url": "https://...",
+        "revised_prompt": "..."
       },
       {
-        "url": "https://..."
+        "b64_json": "",
+        "url": "https://...",
+        "revised_prompt": "..."
       }
     ]
   }

@@ -336,7 +336,6 @@ This interface is used to call the text-to-image model.
   // The number of images to be generated, at least one
   "n": 2,
   // The size of the image to be generated
-  // v0.1.3 started to deprecate the size field, please use the width and height fields
   "size": "1024x1024",
   "width": 1024,
   "height": 1024,
@@ -361,10 +360,14 @@ This interface is used to call the text-to-image model.
     "created": 1589478378,
     "choices": [
       {
-        "url": "https://..."
+        "b64_json": "",
+        "url": "https://...",
+        "revised_prompt": "..."
       },
       {
-        "url": "https://..."
+        "b64_json": "",
+        "url": "https://...",
+        "revised_prompt": "..."
       }
     ]
   }
@@ -391,7 +394,6 @@ This interface uses the project name to call the text-to-image model. The Input 
   // The number of images to be generated, at least one
   "n": 2,
   // The size of the image to be generated
-  // v0.1.3 started to deprecate the size field, please use the width and height fields
   "size": "1024x1024",
   "width": 1024,
   "height": 1024,
@@ -416,10 +418,14 @@ This interface uses the project name to call the text-to-image model. The Input 
     "created": 1589478378,
     "choices": [
       {
-        "url": "https://..."
+        "b64_json": "",
+        "url": "https://...",
+        "revised_prompt": "..."
       },
       {
-        "url": "https://..."
+        "b64_json": "",
+        "url": "https://...",
+        "revised_prompt": "..."
       }
     ]
   }
