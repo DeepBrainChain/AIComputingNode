@@ -8,9 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"sort"
-	"strings"
 	"time"
 
 	"AIComputingNode/pkg/config"
@@ -24,6 +22,246 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 )
+
+func (hs *httpService) handleChatCompletionRequest(ctx context.Context, req *types.ChatCompletionRequest, rsp *types.ChatCompletionResponse) {
+	if req.NodeID == config.GC.Identity.PeerID {
+		modelAPI := config.GC.GetModelAPI(req.Project, req.Model)
+		*rsp = *model.ChatModel(modelAPI, req.ChatModelRequest)
+		log.Logger.Infof("Execute model %s result {code:%d, message:%s}", req.Model, rsp.Code, rsp.Message)
+		return
+	}
+
+	requestID, err := uuid.NewRandom()
+	if err != nil {
+		rsp.Code = int(types.ErrCodeUUID)
+		rsp.Message = err.Error()
+		return
+	}
+
+	ccms := make([]*protocol.ChatCompletionMessage, 0)
+	for _, ccm := range req.Messages {
+		ccms = append(ccms, &protocol.ChatCompletionMessage{
+			Role:    ccm.Role,
+			Content: ccm.Content,
+		})
+	}
+
+	pi := &protocol.ChatCompletionBody{
+		Data: &protocol.ChatCompletionBody_Req{
+			Req: &protocol.ChatCompletionRequest{
+				Project:  req.Project,
+				Model:    req.Model,
+				Messages: ccms,
+				Stream:   false,
+				Wallet: &protocol.WalletVerification{
+					Wallet:    req.Wallet,
+					Signature: req.Signature,
+					Hash:      req.Hash,
+				},
+			},
+		},
+	}
+	body, err := proto.Marshal(pi)
+	if err != nil {
+		rsp.SetCode(int(types.ErrCodeProtobuf))
+		rsp.SetMessage(err.Error())
+		return
+	}
+	body, err = p2p.Encrypt(ctx, req.NodeID, body)
+	if err != nil {
+		rsp.Code = int(types.ErrCodeEncrypt)
+		rsp.Message = types.ErrCodeEncrypt.String()
+		return
+	}
+
+	msg := &protocol.Message{
+		Header: &protocol.MessageHeader{
+			ClientVersion: p2p.Hio.UserAgent,
+			Timestamp:     time.Now().Unix(),
+			Id:            requestID.String(),
+			NodeId:        config.GC.Identity.PeerID,
+			Receiver:      req.NodeID,
+			NodePubKey:    nil,
+			Sign:          nil,
+		},
+		Type:       *protocol.MessageType_CHAT_COMPLETION.Enum(),
+		Body:       body,
+		ResultCode: 0,
+	}
+	msg.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+	hs.handleRequest(msg, rsp)
+}
+
+func (hs *httpService) handleChatCompletionStreamRequest(ctx context.Context, w http.ResponseWriter, req *types.ChatCompletionRequest, rsp *types.ChatCompletionResponse) {
+	if req.NodeID == config.GC.Identity.PeerID {
+		modelAPI := config.GC.GetModelAPI(req.Project, req.Model)
+		log.Logger.Info("Received chat completion stream request from the node itself")
+		if modelAPI == "" {
+			rsp.Code = int(types.ErrCodeModel)
+			rsp.Message = "Model API configuration is empty"
+			// w.Header().Set("Content-Type", "application/json")
+			// json.NewEncoder(w).Encode(rsp)
+			return
+		}
+
+		jsonData, err := json.Marshal(req.ChatModelRequest)
+		if err != nil {
+			rsp.Code = int(types.ErrCodeModel)
+			rsp.Message = "Marshal model request body failed"
+			log.Logger.Errorf("Marshal model request body failed: %v", err)
+			return
+		}
+		hreq, err := http.NewRequestWithContext(ctx, "POST", modelAPI, bytes.NewBuffer(jsonData))
+		if err != nil {
+			rsp.Code = int(types.ErrCodeModel)
+			rsp.Message = "Copy http request body failed"
+			// w.Header().Set("Content-Type", "application/json")
+			// json.NewEncoder(w).Encode(rsp)
+			return
+		}
+		hreq.Header.Set("Content-Type", "application/json")
+
+		log.Logger.Infof("Making request to %s\n", hreq.URL)
+		resp, err := http.DefaultTransport.RoundTrip(hreq)
+		if err != nil {
+			rsp.Code = int(types.ErrCodeModel)
+			rsp.Message = fmt.Sprintf("RoundTrip chat request failed: %v", err)
+			log.Logger.Errorf("RoundTrip chat request failed: %v", err)
+			// w.Header().Set("Content-Type", "application/json")
+			// json.NewEncoder(w).Encode(rsp)
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.Header.Get("Content-Type") == "application/json" {
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				rsp.Code = int(types.ErrCodeStream)
+				rsp.Message = "Read model response json error"
+				log.Logger.Errorf("Read model response json error: %v", err)
+				return
+			}
+			if err := json.Unmarshal(body, rsp); err != nil {
+				rsp.Code = int(types.ErrCodeStream)
+				rsp.Message = "Unmarshal model response json error"
+				log.Logger.Errorf("Unmarshal model response json error: %v", err)
+				return
+			}
+			return
+		}
+
+		for k, v := range resp.Header {
+			for _, s := range v {
+				w.Header().Set(k, s)
+			}
+		}
+
+		w.WriteHeader(resp.StatusCode)
+
+		log.Logger.Info("Copy roundtrip response")
+		io.Copy(w, resp.Body)
+		// resp.Body.Close()
+		log.Logger.Info("Handle chat completion stream request over from the node itself")
+		rsp.Code = 0
+		rsp.Message = ""
+		return
+	}
+
+	log.Logger.Info("Received chat completion stream request")
+	stream, err := p2p.Hio.NewStream(ctx, req.NodeID)
+	if err != nil {
+		rsp.Code = int(types.ErrCodeStream)
+		rsp.Message = "Open stream with peer node failed"
+		log.Logger.Errorf("Open stream with peer node failed: %v", err)
+		// w.Header().Set("Content-Type", "application/json")
+		// json.NewEncoder(w).Encode(rsp)
+		return
+	}
+	stream.SetDeadline(time.Now().Add(p2p.ChatProxyStreamTimeout))
+	defer stream.Close()
+	log.Logger.Infof("Create libp2p stream with %s success", req.NodeID)
+
+	jsonData, err := json.Marshal(req.ChatModelRequest)
+	if err != nil {
+		rsp.Code = int(types.ErrCodeStream)
+		rsp.Message = "Marshal model request body failed"
+		log.Logger.Errorf("Marshal model request body failed: %v", err)
+		return
+	}
+	hreq, err := http.NewRequestWithContext(ctx, "POST", "http://127.0.0.1:8080/api/v0/chat/completion", bytes.NewBuffer(jsonData))
+	if err != nil {
+		rsp.Code = int(types.ErrCodeStream)
+		rsp.Message = "Create http request for stream failed"
+		log.Logger.Errorf("Create http request for stream failed: %v", err)
+		return
+	}
+
+	hreq.Header.Set("Content-Type", "application/json")
+	queryValues := hreq.URL.Query()
+	queryValues.Add("project", req.Project)
+	queryValues.Add("model", req.Model)
+	hreq.URL.RawQuery = queryValues.Encode()
+
+	err = hreq.Write(stream)
+	if err != nil {
+		stream.Reset()
+		rsp.Code = int(types.ErrCodeStream)
+		rsp.Message = "Write chat stream failed"
+		log.Logger.Errorf("Write chat stream failed: %v", err)
+		// w.Header().Set("Content-Type", "application/json")
+		// json.NewEncoder(w).Encode(rsp)
+		return
+	}
+
+	log.Logger.Info("Read the response that was send from dest peer")
+	buf := bufio.NewReader(stream)
+	resp, err := http.ReadResponse(buf, hreq)
+	if err != nil {
+		stream.Reset()
+		rsp.Code = int(types.ErrCodeStream)
+		rsp.Message = "Read chat stream failed"
+		log.Logger.Errorf("Read chat stream failed: %v", err)
+		// w.Header().Set("Content-Type", "application/json")
+		// json.NewEncoder(w).Encode(rsp)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.Header.Get("Content-Type") == "application/json" {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			stream.Reset()
+			rsp.Code = int(types.ErrCodeStream)
+			rsp.Message = "Read model response json error"
+			log.Logger.Errorf("Read model response json error: %v", err)
+			return
+		}
+		if err := json.Unmarshal(body, rsp); err != nil {
+			stream.Reset()
+			rsp.Code = int(types.ErrCodeStream)
+			rsp.Message = "Unmarshal model response json error"
+			log.Logger.Errorf("Unmarshal model response json error: %v", err)
+			return
+		}
+		stream.Reset()
+		return
+	}
+
+	for k, v := range resp.Header {
+		for _, s := range v {
+			w.Header().Set(k, s)
+		}
+	}
+
+	w.WriteHeader(resp.StatusCode)
+
+	log.Logger.Info("Copy the body from libp2p stream")
+	io.Copy(w, resp.Body)
+	// resp.Body.Close()
+	log.Logger.Info("Handle chat completion stream request over")
+	rsp.Code = 0
+	rsp.Message = ""
+}
 
 func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -52,200 +290,17 @@ func (hs *httpService) chatCompletionHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if msg.NodeID == config.GC.Identity.PeerID {
-		modelAPI := config.GC.GetModelAPI(msg.Project, msg.Model)
-		if msg.Stream {
-			log.Logger.Info("Received chat completion stream request from the node itself")
-			if modelAPI == "" {
-				rsp.Code = int(types.ErrCodeModel)
-				rsp.Message = "Model API configuration is empty"
-				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(rsp)
-				return
-			}
-			req := new(http.Request)
-			*req = *r
-			var err error = nil
-			req.URL, err = url.Parse(modelAPI)
-			if err != nil {
-				rsp.Code = int(types.ErrCodeModel)
-				rsp.Message = "Parse model api interface failed"
-				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(rsp)
-				return
-			}
-			req.Host = req.URL.Host
-			req.Body, req.ContentLength, err = msg.ChatModelRequest.RequestBody()
-			if err != nil {
-				rsp.Code = int(types.ErrCodeModel)
-				rsp.Message = "Copy http request body failed"
-				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(rsp)
-				return
-			}
-			log.Logger.Infof("Making request to %s\n", req.URL)
-			resp, err := http.DefaultTransport.RoundTrip(req)
-			if err != nil {
-				rsp.Code = int(types.ErrCodeModel)
-				rsp.Message = "RoundTrip chat request failed"
-				log.Logger.Errorf("RoundTrip chat request failed: %v", err)
-				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(rsp)
-				return
-			}
-
-			for k, v := range resp.Header {
-				for _, s := range v {
-					w.Header().Add(k, s)
-				}
-			}
-
-			w.WriteHeader(resp.StatusCode)
-
-			log.Logger.Info("Copy roundtrip response")
-			io.Copy(w, resp.Body)
-			resp.Body.Close()
-			log.Logger.Info("Handle chat completion stream request over from the node itself")
-			return
-		} else {
-			rsp = *model.ChatModel(modelAPI, msg.ChatModelRequest)
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rsp)
-			return
-		}
-	}
-
 	if msg.Stream {
-		log.Logger.Info("Received chat completion stream request")
-		stream, err := p2p.Hio.NewStream(r.Context(), msg.NodeID)
-		if err != nil {
-			rsp.Code = int(types.ErrCodeStream)
-			rsp.Message = "Open stream with peer node failed"
-			log.Logger.Errorf("Open stream with peer node failed: %v", err)
+		hs.handleChatCompletionStreamRequest(r.Context(), w, &msg, &rsp)
+		if rsp.Code != 0 {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(rsp)
-			return
 		}
-		stream.SetDeadline(time.Now().Add(p2p.ChatProxyStreamTimeout))
-		defer stream.Close()
-		log.Logger.Infof("Create libp2p stream with %s success", msg.NodeID)
-
-		r.Body, r.ContentLength, err = msg.ChatModelRequest.RequestBody()
-		if err != nil {
-			rsp.Code = int(types.ErrCodeStream)
-			rsp.Message = "Copy http request body failed"
-			log.Logger.Errorf("Copy http request body failed: %v", err)
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rsp)
-			return
-		}
-		queryValues := r.URL.Query()
-		queryValues.Add("project", msg.Project)
-		queryValues.Add("model", msg.Model)
-		r.URL.RawQuery = queryValues.Encode()
-
-		err = r.Write(stream)
-		if err != nil {
-			stream.Reset()
-			rsp.Code = int(types.ErrCodeStream)
-			rsp.Message = "Write chat stream failed"
-			log.Logger.Errorf("Write chat stream failed: %v", err)
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rsp)
-			return
-		}
-
-		log.Logger.Info("Read the response that was send from dest peer")
-		buf := bufio.NewReader(stream)
-		resp, err := http.ReadResponse(buf, r)
-		if err != nil {
-			stream.Reset()
-			rsp.Code = int(types.ErrCodeStream)
-			rsp.Message = "Read chat stream failed"
-			log.Logger.Errorf("Read chat stream failed: %v", err)
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rsp)
-			return
-		}
-
-		for k, v := range resp.Header {
-			for _, s := range v {
-				w.Header().Set(k, s)
-			}
-		}
-
-		w.WriteHeader(resp.StatusCode)
-
-		log.Logger.Info("Copy the body from libp2p stream")
-		io.Copy(w, resp.Body)
-		resp.Body.Close()
-		log.Logger.Info("Handle chat completion stream request over")
 		return
 	}
+
+	hs.handleChatCompletionRequest(r.Context(), &msg, &rsp)
 	w.Header().Set("Content-Type", "application/json")
-
-	requestID, err := uuid.NewRandom()
-	if err != nil {
-		rsp.Code = int(types.ErrCodeUUID)
-		rsp.Message = err.Error()
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
-
-	ccms := make([]*protocol.ChatCompletionMessage, 0)
-	for _, ccm := range msg.Messages {
-		ccms = append(ccms, &protocol.ChatCompletionMessage{
-			Role:    ccm.Role,
-			Content: ccm.Content,
-		})
-	}
-
-	pi := &protocol.ChatCompletionBody{
-		Data: &protocol.ChatCompletionBody_Req{
-			Req: &protocol.ChatCompletionRequest{
-				Project:  msg.Project,
-				Model:    msg.Model,
-				Messages: ccms,
-				Stream:   false,
-				Wallet: &protocol.WalletVerification{
-					Wallet:    msg.Wallet,
-					Signature: msg.Signature,
-					Hash:      msg.Hash,
-				},
-			},
-		},
-	}
-	body, err := proto.Marshal(pi)
-	if err != nil {
-		rsp.SetCode(int(types.ErrCodeProtobuf))
-		rsp.SetMessage(err.Error())
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
-	body, err = p2p.Encrypt(r.Context(), msg.NodeID, body)
-	if err != nil {
-		rsp.Code = int(types.ErrCodeEncrypt)
-		rsp.Message = types.ErrCodeEncrypt.String()
-		json.NewEncoder(w).Encode(rsp)
-		return
-	}
-
-	req := &protocol.Message{
-		Header: &protocol.MessageHeader{
-			ClientVersion: p2p.Hio.UserAgent,
-			Timestamp:     time.Now().Unix(),
-			Id:            requestID.String(),
-			NodeId:        config.GC.Identity.PeerID,
-			Receiver:      msg.NodeID,
-			NodePubKey:    nil,
-			Sign:          nil,
-		},
-		Type:       *protocol.MessageType_CHAT_COMPLETION.Enum(),
-		Body:       body,
-		ResultCode: 0,
-	}
-	req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
-	hs.handleRequest(req, &rsp)
 	json.NewEncoder(w).Encode(rsp)
 }
 
@@ -313,12 +368,6 @@ func (hs *httpService) chatCompletionProxyHandler(w http.ResponseWriter, r *http
 		return peers[i].Latency < peers[j].Latency
 	})
 
-	urlScheme := "http"
-	hp := strings.Split(r.Host, ":")
-	if len(hp) > 1 && hp[1] == "443" {
-		urlScheme = "https"
-	}
-	var err error = nil
 	failed_count := 0
 	for _, peer := range peers {
 		if failed_count >= 3 {
@@ -329,57 +378,22 @@ func (hs *httpService) chatCompletionProxyHandler(w http.ResponseWriter, r *http
 			Project:          msg.Project,
 			ChatModelRequest: msg.ChatModelRequest,
 		}
-		req := r.Clone(r.Context())
-		req.URL.Host = r.Host
-		req.URL.Scheme = urlScheme
-		req.URL.Path = "/api/v0/chat/completion"
-		req.Body, req.ContentLength, err = chatReq.RequestBody()
-		if err != nil {
-			log.Logger.Warnf("Make chat completion proxy request body %v in %d time", err, failed_count)
-			continue
-		}
-		resp, err := http.DefaultTransport.RoundTrip(req)
-		if err != nil || resp.StatusCode != 200 {
-			log.Logger.Warnf("Roundtrip chat completion proxy %v %v to %s in %d time", err, resp.StatusCode, peer.NodeID, failed_count)
-			failed_count += 1
-			continue
-		}
-		defer resp.Body.Close()
 		if msg.Stream {
-			contentType := resp.Header.Get("Content-Type")
-			if contentType == "application/json" {
-				body, _ := io.ReadAll(resp.Body)
-				log.Logger.Warnf("Transform chat completion proxy %v to %s in %d time", string(body), peer.NodeID, failed_count)
+			hs.handleChatCompletionStreamRequest(r.Context(), w, &chatReq, &rsp)
+			if rsp.Code != 0 {
+				log.Logger.Warnf("Roundtrip chat completion proxy %v %v to %s in %d time", rsp.Code, rsp.Message, peer.NodeID, failed_count)
 				failed_count += 1
 				continue
 			} else {
-				for k, v := range resp.Header {
-					for _, s := range v {
-						w.Header().Add(k, s)
-					}
-				}
-				w.WriteHeader(resp.StatusCode)
-				io.Copy(w, resp.Body)
-				log.Logger.Infof("Handle chat completion proxy stream request to %s success in %d time", peer.NodeID, failed_count)
 				return
 			}
+		}
+		hs.handleChatCompletionRequest(r.Context(), &chatReq, &rsp)
+		if rsp.Code != 0 {
+			log.Logger.Warnf("Roundtrip chat completion proxy %v %v to %s in %d time", rsp.Code, rsp.Message, peer.NodeID, failed_count)
+			failed_count += 1
+			continue
 		} else {
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				log.Logger.Warnf("Read chat completion proxy response json failed in %d time", failed_count)
-				failed_count += 1
-				continue
-			}
-			if err := json.Unmarshal(body, &rsp); err != nil {
-				log.Logger.Warnf("Parse chat completion proxy response json failed in %d time", failed_count)
-				failed_count += 1
-				continue
-			}
-			if rsp.Code != 0 {
-				log.Logger.Warnf("Handle chat completion proxy response %v in %d time", rsp.Message, failed_count)
-				failed_count += 1
-				continue
-			}
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(rsp)
 			return
@@ -401,6 +415,7 @@ func (hs *httpService) handleImageGenRequest(ctx context.Context, req *types.Ima
 			return
 		}
 		*rsp = *model.ImageGenerationModel(modelAPI, req.ImageGenModelRequest)
+		log.Logger.Infof("Execute model %s result {code:%d, message:%s}", req.Model, rsp.Code, rsp.Message)
 		return
 	}
 
@@ -420,8 +435,8 @@ func (hs *httpService) handleImageGenRequest(ctx context.Context, req *types.Ima
 		jsonData, err := json.Marshal(req.ImageGenModelRequest)
 		if err != nil {
 			rsp.Code = int(types.ErrCodeStream)
-			rsp.Message = "Copy http request body failed"
-			log.Logger.Errorf("Copy http request body failed: %v", err)
+			rsp.Message = "Marshal model request body failed"
+			log.Logger.Errorf("Marshal model request body failed: %v", err)
 			return
 		}
 		hreq, err := http.NewRequestWithContext(ctx, "POST", "http://127.0.0.1:8080/api/v0/image/gen", bytes.NewBuffer(jsonData))
