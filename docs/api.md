@@ -4,6 +4,16 @@ This document describes the HTTP API interface of the AIComputingNode distribute
 
 Detailed test cases can be viewed on the Apifox platform: <https://xr03hymjol.apifox.cn>.
 
+Common interface conventions:
+1. When an HTTP request is successfully processed and returns the expected result, a status code of 200 OK is given.
+2. When processing HTTP requests, if there are internal server problems such as database errors, logic errors, calculation errors, etc., a 500 Internal Server Error status code is usually returned instead of 200, and the following JSON is included to tell the client what error occurred, helping developers locate the problem.
+```json
+{
+  "code": 1010,
+  "message": "Unsupported function"
+}
+```
+
 ## Common query interfaces
 
 Interface for querying common node information, node list or machine information.
@@ -53,8 +63,6 @@ This interface is used to query the node list in the distributed communication n
 - return example:
 ```json
 {
-  "code": 0,
-  "message": "ok",
   "data": [
     "16Uiu2HAm49H3Hcae8rxKBdw8PfFcFAnBXQS8ierXA1VoZwhdDadV",
     "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL",
@@ -89,30 +97,24 @@ This interface can be used to query the PeerInfo of any node in the distributed 
 - return example:
 ```json
 {
-  // Error code, 0 means success, non-0 means failure
-  "code": 0,
-  // Error message
-  "message": "ok",
-  "data": {
-    "peer_id": "16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM",
-    "protocol_version": "aicn/0.0.1",
-    "agent_version": "v0.0.9",
-    "addresses": [
-      "/ip4/122.99.183.54/tcp/6001",
-      "/ip4/127.0.0.1/tcp/6001",
-      "/ip6/::1/tcp/6001"
-    ],
-    "protocols": [
-      "/ipfs/ping/1.0.0",
-      "/libp2p/circuit/relay/0.2.0/stop",
-      "/dbc/kad/1.0.0",
-      "/libp2p/autonat/1.0.0",
-      "/ipfs/id/1.0.0",
-      "/ipfs/id/push/1.0.0",
-      "/floodsub/1.0.0",
-      "/libp2p/circuit/relay/0.2.0/hop"
-    ]
-  }
+  "peer_id": "16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM",
+  "protocol_version": "aicn/0.0.1",
+  "agent_version": "v0.0.9",
+  "addresses": [
+    "/ip4/122.99.183.54/tcp/6001",
+    "/ip4/127.0.0.1/tcp/6001",
+    "/ip6/::1/tcp/6001"
+  ],
+  "protocols": [
+    "/ipfs/ping/1.0.0",
+    "/libp2p/circuit/relay/0.2.0/stop",
+    "/dbc/kad/1.0.0",
+    "/libp2p/autonat/1.0.0",
+    "/ipfs/id/1.0.0",
+    "/ipfs/id/push/1.0.0",
+    "/floodsub/1.0.0",
+    "/libp2p/circuit/relay/0.2.0/hop"
+  ]
 }
 ```
 
@@ -132,55 +134,49 @@ This interface is used to query the machine hardware and software information of
 - return example:
 ```json
 {
-  // Error code, 0 means success, non-0 means failure
-  "code": 0,
-  // Error message
-  "message": "ok",
-  "data": {
-    "os": {
-      "os": "windows",
-      "platform": "Microsoft Windows 11 Pro",
-      "platform_family": "Standalone Workstation",
-      "platform_version": "10.0.22631.3737 Build 22631.3737",
-      "kernel_version": "10.0.22631.3737 Build 22631.3737",
-      "kernel_arch": "x86_64"
+  "os": {
+    "os": "windows",
+    "platform": "Microsoft Windows 11 Pro",
+    "platform_family": "Standalone Workstation",
+    "platform_version": "10.0.22631.3737 Build 22631.3737",
+    "kernel_version": "10.0.22631.3737 Build 22631.3737",
+    "kernel_arch": "x86_64"
+  },
+  "cpu": [
+    {
+      "model_name": "Intel(R) Core(TM) i7-8700 CPU @ 3.20GHz",
+      "total_cores": 6,
+      "total_threads": 12
+    }
+  ],
+  "memory": {
+    "total_physical_bytes": 17179869184,
+    "total_usable_bytes": 17105440768
+  },
+  "disk": [
+    {
+      "drive_type": "HDD",
+      "size_bytes": 2000396321280,
+      "model": "WDC WD20EJRX-89G3VY0",
+      "serial_number": "WD-WCC4M2USUZ1V"
     },
-    "cpu": [
-      {
-        "model_name": "Intel(R) Core(TM) i7-8700 CPU @ 3.20GHz",
-        "total_cores": 6,
-        "total_threads": 12
-      }
-    ],
-    "memory": {
-      "total_physical_bytes": 17179869184,
-      "total_usable_bytes": 17105440768
+    {
+      "drive_type": "SSD",
+      "size_bytes": 240054796800,
+      "model": "TOSHIBA-TR200",
+      "serial_number": "29KB71U8K46S"
+    }
+  ],
+  "gpu": [
+    {
+      "vendor": "qdesk",
+      "product": "Qdesk Virtual Display Adapter"
     },
-    "disk": [
-      {
-        "drive_type": "HDD",
-        "size_bytes": 2000396321280,
-        "model": "WDC WD20EJRX-89G3VY0",
-        "serial_number": "WD-WCC4M2USUZ1V"
-      },
-      {
-        "drive_type": "SSD",
-        "size_bytes": 240054796800,
-        "model": "TOSHIBA-TR200",
-        "serial_number": "29KB71U8K46S"
-      }
-    ],
-    "gpu": [
-      {
-        "vendor": "qdesk",
-        "product": "Qdesk Virtual Display Adapter"
-      },
-      {
-        "vendor": "NVIDIA",
-        "product": "NVIDIA GeForce RTX 2080 Ti"
-      }
-    ]
-  }
+    {
+      "vendor": "NVIDIA",
+      "product": "NVIDIA GeForce RTX 2080 Ti"
+    }
+  ]
 }
 ```
 
@@ -227,27 +223,21 @@ This interface is used to call text to generate text models
 - return example:
 ```json
 {
-  // Error code, 0 means success, non-0 means failure
-  "code": 0,
-  // Error message
-  "message": "ok",
-  "data": {
-    "created": 1718691167,
-    "choices": [
-      {
-        "index": 0,
-        "message": {
-          "role": "assistant",
-          "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat for a bit? I'm here to assist you with any questions or tasks you might have."
-        },
-        "finish_reason": "stop"
-      }
-    ],
-    "usage": {
-      "completion_tokens": 44,
-      "prompt_tokens": 22,
-      "total_tokens": 66
+  "created": 1718691167,
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat for a bit? I'm here to assist you with any questions or tasks you might have."
+      },
+      "finish_reason": "stop"
     }
+  ],
+  "usage": {
+    "completion_tokens": 44,
+    "prompt_tokens": 22,
+    "total_tokens": 66
   }
 }
 ```
@@ -291,27 +281,21 @@ This interface uses the project name to call the text-to-text model. The Input n
 - return example:
 ```json
 {
-  // Error code, 0 means success, non-0 means failure
-  "code": 0,
-  // Error message
-  "message": "ok",
-  "data": {
-    "created": 1718691167,
-    "choices": [
-      {
-        "index": 0,
-        "message": {
-          "role": "assistant",
-          "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat for a bit? I'm here to assist you with any questions or tasks you might have."
-        },
-        "finish_reason": "stop"
-      }
-    ],
-    "usage": {
-      "completion_tokens": 44,
-      "prompt_tokens": 22,
-      "total_tokens": 66
+  "created": 1718691167,
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat for a bit? I'm here to assist you with any questions or tasks you might have."
+      },
+      "finish_reason": "stop"
     }
+  ],
+  "usage": {
+    "completion_tokens": 44,
+    "prompt_tokens": 22,
+    "total_tokens": 66
   }
 }
 ```
@@ -352,25 +336,19 @@ This interface is used to call the text-to-image model.
 - return example:
 ```json
 {
-  // Error code, 0 means success, non-0 means failure
-  "code": 0,
-  // Error message
-  "message": "ok",
-  "data": {
-    "created": 1589478378,
-    "choices": [
-      {
-        "b64_json": "",
-        "url": "https://...",
-        "revised_prompt": "..."
-      },
-      {
-        "b64_json": "",
-        "url": "https://...",
-        "revised_prompt": "..."
-      }
-    ]
-  }
+  "created": 1589478378,
+  "data": [
+    {
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
+    },
+    {
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
+    }
+  ]
 }
 ```
 
@@ -410,25 +388,19 @@ This interface uses the project name to call the text-to-image model. The Input 
 - return example:
 ```json
 {
-  // Error code, 0 means success, non-0 means failure
-  "code": 0,
-  // Error message
-  "message": "ok",
-  "data": {
-    "created": 1589478378,
-    "choices": [
-      {
-        "b64_json": "",
-        "url": "https://...",
-        "revised_prompt": "..."
-      },
-      {
-        "b64_json": "",
-        "url": "https://...",
-        "revised_prompt": "..."
-      }
-    ]
-  }
+  "created": 1589478378,
+  "data": [
+    {
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
+    },
+    {
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
+    }
+  ]
 }
 ```
 
@@ -436,16 +408,12 @@ This interface uses the project name to call the text-to-image model. The Input 
 
 This interface is used to query the list of AI projects running in the distributed communication network.
 
-- request method: POST
+- request method: GET
 - request URL: http://127.0.0.1:6000/api/v0/ai/projects/list
 - request Body: None
 - return example:
 ```json
 {
-  // Error code, 0 means success, non-0 means failure
-  "code": 0,
-  // Error message
-  "message": "ok",
   "data": [
     "DecentralGPT",
     "SuperImage"
@@ -457,7 +425,7 @@ This interface is used to query the list of AI projects running in the distribut
 
 This interface is used to query the model list of the specified AI project running in the distributed communication network.
 
-- request method: POST
+- request method: GET
 - request URL: http://127.0.0.1:6000/api/v0/ai/projects/models
 - request Body:
 ```json
@@ -469,10 +437,6 @@ This interface is used to query the model list of the specified AI project runni
 - return example:
 ```json
 {
-  // Error code, 0 means success, non-0 means failure
-  "code": 0,
-  // Error message
-  "message": "ok",
   "data": [
     "Qwen2-72B",
     "Llama3-70B"
@@ -484,7 +448,7 @@ This interface is used to query the model list of the specified AI project runni
 
 This interface is used to query the list of nodes running the specified AI project and model in the distributed communication network.
 
-- request method: POST
+- request method: GET
 - request URL: http://127.0.0.1:6000/api/v0/ai/projects/peers
 - request Query parameters:
   - number: positive integer type optional parameter - Indicates the maximum number of nodes you want to query, the default value is 20
@@ -500,10 +464,6 @@ This interface is used to query the list of nodes running the specified AI proje
 - return example:
 ```json
 {
-  // Error code, 0 means success, non-0 means failure
-  "code": 0,
-  // Error message
-  "message": "ok",
   "data": [
     // For versions v0.1.2 and earlier, the "data" field is a string array consisting of node IDs.
     // "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL",
@@ -546,7 +506,7 @@ Interface for controlling node connection and registration status.
 
 This interface is used to query information about other peers that have established connections with this node.
 
-- request method: POST
+- request method: GET
 - request URL: http://127.0.0.1:6000/api/v0/swarm/peers
 - request Body: None
 - return example:
@@ -587,7 +547,7 @@ This interface is used to query information about other peers that have establis
 
 This interface is used to query the connection addresses of other nodes known to this node.
 
-- request method: POST
+- request method: GET
 - request URL: http://127.0.0.1:6000/api/v0/swarm/addrs
 - request Body: None
 - return example:
@@ -722,7 +682,7 @@ This interface is used to manually disconnect from a specified node.
 
 This interface is used to query the list of nodes subscribed to the same topic, limited to other nodes known to this node, so it cannot be used to query the list of all nodes.s
 
-- request method: POST
+- request method: GET
 - request URL: http://127.0.0.1:6000/api/v0/pubsub/peers
 - request Body: None
 - return example:
@@ -811,10 +771,6 @@ This interface is used to query the AI ​​project model registration informat
 - return example:
 ```json
 {
-  // Error code, 0 means success, non-0 means failure
-  "code": 0,
-  // Error message
-  "message": "ok",
   "data": [
     {
       "project": "DecentralGPT",

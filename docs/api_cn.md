@@ -4,6 +4,16 @@
 
 详细测试用例可以在 Apifox 平台上获取查看: <https://xr03hymjol.apifox.cn>。
 
+公共的接口约定：
+1. 当 HTTP 请求成功处理并返回预期的结果，给出状态码 200 OK。
+2. 在处理 HTTP 请求时，遇到数据库错误、逻辑错误、计算错误等服务器内部问题时，通常返回 500 Internal Server Error 状态码，而不是 200，并且带有以下 JSON 告诉客户端发生了什么错误，帮助开发人员定位问题。
+```json
+{
+  "code": 1010,
+  "message": "Unsupported function"
+}
+```
+
 ## 常用查询接口
 
 用于查询常用的节点信息、节点列表或者机器信息的接口。
@@ -53,8 +63,6 @@ PeerInfo 为包含节点 ID、协议、版本和监听地址等基础信息的�
 - 返回示例:
 ```json
 {
-  "code": 0,
-  "message": "ok",
   "data": [
     "16Uiu2HAm49H3Hcae8rxKBdw8PfFcFAnBXQS8ierXA1VoZwhdDadV",
     "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL",
@@ -89,30 +97,24 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 - 返回示例:
 ```json
 {
-  // 错误码，0 表示成功，非 0 表示失败
-  "code": 0,
-  // 错误信息
-  "message": "ok",
-  "data": {
-    "peer_id": "16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM",
-    "protocol_version": "aicn/0.0.1",
-    "agent_version": "v0.0.9",
-    "addresses": [
-      "/ip4/122.99.183.54/tcp/6001",
-      "/ip4/127.0.0.1/tcp/6001",
-      "/ip6/::1/tcp/6001"
-    ],
-    "protocols": [
-      "/ipfs/ping/1.0.0",
-      "/libp2p/circuit/relay/0.2.0/stop",
-      "/dbc/kad/1.0.0",
-      "/libp2p/autonat/1.0.0",
-      "/ipfs/id/1.0.0",
-      "/ipfs/id/push/1.0.0",
-      "/floodsub/1.0.0",
-      "/libp2p/circuit/relay/0.2.0/hop"
-    ]
-  }
+  "peer_id": "16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM",
+  "protocol_version": "aicn/0.0.1",
+  "agent_version": "v0.0.9",
+  "addresses": [
+    "/ip4/122.99.183.54/tcp/6001",
+    "/ip4/127.0.0.1/tcp/6001",
+    "/ip6/::1/tcp/6001"
+  ],
+  "protocols": [
+    "/ipfs/ping/1.0.0",
+    "/libp2p/circuit/relay/0.2.0/stop",
+    "/dbc/kad/1.0.0",
+    "/libp2p/autonat/1.0.0",
+    "/ipfs/id/1.0.0",
+    "/ipfs/id/push/1.0.0",
+    "/floodsub/1.0.0",
+    "/libp2p/circuit/relay/0.2.0/hop"
+  ]
 }
 ```
 
@@ -132,55 +134,49 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 - 返回示例:
 ```json
 {
-  // 错误码，0 表示成功，非 0 表示失败
-  "code": 0,
-  // 错误信息
-  "message": "ok",
-  "data": {
-    "os": {
-      "os": "windows",
-      "platform": "Microsoft Windows 11 Pro",
-      "platform_family": "Standalone Workstation",
-      "platform_version": "10.0.22631.3737 Build 22631.3737",
-      "kernel_version": "10.0.22631.3737 Build 22631.3737",
-      "kernel_arch": "x86_64"
+  "os": {
+    "os": "windows",
+    "platform": "Microsoft Windows 11 Pro",
+    "platform_family": "Standalone Workstation",
+    "platform_version": "10.0.22631.3737 Build 22631.3737",
+    "kernel_version": "10.0.22631.3737 Build 22631.3737",
+    "kernel_arch": "x86_64"
+  },
+  "cpu": [
+    {
+      "model_name": "Intel(R) Core(TM) i7-8700 CPU @ 3.20GHz",
+      "total_cores": 6,
+      "total_threads": 12
+    }
+  ],
+  "memory": {
+    "total_physical_bytes": 17179869184,
+    "total_usable_bytes": 17105440768
+  },
+  "disk": [
+    {
+      "drive_type": "HDD",
+      "size_bytes": 2000396321280,
+      "model": "WDC WD20EJRX-89G3VY0",
+      "serial_number": "WD-WCC4M2USUZ1V"
     },
-    "cpu": [
-      {
-        "model_name": "Intel(R) Core(TM) i7-8700 CPU @ 3.20GHz",
-        "total_cores": 6,
-        "total_threads": 12
-      }
-    ],
-    "memory": {
-      "total_physical_bytes": 17179869184,
-      "total_usable_bytes": 17105440768
+    {
+      "drive_type": "SSD",
+      "size_bytes": 240054796800,
+      "model": "TOSHIBA-TR200",
+      "serial_number": "29KB71U8K46S"
+    }
+  ],
+  "gpu": [
+    {
+      "vendor": "qdesk",
+      "product": "Qdesk Virtual Display Adapter"
     },
-    "disk": [
-      {
-        "drive_type": "HDD",
-        "size_bytes": 2000396321280,
-        "model": "WDC WD20EJRX-89G3VY0",
-        "serial_number": "WD-WCC4M2USUZ1V"
-      },
-      {
-        "drive_type": "SSD",
-        "size_bytes": 240054796800,
-        "model": "TOSHIBA-TR200",
-        "serial_number": "29KB71U8K46S"
-      }
-    ],
-    "gpu": [
-      {
-        "vendor": "qdesk",
-        "product": "Qdesk Virtual Display Adapter"
-      },
-      {
-        "vendor": "NVIDIA",
-        "product": "NVIDIA GeForce RTX 2080 Ti"
-      }
-    ]
-  }
+    {
+      "vendor": "NVIDIA",
+      "product": "NVIDIA GeForce RTX 2080 Ti"
+    }
+  ]
 }
 ```
 
@@ -227,27 +223,21 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 - 返回示例:
 ```json
 {
-  // 错误码，0 表示成功，非 0 表示失败
-  "code": 0,
-  // 错误信息
-  "message": "ok",
-  "data": {
-    "created": 1718691167,
-    "choices": [
-      {
-        "index": 0,
-        "message": {
-          "role": "assistant",
-          "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat for a bit? I'm here to assist you with any questions or tasks you might have."
-        },
-        "finish_reason": "stop"
-      }
-    ],
-    "usage": {
-      "completion_tokens": 44,
-      "prompt_tokens": 22,
-      "total_tokens": 66
+  "created": 1718691167,
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat for a bit? I'm here to assist you with any questions or tasks you might have."
+      },
+      "finish_reason": "stop"
     }
+  ],
+  "usage": {
+    "completion_tokens": 44,
+    "prompt_tokens": 22,
+    "total_tokens": 66
   }
 }
 ```
@@ -291,27 +281,21 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 - 返回示例:
 ```json
 {
-  // 错误码，0 表示成功，非 0 表示失败
-  "code": 0,
-  // 错误信息
-  "message": "ok",
-  "data": {
-    "created": 1718691167,
-    "choices": [
-      {
-        "index": 0,
-        "message": {
-          "role": "assistant",
-          "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat for a bit? I'm here to assist you with any questions or tasks you might have."
-        },
-        "finish_reason": "stop"
-      }
-    ],
-    "usage": {
-      "completion_tokens": 44,
-      "prompt_tokens": 22,
-      "total_tokens": 66
+  "created": 1718691167,
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat for a bit? I'm here to assist you with any questions or tasks you might have."
+      },
+      "finish_reason": "stop"
     }
+  ],
+  "usage": {
+    "completion_tokens": 44,
+    "prompt_tokens": 22,
+    "total_tokens": 66
   }
 }
 ```
@@ -352,25 +336,19 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 - 返回示例:
 ```json
 {
-  // 错误码，0 表示成功，非 0 表示失败
-  "code": 0,
-  // 错误信息
-  "message": "ok",
-  "data": {
-    "created": 1589478378,
-    "choices": [
-      {
-        "b64_json": "",
-        "url": "https://...",
-        "revised_prompt": "..."
-      },
-      {
-        "b64_json": "",
-        "url": "https://...",
-        "revised_prompt": "..."
-      }
-    ]
-  }
+  "created": 1589478378,
+  "data": [
+    {
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
+    },
+    {
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
+    }
+  ]
 }
 ```
 
@@ -410,25 +388,19 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 - 返回示例:
 ```json
 {
-  // 错误码，0 表示成功，非 0 表示失败
-  "code": 0,
-  // 错误信息
-  "message": "ok",
-  "data": {
-    "created": 1589478378,
-    "choices": [
-      {
-        "b64_json": "",
-        "url": "https://...",
-        "revised_prompt": "..."
-      },
-      {
-        "b64_json": "",
-        "url": "https://...",
-        "revised_prompt": "..."
-      }
-    ]
-  }
+  "created": 1589478378,
+  "data": [
+    {
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
+    },
+    {
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
+    }
+  ]
 }
 ```
 
@@ -436,16 +408,12 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 
 此接口用来查询分布式通信网络中运行的 AI 项目列表。
 
-- 请求方式: POST
+- 请求方式: GET
 - 请求 URL: http://127.0.0.1:6000/api/v0/ai/projects/list
 - 请求 Body: None
 - 返回示例:
 ```json
 {
-  // 错误码，0 表示成功，非 0 表示失败
-  "code": 0,
-  // 错误信息
-  "message": "ok",
   "data": [
     "DecentralGPT",
     "SuperImage"
@@ -457,7 +425,7 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 
 此接口用来查询分布式通信网络中运行指定 AI 项目的模型列表。
 
-- 请求方式: POST
+- 请求方式: GET
 - 请求 URL: http://127.0.0.1:6000/api/v0/ai/projects/models
 - 请求 Body:
 ```json
@@ -469,10 +437,6 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 - 返回示例:
 ```json
 {
-  // 错误码，0 表示成功，非 0 表示失败
-  "code": 0,
-  // 错误信息
-  "message": "ok",
   "data": [
     "Qwen2-72B",
     "Llama3-70B"
@@ -484,7 +448,7 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 
 此接口用来查询分布式通信网络中运行指定 AI 项目和模型的节点列表。
 
-- 请求方式: POST
+- 请求方式: GET
 - 请求 URL: http://127.0.0.1:6000/api/v0/ai/projects/peers
 - 请求 Query 参数:
   - number: 正整数类型可选参数 - 表示想要查询的最大节点数量，默认值为 20
@@ -500,10 +464,6 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 - 返回示例:
 ```json
 {
-  // 错误码，0 表示成功，非 0 表示失败
-  "code": 0,
-  // 错误信息
-  "message": "ok",
   "data": [
     // v0.1.2 版本及其之前版本，"data" 字段为节点 ID 组成的字符串数组
     // "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL",
@@ -544,7 +504,7 @@ v0.1.3 版本开始在请求 URL 中增加了可选的 Query 参数 "number" 来
 
 此接口用于查询与本节点建立连接的其他对等点信息。
 
-- 请求方式: POST
+- 请求方式: GET
 - 请求 URL: http://127.0.0.1:6000/api/v0/swarm/peers
 - 请求 Body: None
 - 返回示例:
@@ -585,7 +545,7 @@ v0.1.3 版本开始在请求 URL 中增加了可选的 Query 参数 "number" 来
 
 此接口用于查询本节点已知的其他节点的连接地址。
 
-- 请求方式: POST
+- 请求方式: GET
 - 请求 URL: http://127.0.0.1:6000/api/v0/swarm/addrs
 - 请求 Body: None
 - 返回示例:
@@ -720,7 +680,7 @@ v0.1.3 版本开始在请求 URL 中增加了可选的 Query 参数 "number" 来
 
 此接口用于查询订阅了相同主题的节点列表，仅限本节点已知的其他节点，因此不能作为查询所有节点列表的用途。
 
-- 请求方式: POST
+- 请求方式: GET
 - 请求 URL: http://127.0.0.1:6000/api/v0/pubsub/peers
 - 请求 Body: None
 - 返回示例:
@@ -809,10 +769,6 @@ v0.1.3 版本开始在请求 URL 中增加了可选的 Query 参数 "number" 来
 - 返回示例:
 ```json
 {
-  // 错误码，0 表示成功，非 0 表示失败
-  "code": 0,
-  // 错误信息
-  "message": "ok",
   "data": [
     {
       "project": "DecentralGPT",
