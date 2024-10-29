@@ -14,7 +14,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21.6
+          go-version: 1.22.8
       - name: Check out code
         uses: actions/checkout@v4
       - name: Build Program linux_amd64
@@ -35,6 +35,8 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
+          draft: true
+          prerelease: false
           files: |
             host_${{ github.ref_name }}_linux_amd64
             host_${{ github.ref_name }}_linux_arm64
