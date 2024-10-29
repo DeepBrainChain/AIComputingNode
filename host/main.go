@@ -421,7 +421,9 @@ func main() {
 		v0.POST("/chat/completion", func(ctx *gin.Context) {
 			serve.ChatCompletionHandler(ctx, publishChan)
 		})
-		v0.POST("/chat/completion/proxy", serve.ChatCompletionProxyHandler)
+		v0.POST("/chat/completion/proxy", func(ctx *gin.Context) {
+			serve.ChatCompletionProxyHandler(ctx, publishChan)
+		})
 		v0.POST("/image/gen", func(ctx *gin.Context) {
 			serve.ImageGenHandler(ctx, publishChan)
 		})
