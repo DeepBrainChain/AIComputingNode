@@ -393,6 +393,13 @@ func main() {
 	// router.Use(gin.Recovery())
 	// router.Use(errorHandler)
 	router := gin.New()
+	router.HandleMethodNotAllowed = true
+	// router.NoRoute(func(ctx *gin.Context) {
+	// 	ctx.JSON(http.StatusNotFound, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
+	// })
+	// router.NoMethod(func(ctx *gin.Context) {
+	// 	ctx.JSON(http.StatusMethodNotAllowed, gin.H{"code": "METHOD_NOT_ALLOWED", "message": "Method not allowed"})
+	// })
 	router.Use(
 		log.GinzapWithConfig(&log.GinConfig{
 			SkipPaths: []string{},
