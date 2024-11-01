@@ -13,9 +13,9 @@ import (
 
 	"AIComputingNode/pkg/config"
 	"AIComputingNode/pkg/db"
+	"AIComputingNode/pkg/libp2p/host"
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/model"
-	"AIComputingNode/pkg/p2p"
 	"AIComputingNode/pkg/protocol"
 	"AIComputingNode/pkg/timer"
 	"AIComputingNode/pkg/types"
@@ -74,14 +74,14 @@ func handleChatCompletionRequest(ctx context.Context, publishChan chan<- []byte,
 	if err != nil {
 		return http.StatusInternalServerError, int(types.ErrCodeProtobuf), err.Error()
 	}
-	body, err = p2p.Encrypt(ctx, req.NodeID, body)
+	body, err = host.Encrypt(ctx, req.NodeID, body)
 	if err != nil {
 		return http.StatusInternalServerError, int(types.ErrCodeEncrypt), types.ErrCodeEncrypt.String()
 	}
 
 	msg := &protocol.Message{
 		Header: &protocol.MessageHeader{
-			ClientVersion: p2p.Hio.UserAgent,
+			ClientVersion: host.Hio.UserAgent,
 			Timestamp:     time.Now().Unix(),
 			Id:            requestID.String(),
 			NodeId:        config.GC.Identity.PeerID,
@@ -93,7 +93,7 @@ func handleChatCompletionRequest(ctx context.Context, publishChan chan<- []byte,
 		Body:       body,
 		ResultCode: 0,
 	}
-	msg.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+	msg.Header.NodePubKey, _ = host.MarshalPubKeyFromPrivKey(host.Hio.PrivKey)
 	return handleRequest(publishChan, msg, rsp)
 }
 
@@ -166,7 +166,7 @@ func handleChatCompletionStreamRequest(ctx context.Context, w http.ResponseWrite
 	}
 
 	log.Logger.Info("Received chat completion stream request")
-	stream, err := p2p.Hio.NewStream(ctx, req.NodeID)
+	stream, err := host.Hio.NewStream(ctx, req.NodeID)
 	if err != nil {
 		// rsp.Code = int(types.ErrCodeStream)
 		// rsp.Message = "Open stream with peer node failed"
@@ -330,11 +330,11 @@ func ChatCompletionProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 
 	peers := []types.AIProjectPeerInfo{}
 	for id, idle := range ids {
-		conn := p2p.Hio.Connectedness(id)
+		conn := host.Hio.Connectedness(id)
 		if msg.Stream && conn != 1 {
 			continue
 		}
-		latency := p2p.Hio.Latency(id).Nanoseconds()
+		latency := host.Hio.Latency(id).Nanoseconds()
 		if msg.Stream && latency == 0 {
 			continue
 		}
@@ -421,7 +421,7 @@ func handleImageGenRequest(ctx context.Context, publishChan chan<- []byte, req t
 
 	if req.ResponseFormat == "b64_json" {
 		log.Logger.Info("Received image gen b64_json request")
-		stream, err := p2p.Hio.NewStream(ctx, req.NodeID)
+		stream, err := host.Hio.NewStream(ctx, req.NodeID)
 		if err != nil {
 			// rsp.Code = int(types.ErrCodeStream)
 			// rsp.Message = "Open stream with peer node failed"
@@ -565,14 +565,14 @@ func handleImageGenRequest(ctx context.Context, publishChan chan<- []byte, req t
 	if err != nil {
 		return http.StatusInternalServerError, int(types.ErrCodeProtobuf), err.Error()
 	}
-	body, err = p2p.Encrypt(ctx, req.NodeID, body)
+	body, err = host.Encrypt(ctx, req.NodeID, body)
 	if err != nil {
 		return http.StatusInternalServerError, int(types.ErrCodeEncrypt), types.ErrCodeEncrypt.String()
 	}
 
 	msg := &protocol.Message{
 		Header: &protocol.MessageHeader{
-			ClientVersion: p2p.Hio.UserAgent,
+			ClientVersion: host.Hio.UserAgent,
 			Timestamp:     time.Now().Unix(),
 			Id:            requestID.String(),
 			NodeId:        config.GC.Identity.PeerID,
@@ -584,7 +584,7 @@ func handleImageGenRequest(ctx context.Context, publishChan chan<- []byte, req t
 		Body:       body,
 		ResultCode: 0,
 	}
-	msg.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+	msg.Header.NodePubKey, _ = host.MarshalPubKeyFromPrivKey(host.Hio.PrivKey)
 	return handleRequest(publishChan, msg, rsp)
 }
 
@@ -649,11 +649,11 @@ func ImageGenProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 
 	peers := []types.AIProjectPeerInfo{}
 	for id, idle := range ids {
-		conn := p2p.Hio.Connectedness(id)
+		conn := host.Hio.Connectedness(id)
 		if msg.ResponseFormat == "b64_json" && conn != 1 {
 			continue
 		}
-		latency := p2p.Hio.Latency(id).Nanoseconds()
+		latency := host.Hio.Latency(id).Nanoseconds()
 		if msg.ResponseFormat == "b64_json" && latency == 0 {
 			continue
 		}

@@ -6,9 +6,9 @@ import (
 
 	"AIComputingNode/pkg/config"
 	"AIComputingNode/pkg/db"
+	"AIComputingNode/pkg/libp2p/host"
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/model"
-	"AIComputingNode/pkg/p2p"
 	"AIComputingNode/pkg/protocol"
 	"AIComputingNode/pkg/types"
 
@@ -48,7 +48,7 @@ func (service AITimer) SendAIProjects() {
 	}
 	protoMsg := protocol.Message{
 		Header: &protocol.MessageHeader{
-			ClientVersion: p2p.Hio.UserAgent,
+			ClientVersion: host.Hio.UserAgent,
 			Timestamp:     time.Now().Unix(),
 			Id:            "",
 			NodeId:        config.GC.Identity.PeerID,

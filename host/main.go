@@ -16,10 +16,10 @@ import (
 	"AIComputingNode/pkg/config"
 	"AIComputingNode/pkg/conngater"
 	"AIComputingNode/pkg/db"
+	"AIComputingNode/pkg/libp2p/host"
 	"AIComputingNode/pkg/libp2p/stream"
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/model"
-	"AIComputingNode/pkg/p2p"
 	ps "AIComputingNode/pkg/pubsub"
 	"AIComputingNode/pkg/serve"
 	"AIComputingNode/pkg/timer"
@@ -27,7 +27,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p/core/host"
+	libp2phost "github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
@@ -124,12 +124,12 @@ func main() {
 		log.Logger.Fatalf("Init database: %v", err)
 	}
 
-	PeersHistory, err := p2p.ConvertPeersFromStringMap(db.LoadPeerConnHistory())
+	PeersHistory, err := host.ConvertPeersFromStringMap(db.LoadPeerConnHistory())
 	if err != nil {
 		log.Logger.Fatalf("Load peer history: %v", err)
 	}
 
-	DefaultBootstrapPeers, err := p2p.ConvertPeersFromStringArray(cfg.Bootstrap)
+	DefaultBootstrapPeers, err := host.ConvertPeersFromStringArray(cfg.Bootstrap)
 	if err != nil {
 		log.Logger.Fatalf("Parse bootstrap: %v", err)
 	}
@@ -142,7 +142,7 @@ func main() {
 	var kadDHT *dht.IpfsDHT
 	var pingService *ping.PingService = nil
 
-	privKey, _ := p2p.PrivKeyFromString(cfg.Identity.PrivKey)
+	privKey, _ := host.PrivKeyFromString(cfg.Identity.PrivKey)
 	connGater := &conngater.ConnectionGater{}
 
 	// https://github.com/ipfs/kubo/issues/9322
@@ -193,7 +193,7 @@ func main() {
 		opts = append(opts, libp2p.DefaultTransports)
 	}
 	if cfg.Routing.Type != "none" {
-		opts = append(opts, libp2p.Routing(func(h host.Host) (routing.PeerRouting, error) {
+		opts = append(opts, libp2p.Routing(func(h libp2phost.Host) (routing.PeerRouting, error) {
 			dhtOpts := []dht.Option{}
 			if cfg.Routing.Type == "auto" {
 				dhtOpts = append(dhtOpts, dht.Mode(dht.ModeAuto))
@@ -227,22 +227,22 @@ func main() {
 	if cfg.Swarm.EnableHolePunching {
 		opts = append(opts, libp2p.EnableHolePunching())
 	}
-	host, err := libp2p.New(opts...)
+	h, err := libp2p.New(opts...)
 	if err != nil {
 		log.Logger.Fatalf("Create libp2p host: %v", err)
 	}
-	log.Logger.Info("Listen addresses:", host.Addrs())
-	log.Logger.Info("Node id:", host.ID())
+	log.Logger.Info("Listen addresses:", h.Addrs())
+	log.Logger.Info("Node id:", h.ID())
 
 	// print the node's PeerInfo in multiaddr format
 	peerInfo := peer.AddrInfo{
-		ID:    host.ID(),
-		Addrs: host.Addrs(),
+		ID:    h.ID(),
+		Addrs: h.Addrs(),
 	}
 	addrs, err := peer.AddrInfoToP2pAddrs(&peerInfo)
 	log.Logger.Info("libp2p node address:", addrs) // addrs[0]
 
-	host.Network().Notify(&network.NotifyBundle{
+	h.Network().Notify(&network.NotifyBundle{
 		ConnectedF: func(n network.Network, c network.Conn) {
 			log.Logger.Infof("OnConnected remote multi-addr %v %v", c.RemoteMultiaddr(), c.RemotePeer())
 			db.PeerConnected(c.RemotePeer().String(), c.RemoteMultiaddr().String())
@@ -253,11 +253,11 @@ func main() {
 		},
 	})
 
-	host.SetStreamHandler(types.ChatProxyProtocol, stream.ChatProxyStreamHandler)
+	h.SetStreamHandler(types.ChatProxyProtocol, stream.ChatProxyStreamHandler)
 	pingCtx, pingStopCancel := context.WithCancel(ctx)
 	if cfg.Swarm.RelayService.Enabled && cfg.App.PeersCollect.Enabled {
-		pingService = &ping.PingService{Host: host}
-		host.SetStreamHandler(ping.ID, pingService.PingHandler)
+		pingService = &ping.PingService{Host: h}
+		h.SetStreamHandler(ping.ID, pingService.PingHandler)
 	}
 
 	if cfg.Routing.Type == "none" {
@@ -267,7 +267,7 @@ func main() {
 		if cfg.Routing.ProtocolPrefix != "" {
 			dhtOpts = append(dhtOpts, dht.ProtocolPrefix(protocol.ID(cfg.Routing.ProtocolPrefix)))
 		}
-		kadDHT, err = dht.New(p2pCtx, host, dhtOpts...)
+		kadDHT, err = dht.New(p2pCtx, h, dhtOpts...)
 		if err != nil {
 			log.Logger.Fatalf("Create Kademlia DHT: %v", err)
 		}
@@ -291,9 +291,9 @@ func main() {
 		if cfg.Pubsub.FloodPublish {
 			psOpts = append(psOpts, pubsub.WithFloodPublish(true))
 		}
-		gs, err = pubsub.NewGossipSub(p2pCtx, host, psOpts...)
+		gs, err = pubsub.NewGossipSub(p2pCtx, h, psOpts...)
 	} else {
-		gs, err = pubsub.NewFloodSub(p2pCtx, host, psOpts...)
+		gs, err = pubsub.NewFloodSub(p2pCtx, h, psOpts...)
 	}
 	if err != nil {
 		log.Logger.Fatalf("New %s: %v", cfg.Pubsub.Router, err)
@@ -307,14 +307,14 @@ func main() {
 		wg.Add(1)
 		go func(pi peer.AddrInfo) {
 			defer wg.Done()
-			ispub := p2p.IsPublicNode(pi)
+			ispub := host.IsPublicNode(pi)
 			result := connectionResult{
 				IsPublic: ispub,
 			}
 			if ispub {
-				host.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
+				h.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
 			}
-			if err := host.Connect(p2pCtx, pi); err != nil {
+			if err := h.Connect(p2pCtx, pi); err != nil {
 				log.Logger.Warnf("Connect history node %v : %v", pi, err)
 				result.Success = false
 			} else {
@@ -344,9 +344,9 @@ func main() {
 			wg.Add(1)
 			go func(pi peer.AddrInfo) {
 				defer wg.Done()
-				if host.Network().Connectedness(pi.ID) != network.Connected {
-					host.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
-					if err := host.Connect(p2pCtx, pi); err != nil {
+				if h.Network().Connectedness(pi.ID) != network.Connected {
+					h.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
+					if err := h.Connect(p2pCtx, pi); err != nil {
 						log.Logger.Warnf("Connect bootstrap node %v : %v", pi, err)
 					} else {
 						log.Logger.Info("Connection established with bootstrap node:", pi)
@@ -379,8 +379,8 @@ func main() {
 	subCtx, subStopCancel := context.WithCancel(ctx)
 	timerCtx, timerStopCancel := context.WithCancel(ctx)
 
-	p2p.Hio = &p2p.HostInfo{
-		Host:            host,
+	host.Hio = &host.HostInfo{
+		Host:            h,
 		UserAgent:       version,
 		ProtocolVersion: ProtocolVersion,
 		PrivKey:         privKey,
@@ -476,7 +476,7 @@ func main() {
 		}
 		log.Logger.Info("HTTP server is stopped")
 	}()
-	p2p.Hio.StartPingService(pingCtx)
+	host.Hio.StartPingService(pingCtx)
 
 	log.Logger.Info("listening for connections")
 
@@ -501,7 +501,7 @@ func main() {
 	p2pStopCancel()
 
 	kadDHT.Close()
-	host.Close()
+	h.Close()
 
 	log.Logger.Info("################################################################")
 	log.Logger.Info("#                          OVER                                #")

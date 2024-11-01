@@ -11,9 +11,9 @@ import (
 	"AIComputingNode/pkg/config"
 	"AIComputingNode/pkg/db"
 	"AIComputingNode/pkg/hardware"
+	"AIComputingNode/pkg/libp2p/host"
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/model"
-	"AIComputingNode/pkg/p2p"
 	"AIComputingNode/pkg/protocol"
 	"AIComputingNode/pkg/timer"
 	"AIComputingNode/pkg/types"
@@ -46,7 +46,7 @@ func httpStatus(code types.ErrorCode) int {
 }
 
 func IdHandler(c *gin.Context) {
-	id := p2p.Hio.GetIdentifyProtocol()
+	id := host.Hio.GetIdentifyProtocol()
 	c.JSON(http.StatusOK, id)
 }
 
@@ -128,7 +128,7 @@ func PeerHandler(c *gin.Context, publishChan chan<- []byte) {
 	}
 
 	if msg.NodeID == config.GC.Identity.PeerID {
-		rsp.IdentifyProtocol = p2p.Hio.GetIdentifyProtocol()
+		rsp.IdentifyProtocol = host.Hio.GetIdentifyProtocol()
 		c.JSON(http.StatusOK, rsp)
 		return
 	}
@@ -153,11 +153,11 @@ func PeerHandler(c *gin.Context, publishChan chan<- []byte) {
 		c.JSON(http.StatusInternalServerError, rsp)
 		return
 	}
-	body, err = p2p.Encrypt(c.Request.Context(), msg.NodeID, body)
+	body, err = host.Encrypt(c.Request.Context(), msg.NodeID, body)
 
 	req := &protocol.Message{
 		Header: &protocol.MessageHeader{
-			ClientVersion: p2p.Hio.UserAgent,
+			ClientVersion: host.Hio.UserAgent,
 			Timestamp:     time.Now().Unix(),
 			Id:            requestID.String(),
 			NodeId:        config.GC.Identity.PeerID,
@@ -170,7 +170,7 @@ func PeerHandler(c *gin.Context, publishChan chan<- []byte) {
 		ResultCode: 0,
 	}
 	if err == nil {
-		req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+		req.Header.NodePubKey, _ = host.MarshalPubKeyFromPrivKey(host.Hio.PrivKey)
 	}
 	status, code, message := handleRequest(publishChan, req, &rsp)
 	if code != 0 {
@@ -236,11 +236,11 @@ func HostInfoHandler(c *gin.Context, publishChan chan<- []byte) {
 		c.JSON(http.StatusInternalServerError, rsp)
 		return
 	}
-	body, err = p2p.Encrypt(c.Request.Context(), msg.NodeID, body)
+	body, err = host.Encrypt(c.Request.Context(), msg.NodeID, body)
 
 	req := &protocol.Message{
 		Header: &protocol.MessageHeader{
-			ClientVersion: p2p.Hio.UserAgent,
+			ClientVersion: host.Hio.UserAgent,
 			Timestamp:     time.Now().Unix(),
 			Id:            requestID.String(),
 			NodeId:        config.GC.Identity.PeerID,
@@ -253,7 +253,7 @@ func HostInfoHandler(c *gin.Context, publishChan chan<- []byte) {
 		ResultCode: 0,
 	}
 	if err == nil {
-		req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+		req.Header.NodePubKey, _ = host.MarshalPubKeyFromPrivKey(host.Hio.PrivKey)
 	}
 	status, code, message := handleRequest(publishChan, req, &rsp)
 	if code != 0 {
@@ -273,7 +273,7 @@ func RendezvousPeersHandler(c *gin.Context) {
 	defer cancel()
 	rsp := types.PeerListResponse{}
 
-	peerChan, err := p2p.Hio.FindPeers(ctx, config.GC.App.TopicName)
+	peerChan, err := host.Hio.FindPeers(ctx, config.GC.App.TopicName)
 	if err != nil {
 		log.Logger.Warnf("List peer message: %v", err)
 		rsp.Code = int(types.ErrCodeRendezvous)
@@ -290,12 +290,12 @@ func RendezvousPeersHandler(c *gin.Context) {
 }
 
 func SwarmPeersHandler(c *gin.Context) {
-	pinfos := p2p.Hio.SwarmPeers()
+	pinfos := host.Hio.SwarmPeers()
 	c.JSON(http.StatusOK, pinfos)
 }
 
 func SwarmAddrsHandler(c *gin.Context) {
-	pinfos := p2p.Hio.SwarmAddrs()
+	pinfos := host.Hio.SwarmAddrs()
 	c.JSON(http.StatusOK, pinfos)
 }
 
@@ -322,7 +322,7 @@ func SwarmConnectHandler(c *gin.Context) {
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 60*time.Second)
 	defer cancel()
-	if err := p2p.Hio.SwarmConnect(ctx, req.NodeAddr); err != nil {
+	if err := host.Hio.SwarmConnect(ctx, req.NodeAddr); err != nil {
 		rsp.Code = int(types.ErrCodeInternal)
 		rsp.Message = err.Error()
 		c.JSON(http.StatusInternalServerError, rsp)
@@ -352,7 +352,7 @@ func SwarmDisconnectHandler(c *gin.Context) {
 		return
 	}
 
-	if err := p2p.Hio.SwarmDisconnect(req.NodeAddr); err != nil {
+	if err := host.Hio.SwarmDisconnect(req.NodeAddr); err != nil {
 		rsp.Code = int(types.ErrCodeInternal)
 		rsp.Message = err.Error()
 		c.JSON(http.StatusInternalServerError, rsp)
@@ -362,7 +362,7 @@ func SwarmDisconnectHandler(c *gin.Context) {
 }
 
 func PubsubPeersHandler(c *gin.Context) {
-	rsp := p2p.Hio.PubsubPeers()
+	rsp := host.Hio.PubsubPeers()
 	c.JSON(http.StatusOK, rsp)
 }
 
@@ -515,11 +515,11 @@ func GetAIProjectOfNodeHandler(c *gin.Context, publishChan chan<- []byte) {
 		c.JSON(http.StatusInternalServerError, rsp)
 		return
 	}
-	body, err = p2p.Encrypt(c.Request.Context(), msg.NodeID, body)
+	body, err = host.Encrypt(c.Request.Context(), msg.NodeID, body)
 
 	req := &protocol.Message{
 		Header: &protocol.MessageHeader{
-			ClientVersion: p2p.Hio.UserAgent,
+			ClientVersion: host.Hio.UserAgent,
 			Timestamp:     time.Now().Unix(),
 			Id:            requestID.String(),
 			NodeId:        config.GC.Identity.PeerID,
@@ -532,7 +532,7 @@ func GetAIProjectOfNodeHandler(c *gin.Context, publishChan chan<- []byte) {
 		ResultCode: 0,
 	}
 	if err == nil {
-		req.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+		req.Header.NodePubKey, _ = host.MarshalPubKeyFromPrivKey(host.Hio.PrivKey)
 	}
 	status, code, message := handleRequest(publishChan, req, &rsp)
 	if code != 0 {
@@ -635,8 +635,8 @@ func GetPeersOfAIProjectHandler(c *gin.Context) {
 	for id, idle := range ids {
 		rsp.Data = append(rsp.Data, types.AIProjectPeerInfo{
 			NodeID:       id,
-			Connectivity: p2p.Hio.Connectedness(id),
-			Latency:      p2p.Hio.Latency(id).Microseconds(),
+			Connectivity: host.Hio.Connectedness(id),
+			Latency:      host.Hio.Latency(id).Microseconds(),
 			Idle:         idle,
 		})
 	}

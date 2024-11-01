@@ -9,9 +9,9 @@ import (
 	"AIComputingNode/pkg/config"
 	"AIComputingNode/pkg/db"
 	"AIComputingNode/pkg/hardware"
+	"AIComputingNode/pkg/libp2p/host"
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/model"
-	"AIComputingNode/pkg/p2p"
 	"AIComputingNode/pkg/protocol"
 	"AIComputingNode/pkg/serve"
 	"AIComputingNode/pkg/timer"
@@ -79,7 +79,7 @@ func ReadFromTopic(ctx context.Context, sub *pubsub.Subscription, publishChan ch
 }
 
 func handleBroadcastMessage(ctx context.Context, msg *protocol.Message, publishChan chan<- []byte) {
-	msgBody, err := p2p.Decrypt(msg.Header.GetNodePubKey(), msg.Body)
+	msgBody, err := host.Decrypt(msg.Header.GetNodePubKey(), msg.Body)
 	if err != nil {
 		res := TransformErrorResponse(msg, int32(types.ErrCodeDecrypt), types.ErrCodeDecrypt.String())
 		resBytes, err := proto.Marshal(res)
@@ -131,7 +131,7 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 		serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
 	} else if err := proto.Unmarshal(decBody, pi); err == nil {
 		if piReq := pi.GetReq(); piReq != nil {
-			idp := p2p.Hio.GetIdentifyProtocol()
+			idp := host.Hio.GetIdentifyProtocol()
 			piBody := &protocol.PeerIdentityBody{
 				Data: &protocol.PeerIdentityBody_Res{
 					Res: &protocol.PeerIdentityResponse{
@@ -147,10 +147,10 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 				log.Logger.Errorf("Marshal Identity Response Body %v", err)
 				return
 			}
-			resBody, err = p2p.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
+			resBody, err = host.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
 			res := protocol.Message{
 				Header: &protocol.MessageHeader{
-					ClientVersion: p2p.Hio.UserAgent,
+					ClientVersion: host.Hio.UserAgent,
 					Timestamp:     time.Now().Unix(),
 					Id:            msg.Header.GetId(),
 					NodeId:        config.GC.Identity.PeerID,
@@ -161,7 +161,7 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 				ResultCode: 0,
 			}
 			if err == nil {
-				res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+				res.Header.NodePubKey, _ = host.MarshalPubKeyFromPrivKey(host.Hio.PrivKey)
 			}
 			resBytes, err := proto.Marshal(&res)
 			if err != nil {
@@ -224,10 +224,10 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 				log.Logger.Errorf("Marshal Chat Completion Response Body %v", err)
 				return
 			}
-			resBody, err = p2p.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
+			resBody, err = host.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
 			res := protocol.Message{
 				Header: &protocol.MessageHeader{
-					ClientVersion: p2p.Hio.UserAgent,
+					ClientVersion: host.Hio.UserAgent,
 					Timestamp:     chatRes.GetCreated(),
 					Id:            msg.Header.GetId(),
 					NodeId:        config.GC.Identity.PeerID,
@@ -239,7 +239,7 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 				ResultMessage: message,
 			}
 			if err == nil {
-				res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+				res.Header.NodePubKey, _ = host.MarshalPubKeyFromPrivKey(host.Hio.PrivKey)
 			}
 			resBytes, err := proto.Marshal(&res)
 			if err != nil {
@@ -314,10 +314,10 @@ func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, de
 				log.Logger.Errorf("Marshal Image Generation Response Body %v", err)
 				return
 			}
-			resBody, err = p2p.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
+			resBody, err = host.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
 			res := protocol.Message{
 				Header: &protocol.MessageHeader{
-					ClientVersion: p2p.Hio.UserAgent,
+					ClientVersion: host.Hio.UserAgent,
 					Timestamp:     igRes.GetCreated(),
 					Id:            msg.Header.GetId(),
 					NodeId:        config.GC.Identity.PeerID,
@@ -329,7 +329,7 @@ func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, de
 				ResultMessage: message,
 			}
 			if err == nil {
-				res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+				res.Header.NodePubKey, _ = host.MarshalPubKeyFromPrivKey(host.Hio.PrivKey)
 			}
 			resBytes, err := proto.Marshal(&res)
 			if err != nil {
@@ -402,10 +402,10 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 				log.Logger.Warnf("Marshal HostInfo Response Body %v", err)
 				return
 			}
-			resBody, err = p2p.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
+			resBody, err = host.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
 			res := protocol.Message{
 				Header: &protocol.MessageHeader{
-					ClientVersion: p2p.Hio.UserAgent,
+					ClientVersion: host.Hio.UserAgent,
 					Timestamp:     time.Now().Unix(),
 					Id:            msg.Header.GetId(),
 					NodeId:        config.GC.Identity.PeerID,
@@ -417,7 +417,7 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 				ResultMessage: message,
 			}
 			if err == nil {
-				res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+				res.Header.NodePubKey, _ = host.MarshalPubKeyFromPrivKey(host.Hio.PrivKey)
 			}
 			resBytes, err := proto.Marshal(&res)
 			if err != nil {
@@ -474,10 +474,10 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 				log.Logger.Warnf("Marshal AI Project Response Body %v", err)
 				return
 			}
-			resBody, err = p2p.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
+			resBody, err = host.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
 			res := protocol.Message{
 				Header: &protocol.MessageHeader{
-					ClientVersion: p2p.Hio.UserAgent,
+					ClientVersion: host.Hio.UserAgent,
 					Timestamp:     time.Now().Unix(),
 					Id:            msg.Header.GetId(),
 					NodeId:        config.GC.Identity.PeerID,
@@ -489,7 +489,7 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 				ResultMessage: "",
 			}
 			if err == nil {
-				res.Header.NodePubKey, _ = p2p.MarshalPubKeyFromPrivKey(p2p.Hio.PrivKey)
+				res.Header.NodePubKey, _ = host.MarshalPubKeyFromPrivKey(host.Hio.PrivKey)
 			}
 			resBytes, err := proto.Marshal(&res)
 			if err != nil {
@@ -521,7 +521,7 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 func TransformErrorResponse(msg *protocol.Message, code int32, message string) *protocol.Message {
 	res := protocol.Message{
 		Header: &protocol.MessageHeader{
-			ClientVersion: p2p.Hio.UserAgent,
+			ClientVersion: host.Hio.UserAgent,
 			Timestamp:     time.Now().Unix(),
 			Id:            msg.Header.GetId(),
 			NodeId:        config.GC.Identity.PeerID,
