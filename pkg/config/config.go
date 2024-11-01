@@ -16,15 +16,15 @@ import (
 var GC *Config
 
 type Config struct {
-	Bootstrap  []string          `json:"Bootstrap"`
-	Addresses  []string          `json:"Addresses"`
-	API        APIConfig         `Json:"API"`
-	Identity   IdentityConfig    `json:"Identity"`
-	Swarm      SwarmConfig       `json:"Swarm"`
-	Pubsub     PubsubConfig      `json:"Pubsub"`
-	Routing    RoutingConfig     `json:"Routing"`
-	App        AppConfig         `json:"App"`
-	AIProjects []types.AIProject `json:"AIProjects"`
+	Bootstrap  []string                `json:"Bootstrap"`
+	Addresses  []string                `json:"Addresses"`
+	API        APIConfig               `Json:"API"`
+	Identity   IdentityConfig          `json:"Identity"`
+	Swarm      SwarmConfig             `json:"Swarm"`
+	Pubsub     PubsubConfig            `json:"Pubsub"`
+	Routing    RoutingConfig           `json:"Routing"`
+	App        AppConfig               `json:"App"`
+	AIProjects []types.AIProjectConfig `json:"AIProjects"`
 }
 
 type APIConfig struct {
@@ -270,15 +270,8 @@ func (config Config) SaveConfig(configPath string) error {
 	return nil
 }
 
-func (config Config) GetAIProjectsOfNode() []types.AIProjectOfNode {
-	projects := make([]types.AIProjectOfNode, len(config.AIProjects))
-	for i, project := range config.AIProjects {
-		projects[i].Project = project.Project
-		for _, model := range project.Models {
-			projects[i].Models = append(projects[i].Models, model.Model)
-		}
-	}
-	return projects
+func (config Config) GetAIProjectsOfNode() []types.AIProjectConfig {
+	return config.AIProjects
 }
 
 func LoadConfig(configPath string) (*Config, error) {

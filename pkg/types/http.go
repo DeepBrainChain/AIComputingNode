@@ -152,7 +152,7 @@ type AIProjectListRequest BaseHttpRequest
 
 type AIProjectListResponse struct {
 	BaseHttpResponse
-	Data []AIProjectOfNode `json:"data"`
+	Data []AIProjectConfig `json:"data"`
 }
 
 type GetModelsOfAIProjectRequest struct {

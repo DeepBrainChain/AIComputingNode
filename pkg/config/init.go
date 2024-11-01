@@ -128,7 +128,7 @@ func Init(mode string) error {
 				ClientProject:     "",
 			},
 		},
-		AIProjects: []types.AIProject{},
+		AIProjects: []types.AIProjectConfig{},
 	}
 	if mode == "server" || mode == "input" {
 		config.Swarm.DisableNatPortMap = true

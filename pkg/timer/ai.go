@@ -88,7 +88,7 @@ func (service AITimer) HandleBroadcastMessage(ctx context.Context, msg *protocol
 	}
 }
 
-func (service AITimer) HandleAIProjectMessage(node_id string, projects []types.AIProjectOfNode, nodeType uint32) {
+func (service AITimer) HandleAIProjectMessage(node_id string, projects []types.AIProjectConfig, nodeType uint32) {
 	info := db.PeerCollectInfo{
 		Timestamp:  time.Now().Unix(),
 		AIProjects: projects,

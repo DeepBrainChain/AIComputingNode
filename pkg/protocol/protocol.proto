@@ -173,9 +173,16 @@ message AIProjectBody {
   }
 }
 
+message AIModelOfProject {
+  string model = 1;
+  string api = 2;
+  uint32 type = 3;
+  uint32 idle = 4;
+}
+
 message AIProjectOfNode {
   string project = 1;
-  repeated string models = 2;
+  repeated AIModelOfProject models = 2;
 }
 
 message AIProjectRequest {

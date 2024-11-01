@@ -371,7 +371,7 @@ func RegisterAIProjectHandler(c *gin.Context, configPath string) {
 		Message: "ok",
 	}
 
-	var req types.AIProject
+	var req types.AIProjectConfig
 	if err := c.ShouldBindJSON(&req); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
@@ -395,7 +395,7 @@ func RegisterAIProjectHandler(c *gin.Context, configPath string) {
 		}
 	}
 
-	backup := make([]types.AIProject, len(config.GC.AIProjects))
+	backup := make([]types.AIProjectConfig, len(config.GC.AIProjects))
 	copy(backup, config.GC.AIProjects)
 
 	var find bool = false
@@ -426,7 +426,7 @@ func UnregisterAIProjectHandler(c *gin.Context, configPath string) {
 		Message: "ok",
 	}
 
-	var req types.AIProject
+	var req types.AIProjectConfig
 	if err := c.ShouldBindJSON(&req); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
@@ -441,7 +441,7 @@ func UnregisterAIProjectHandler(c *gin.Context, configPath string) {
 		return
 	}
 
-	backup := make([]types.AIProject, len(config.GC.AIProjects))
+	backup := make([]types.AIProjectConfig, len(config.GC.AIProjects))
 	copy(backup, config.GC.AIProjects)
 
 	var find bool = false

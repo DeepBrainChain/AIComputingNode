@@ -32,7 +32,7 @@ type connInfo struct {
 }
 
 type PeerCollectInfo struct {
-	AIProjects []types.AIProjectOfNode `json:"AIProjects"`
+	AIProjects []types.AIProjectConfig `json:"AIProjects"`
 	NodeType   uint32                  `json:"NodeType"`
 	Timestamp  int64                   `json:"timestamp"`
 }
@@ -290,7 +290,7 @@ func GetPeersOfAIProjects(project, model string, limit int) ([]string, int) {
 					set.Add(string(iter.Key()))
 				} else {
 					for _, item2 := range item.Models {
-						if model == item2 {
+						if model == item2.Model {
 							set.Add(string(iter.Key()))
 							break
 						}
