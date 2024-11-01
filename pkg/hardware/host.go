@@ -1,4 +1,4 @@
-package host
+package hardware
 
 import (
 	"AIComputingNode/pkg/log"

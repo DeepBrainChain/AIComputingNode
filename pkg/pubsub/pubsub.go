@@ -8,7 +8,7 @@ import (
 
 	"AIComputingNode/pkg/config"
 	"AIComputingNode/pkg/db"
-	"AIComputingNode/pkg/host"
+	"AIComputingNode/pkg/hardware"
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/model"
 	"AIComputingNode/pkg/p2p"
@@ -384,7 +384,7 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 		serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
 	} else if err := proto.Unmarshal(decBody, hi); err == nil {
 		if hiReq := hi.GetReq(); hiReq != nil {
-			hostInfo, err := host.GetHostInfo()
+			hostInfo, err := hardware.GetHostInfo()
 			var code int32 = 0
 			var message string = ""
 			if err != nil {

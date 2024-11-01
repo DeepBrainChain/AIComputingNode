@@ -10,7 +10,7 @@ import (
 
 	"AIComputingNode/pkg/config"
 	"AIComputingNode/pkg/db"
-	"AIComputingNode/pkg/host"
+	"AIComputingNode/pkg/hardware"
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/model"
 	"AIComputingNode/pkg/p2p"
@@ -204,7 +204,7 @@ func HostInfoHandler(c *gin.Context, publishChan chan<- []byte) {
 	}
 
 	if msg.NodeID == config.GC.Identity.PeerID {
-		hd, err := host.GetHostInfo()
+		hd, err := hardware.GetHostInfo()
 		if err != nil {
 			rsp.Code = int(types.ErrCodeHostInfo)
 			rsp.Message = err.Error()
