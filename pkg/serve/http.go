@@ -12,6 +12,7 @@ import (
 	"AIComputingNode/pkg/db"
 	"AIComputingNode/pkg/host"
 	"AIComputingNode/pkg/log"
+	"AIComputingNode/pkg/model"
 	"AIComputingNode/pkg/p2p"
 	"AIComputingNode/pkg/protocol"
 	"AIComputingNode/pkg/timer"
@@ -417,6 +418,7 @@ func RegisterAIProjectHandler(c *gin.Context, configPath string) {
 		return
 	}
 	c.JSON(http.StatusOK, rsp)
+	model.RegisterAIProject(req)
 	timer.AIT.SendAIProjects()
 }
 
@@ -465,6 +467,7 @@ func UnregisterAIProjectHandler(c *gin.Context, configPath string) {
 		return
 	}
 	c.JSON(http.StatusOK, rsp)
+	model.UnregisterAIProject(req.Project)
 	timer.AIT.SendAIProjects()
 }
 
@@ -487,7 +490,7 @@ func GetAIProjectOfNodeHandler(c *gin.Context, publishChan chan<- []byte) {
 	}
 
 	if msg.NodeID == config.GC.Identity.PeerID {
-		rsp.Data = config.GC.GetAIProjectsOfNode()
+		rsp.Data = model.GetAIProjects()
 		c.JSON(http.StatusOK, rsp)
 		return
 	}
@@ -629,11 +632,12 @@ func GetPeersOfAIProjectHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, rsp)
 		return
 	}
-	for _, id := range ids {
+	for id, idle := range ids {
 		rsp.Data = append(rsp.Data, types.AIProjectPeerInfo{
 			NodeID:       id,
 			Connectivity: p2p.Hio.Connectedness(id),
 			Latency:      p2p.Hio.Latency(id).Microseconds(),
+			Idle:         idle,
 		})
 	}
 	c.JSON(http.StatusOK, rsp)

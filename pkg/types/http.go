@@ -152,7 +152,7 @@ type AIProjectListRequest BaseHttpRequest
 
 type AIProjectListResponse struct {
 	BaseHttpResponse
-	Data []AIProjectConfig `json:"data"`
+	Data map[string]map[string]ModelInfo `json:"data"`
 }
 
 type GetModelsOfAIProjectRequest struct {
@@ -168,11 +168,35 @@ type AIProjectPeerInfo struct {
 	NodeID       string `json:"node_id"`
 	Connectivity int    `json:"connectivity"`
 	Latency      int64  `json:"latency"`
+	Idle         int    `json:"Idle"`
 }
 
 type GetPeersOfAIProjectResponse struct {
 	BaseHttpResponse
 	Data []AIProjectPeerInfo `json:"data"`
+}
+
+type AIProjectPeerOrder []AIProjectPeerInfo
+
+func (a AIProjectPeerOrder) Len() int      { return len(a) }
+func (a AIProjectPeerOrder) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a AIProjectPeerOrder) Less(i, j int) bool {
+	// First condition: Connectivity of 1 is ranked first
+	// if a[i].Connectivity != a[j].Connectivity {
+	// 	return a[i].Connectivity == 1
+	// }
+	if a[i].Connectivity == 1 && a[j].Connectivity != 1 {
+		return true
+	}
+	if a[i].Connectivity != 1 && a[j].Connectivity == 1 {
+		return false
+	}
+	// Second condition: The smaller the Idle, the higher the ranking
+	if a[i].Idle != a[j].Idle {
+		return a[i].Idle < a[j].Idle
+	}
+	// Third condition: The smaller the Latency, the higher the ranking
+	return a[i].Latency < a[j].Latency
 }
 
 func (res *BaseHttpResponse) SetCode(code int) {

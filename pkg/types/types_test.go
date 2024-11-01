@@ -108,3 +108,37 @@ func TestNodeType(t *testing.T) {
 	nt &= ^PublicIpFlag
 	t.Logf("%v ~ {%v, %v, %v}", nt, nt.IsPublicNode(), nt.IsClientNode(), nt.IsModelNode())
 }
+
+func TestJsonMap(t *testing.T) {
+	ss := make(map[string]testPerson)
+	ss["s1"] = testPerson{
+		Name: "s1-name",
+		Age:  18,
+	}
+	ss["s2"] = testPerson{
+		Name: "s2-name",
+		Age:  19,
+	}
+
+	// error will occur when Person is map[int]testPerson
+	type Class struct {
+		Name    string
+		Persons map[string]testPerson
+	}
+
+	cls := Class{
+		Name:    "c1",
+		Persons: ss,
+	}
+	jsonData, err := json.Marshal(cls)
+	if err != nil {
+		t.Fatalf("Marshal json %v", err)
+	}
+	t.Logf("orignal json %s", string(jsonData))
+
+	js := Class{}
+	if err := json.Unmarshal(jsonData, &js); err != nil {
+		t.Fatalf("Unmarshal json %v", err)
+	}
+	t.Logf("Unmarshal json sucess %v", js)
+}

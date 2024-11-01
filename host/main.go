@@ -16,11 +16,14 @@ import (
 	"AIComputingNode/pkg/config"
 	"AIComputingNode/pkg/conngater"
 	"AIComputingNode/pkg/db"
+	"AIComputingNode/pkg/libp2p/stream"
 	"AIComputingNode/pkg/log"
+	"AIComputingNode/pkg/model"
 	"AIComputingNode/pkg/p2p"
 	ps "AIComputingNode/pkg/pubsub"
 	"AIComputingNode/pkg/serve"
 	"AIComputingNode/pkg/timer"
+	"AIComputingNode/pkg/types"
 
 	"github.com/gin-gonic/gin"
 	"github.com/libp2p/go-libp2p"
@@ -95,14 +98,12 @@ func main() {
 		fmt.Println("Failed to load JSON configuration file:", err)
 		os.Exit(1)
 	}
-	err = cfg.Validate()
-	if err != nil {
+	if err := cfg.Validate(); err != nil {
 		fmt.Println("Invalid configuration item:", err)
 		os.Exit(1)
 	}
 
-	err = log.InitLogging(cfg.App.LogLevel, cfg.App.LogFile, cfg.App.LogOutput)
-	if err != nil {
+	if err := log.InitLogging(cfg.App.LogLevel, cfg.App.LogFile, cfg.App.LogOutput); err != nil {
 		fmt.Println("Initialize the log module failed:", err)
 		os.Exit(1)
 	}
@@ -111,12 +112,15 @@ func main() {
 	log.Logger.Info("#                          START                               #")
 	log.Logger.Info("################################################################")
 
-	err = db.InitDb(db.InitOptions{
+	if err := model.InitModels(cfg.AIProjects); err != nil {
+		log.Logger.Fatalf("Init models: %v", err)
+	}
+
+	if err := db.InitDb(db.InitOptions{
 		Folder: cfg.App.Datastore,
 		// the node is deployed on a public server && enable peers collect
 		EnablePeersCollect: (cfg.Swarm.RelayService.Enabled && cfg.App.PeersCollect.Enabled),
-	})
-	if err != nil {
+	}); err != nil {
 		log.Logger.Fatalf("Init database: %v", err)
 	}
 
@@ -249,7 +253,7 @@ func main() {
 		},
 	})
 
-	host.SetStreamHandler(p2p.ChatProxyProtocol, p2p.ChatProxyStreamHandler)
+	host.SetStreamHandler(types.ChatProxyProtocol, stream.ChatProxyStreamHandler)
 	pingCtx, pingStopCancel := context.WithCancel(ctx)
 	if cfg.Swarm.RelayService.Enabled && cfg.App.PeersCollect.Enabled {
 		pingService = &ping.PingService{Host: host}

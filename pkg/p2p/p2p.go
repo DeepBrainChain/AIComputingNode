@@ -164,7 +164,7 @@ func (hio *HostInfo) NewStream(ctx context.Context, nodeId string) (network.Stre
 	if err != nil {
 		return nil, err
 	}
-	return hio.Host.NewStream(ctx, peer, ChatProxyProtocol)
+	return hio.Host.NewStream(ctx, peer, types.ChatProxyProtocol)
 }
 
 func (hio *HostInfo) Connectedness(nodeId string) int {

@@ -1,5 +1,11 @@
 package types
 
+import "time"
+
+const ChatProxyProtocol = "/chat-proxy/0.0.1"
+
+var ChatProxyStreamTimeout = 3 * time.Minute
+
 type IdentifyProtocol struct {
 	ID              string   `json:"peer_id,omitempty"`
 	ProtocolVersion string   `json:"protocol_version,omitempty"`

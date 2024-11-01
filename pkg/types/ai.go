@@ -17,6 +17,12 @@ type AIModelConfig struct {
 	Type  int    `json:"Type"`
 }
 
+type ModelInfo struct {
+	API  string `json:"API"`
+	Type int    `json:"Type"`
+	Idle int    `json:"Idle"`
+}
+
 func (config AIProjectConfig) Validate() error {
 	if config.Project == "" {
 		return fmt.Errorf("project name can not be empty")

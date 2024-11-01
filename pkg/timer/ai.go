@@ -7,6 +7,7 @@ import (
 	"AIComputingNode/pkg/config"
 	"AIComputingNode/pkg/db"
 	"AIComputingNode/pkg/log"
+	"AIComputingNode/pkg/model"
 	"AIComputingNode/pkg/p2p"
 	"AIComputingNode/pkg/protocol"
 	"AIComputingNode/pkg/types"
@@ -21,7 +22,7 @@ type AITimer struct {
 var AIT *AITimer
 
 func (service AITimer) SendAIProjects() {
-	projects := config.GC.GetAIProjectsOfNode()
+	projects := model.GetAIProjects()
 	var nt types.NodeType = 0x00
 	if config.GC.Swarm.RelayService.Enabled {
 		nt |= types.PublicIpFlag
@@ -29,8 +30,8 @@ func (service AITimer) SendAIProjects() {
 	if config.GC.App.PeersCollect.Enabled {
 		nt |= types.PeersCollectFlag
 	}
-	for _, proj := range projects {
-		if len(proj.Models) > 0 {
+	for _, models := range projects {
+		if len(models) > 0 {
 			nt |= types.ModelFlag
 			break
 		}
@@ -88,7 +89,7 @@ func (service AITimer) HandleBroadcastMessage(ctx context.Context, msg *protocol
 	}
 }
 
-func (service AITimer) HandleAIProjectMessage(node_id string, projects []types.AIProjectConfig, nodeType uint32) {
+func (service AITimer) HandleAIProjectMessage(node_id string, projects map[string]map[string]types.ModelInfo, nodeType uint32) {
 	info := db.PeerCollectInfo{
 		Timestamp:  time.Now().Unix(),
 		AIProjects: projects,

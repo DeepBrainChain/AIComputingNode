@@ -463,7 +463,7 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 		serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
 	} else if err := proto.Unmarshal(decBody, aip); err == nil {
 		if aiReq := aip.GetReq(); aiReq != nil {
-			projects := config.GC.GetAIProjectsOfNode()
+			projects := model.GetAIProjects()
 			aiBody := &protocol.AIProjectBody{
 				Data: &protocol.AIProjectBody_Res{
 					Res: types.AIProject2ProtocolMessage(projects, 0),
@@ -538,6 +538,13 @@ func TransformErrorResponse(msg *protocol.Message, code int32, message string) *
 }
 
 func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompletionRequest, reqHeader *protocol.MessageHeader) (int, string, *protocol.ChatCompletionResponse) {
+	response := &protocol.ChatCompletionResponse{}
+
+	modelAPI := config.GC.GetModelAPI(req.GetProject(), req.GetModel())
+	if modelAPI == "" {
+		return int(types.ErrCodeModel), "Model API configuration is empty", response
+	}
+
 	chatReq := types.ChatModelRequest{
 		Model:  req.GetModel(),
 		Stream: req.GetStream(),
@@ -553,7 +560,14 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 			Content: ccm.GetContent(),
 		})
 	}
-	chatRes := model.ChatModel(config.GC.GetModelAPI(req.GetProject(), req.GetModel()), chatReq)
+
+	model.IncRef(req.GetProject(), req.GetModel())
+	timer.AIT.SendAIProjects()
+	defer func() {
+		model.DecRef(req.GetProject(), req.GetModel())
+		timer.AIT.SendAIProjects()
+	}()
+	chatRes := model.ChatModel(modelAPI, chatReq)
 
 	log.Logger.Infof("Execute model %s in %s result {code:%d, message:%s}", req.GetProject(), req.GetModel(), chatRes.Code, chatRes.Message)
 	modelHistory := &types.ModelHistory{
@@ -573,7 +587,6 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 	}
 	_ = db.WriteModelHistory(modelHistory)
 
-	response := &protocol.ChatCompletionResponse{}
 	if chatRes.Code != 0 {
 		return chatRes.Code, chatRes.Message, response
 	}
@@ -597,6 +610,13 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 }
 
 func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenerationRequest, reqHeader *protocol.MessageHeader) (int, string, *protocol.ImageGenerationResponse) {
+	response := &protocol.ImageGenerationResponse{}
+
+	modelAPI := config.GC.GetModelAPI(req.GetProject(), req.GetModel())
+	if modelAPI == "" {
+		return int(types.ErrCodeModel), "Model API configuration is empty", response
+	}
+
 	igReq := types.ImageGenModelRequest{
 		Model:          req.GetModel(),
 		Prompt:         req.GetPrompt(),
@@ -611,7 +631,14 @@ func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenera
 			Hash:      req.GetWallet().GetHash(),
 		},
 	}
-	igRes := model.ImageGenerationModel(config.GC.GetModelAPI(req.GetProject(), req.GetModel()), igReq)
+
+	model.IncRef(req.GetProject(), req.GetModel())
+	timer.AIT.SendAIProjects()
+	defer func() {
+		model.DecRef(req.GetProject(), req.GetModel())
+		timer.AIT.SendAIProjects()
+	}()
+	igRes := model.ImageGenerationModel(modelAPI, igReq)
 
 	if igRes.Code == 0 {
 		log.Logger.Infof("Execute model %s with (%q, %d, %s) result %v",
@@ -637,7 +664,6 @@ func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenera
 	}
 	_ = db.WriteModelHistory(modelHistory)
 
-	response := &protocol.ImageGenerationResponse{}
 	if igRes.Code != 0 {
 		return igRes.Code, igRes.Message, response
 	}

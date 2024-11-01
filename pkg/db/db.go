@@ -32,9 +32,9 @@ type connInfo struct {
 }
 
 type PeerCollectInfo struct {
-	AIProjects []types.AIProjectConfig `json:"AIProjects"`
-	NodeType   uint32                  `json:"NodeType"`
-	Timestamp  int64                   `json:"timestamp"`
+	AIProjects map[string]map[string]types.ModelInfo `json:"AIProjects"`
+	NodeType   uint32                                `json:"NodeType"`
+	Timestamp  int64                                 `json:"timestamp"`
 }
 
 func InitDb(opts InitOptions) error {
@@ -214,8 +214,8 @@ func ListAIProjects(limit int) ([]string, int) {
 			log.Logger.Warn("Parse failed when load peer collect info of ", iter.Key(), err)
 			continue
 		}
-		for _, project := range info.AIProjects {
-			set.Add(project.Project)
+		for project := range info.AIProjects {
+			set.Add(project)
 		}
 	}
 
@@ -245,9 +245,9 @@ func GetModelsOfAIProjects(project string, limit int) ([]string, int) {
 			log.Logger.Warn("Parse failed when load peer collect info of ", iter.Key(), err)
 			continue
 		}
-		for _, item := range info.AIProjects {
-			if item.Project == project {
-				for _, model := range item.Models {
+		for pn, item := range info.AIProjects {
+			if pn == project {
+				for model := range item {
 					set.Add(model)
 				}
 			}
@@ -266,17 +266,16 @@ func GetModelsOfAIProjects(project string, limit int) ([]string, int) {
 	return models, 0
 }
 
-func GetPeersOfAIProjects(project, model string, limit int) ([]string, int) {
-	ids := make([]string, 0)
+func GetPeersOfAIProjects(project, model string, limit int) (map[string]int, int) {
+	ids := make(map[string]int)
 	if peersCollectDB == nil {
 		return ids, int(types.ErrCodeUnsupported)
 	}
 
-	set := types.NewSet()
 	iter := peersCollectDB.NewIterator(nil, nil)
 	var info PeerCollectInfo
 	timestamp := time.Now().Add(-time.Minute * 10)
-	for iter.Next() && set.Size() < limit {
+	for iter.Next() && len(ids) < limit {
 		if err := json.Unmarshal(iter.Value(), &info); err != nil {
 			log.Logger.Warn("Parse failed when load peer collect info of ", iter.Key(), err)
 			continue
@@ -284,14 +283,14 @@ func GetPeersOfAIProjects(project, model string, limit int) ([]string, int) {
 		if time.Unix(info.Timestamp, 0).Before(timestamp) {
 			continue
 		}
-		for _, item := range info.AIProjects {
-			if item.Project == project {
+		for pn, item := range info.AIProjects {
+			if pn == project {
 				if model == "" {
-					set.Add(string(iter.Key()))
+					ids[string(iter.Key())] = -1
 				} else {
-					for _, item2 := range item.Models {
-						if model == item2.Model {
-							set.Add(string(iter.Key()))
+					for mn, mi := range item {
+						if model == mn {
+							ids[string(iter.Key())] = mi.Idle
 							break
 						}
 					}
@@ -306,9 +305,6 @@ func GetPeersOfAIProjects(project, model string, limit int) ([]string, int) {
 		return ids, int(types.ErrCodeDatabase)
 	}
 
-	for _, item := range set.Elements() {
-		ids = append(ids, item.(string))
-	}
 	return ids, 0
 }
 

@@ -1,4 +1,4 @@
-package p2p
+package stream
 
 import (
 	"bufio"
@@ -315,14 +315,14 @@ func TestStreamChatModel(t *testing.T) {
 		Addrs: host1.Addrs(),
 	}
 
-	host2.SetStreamHandler(ChatProxyProtocol, ChatProxyStreamTestHandler)
+	host2.SetStreamHandler("/chat-test/0.0.1", ChatProxyStreamTestHandler)
 	if err := host2.Connect(context.Background(), pi1); err != nil {
 		t.Logf("host2 connect host1 failed %v", err)
 	} else {
 		t.Log("host2 connect host1 success")
 	}
 
-	stream, err := host1.NewStream(context.Background(), peer2, ChatProxyProtocol)
+	stream, err := host1.NewStream(context.Background(), peer2, "/chat-test/0.0.1")
 	if err != nil {
 		t.Fatalf("New libp2p stream failed %v", err)
 	}

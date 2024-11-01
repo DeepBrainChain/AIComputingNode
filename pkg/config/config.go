@@ -270,10 +270,6 @@ func (config Config) SaveConfig(configPath string) error {
 	return nil
 }
 
-func (config Config) GetAIProjectsOfNode() []types.AIProjectConfig {
-	return config.AIProjects
-}
-
 func LoadConfig(configPath string) (*Config, error) {
 	configFile, err := os.ReadFile(configPath)
 	if err != nil {

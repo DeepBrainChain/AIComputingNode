@@ -50,8 +50,8 @@ func (cg *ConnectionGater) InterceptSecured(dir network.Direction, p peer.ID, cm
 		if !nt.IsModelNode() {
 			return true
 		}
-		for _, ap := range info.AIProjects {
-			if ap.Project == config.GC.App.PeersCollect.ClientProject {
+		for pn := range info.AIProjects {
+			if pn == config.GC.App.PeersCollect.ClientProject {
 				return true
 			}
 		}

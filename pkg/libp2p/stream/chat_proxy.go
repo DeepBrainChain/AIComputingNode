@@ -1,4 +1,4 @@
-package p2p
+package stream
 
 import (
 	"bufio"
@@ -12,13 +12,12 @@ import (
 
 	"AIComputingNode/pkg/config"
 	"AIComputingNode/pkg/log"
+	"AIComputingNode/pkg/model"
+	"AIComputingNode/pkg/timer"
+	"AIComputingNode/pkg/types"
 
 	"github.com/libp2p/go-libp2p/core/network"
 )
-
-const ChatProxyProtocol = "/chat-proxy/0.0.1"
-
-var ChatProxyStreamTimeout = 3 * time.Minute
 
 var DefaultTransport http.RoundTripper = &http.Transport{
 	// Proxy: ProxyFromEnvironment,
@@ -82,7 +81,7 @@ func NewHttpClientTrace() *httptrace.ClientTrace {
 // to parse, make on behalf of the original node, and then write the response
 // on the stream, before closing it.
 func ChatProxyStreamHandler(stream network.Stream) {
-	stream.SetDeadline(time.Now().Add(ChatProxyStreamTimeout))
+	stream.SetDeadline(time.Now().Add(types.ChatProxyStreamTimeout))
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
@@ -158,9 +157,16 @@ func ChatProxyStreamHandler(stream network.Stream) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	pctx, cancel := context.WithTimeout(ctx, ChatProxyStreamTimeout)
+	pctx, cancel := context.WithTimeout(ctx, types.ChatProxyStreamTimeout)
 	defer cancel()
 	outreq := req.WithContext(httptrace.WithClientTrace(pctx, NewHttpClientTrace()))
+
+	model.IncRef(projectName, modelName)
+	timer.AIT.SendAIProjects()
+	defer func() {
+		model.DecRef(projectName, modelName)
+		timer.AIT.SendAIProjects()
+	}()
 
 	// We now make the request
 	log.Logger.Infof("Making request to %s", req.URL)

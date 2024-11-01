@@ -17,6 +17,7 @@ import (
 	"AIComputingNode/pkg/model"
 	"AIComputingNode/pkg/p2p"
 	"AIComputingNode/pkg/protocol"
+	"AIComputingNode/pkg/timer"
 	"AIComputingNode/pkg/types"
 
 	"github.com/gin-gonic/gin"
@@ -27,6 +28,15 @@ import (
 func handleChatCompletionRequest(ctx context.Context, publishChan chan<- []byte, req *types.ChatCompletionRequest, rsp *types.ChatCompletionResponse) (int, int, string) {
 	if req.NodeID == config.GC.Identity.PeerID {
 		modelAPI := config.GC.GetModelAPI(req.Project, req.Model)
+		if modelAPI == "" {
+			return http.StatusInternalServerError, int(types.ErrCodeModel), "Model API configuration is empty"
+		}
+		model.IncRef(req.Project, req.Model)
+		timer.AIT.SendAIProjects()
+		defer func() {
+			model.DecRef(req.Project, req.Model)
+			timer.AIT.SendAIProjects()
+		}()
 		*rsp = *model.ChatModel(modelAPI, req.ChatModelRequest)
 		log.Logger.Infof("Execute model %s result {code:%d, message:%s}", req.Model, rsp.Code, rsp.Message)
 		return http.StatusOK, rsp.Code, rsp.Message
@@ -163,7 +173,7 @@ func handleChatCompletionStreamRequest(ctx context.Context, w http.ResponseWrite
 		log.Logger.Errorf("Open stream with peer node failed: %v", err)
 		return http.StatusInternalServerError, int(types.ErrCodeStream), "Open stream with peer node failed"
 	}
-	stream.SetDeadline(time.Now().Add(p2p.ChatProxyStreamTimeout))
+	stream.SetDeadline(time.Now().Add(types.ChatProxyStreamTimeout))
 	defer stream.Close()
 	log.Logger.Infof("Create libp2p stream with %s success", req.NodeID)
 
@@ -319,19 +329,20 @@ func ChatCompletionProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 	}
 
 	peers := []types.AIProjectPeerInfo{}
-	for _, id := range ids {
+	for id, idle := range ids {
 		conn := p2p.Hio.Connectedness(id)
-		if conn != 1 {
+		if msg.Stream && conn != 1 {
 			continue
 		}
 		latency := p2p.Hio.Latency(id).Nanoseconds()
-		if latency == 0 {
+		if msg.Stream && latency == 0 {
 			continue
 		}
 		peers = append(peers, types.AIProjectPeerInfo{
 			NodeID:       id,
-			Connectivity: 1,
+			Connectivity: conn,
 			Latency:      latency,
+			Idle:         idle,
 		})
 	}
 	if len(peers) == 0 {
@@ -341,9 +352,7 @@ func ChatCompletionProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 		return
 	}
 
-	sort.Slice(peers, func(i, j int) bool {
-		return peers[i].Latency < peers[j].Latency
-	})
+	sort.Sort(types.AIProjectPeerOrder(peers))
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), requestProcessTimeout)
 	defer cancel()
@@ -399,6 +408,12 @@ func handleImageGenRequest(ctx context.Context, publishChan chan<- []byte, req t
 		if modelAPI == "" {
 			return http.StatusInternalServerError, int(types.ErrCodeModel), "Model API configuration is empty"
 		}
+		model.IncRef(req.Project, req.Model)
+		timer.AIT.SendAIProjects()
+		defer func() {
+			model.DecRef(req.Project, req.Model)
+			timer.AIT.SendAIProjects()
+		}()
 		*rsp = *model.ImageGenerationModel(modelAPI, req.ImageGenModelRequest)
 		log.Logger.Infof("Execute model %s result {code:%d, message:%s}", req.Model, rsp.Code, rsp.Message)
 		return http.StatusOK, rsp.Code, rsp.Message
@@ -413,7 +428,7 @@ func handleImageGenRequest(ctx context.Context, publishChan chan<- []byte, req t
 			log.Logger.Errorf("Open stream with peer node failed: %v", err)
 			return http.StatusInternalServerError, int(types.ErrCodeStream), "Open stream with peer node failed"
 		}
-		stream.SetDeadline(time.Now().Add(p2p.ChatProxyStreamTimeout))
+		stream.SetDeadline(time.Now().Add(types.ChatProxyStreamTimeout))
 		defer stream.Close()
 		log.Logger.Infof("Create libp2p stream with %s success", req.NodeID)
 
@@ -633,19 +648,20 @@ func ImageGenProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 	}
 
 	peers := []types.AIProjectPeerInfo{}
-	for _, id := range ids {
-		// conn := p2p.Hio.Connectedness(id)
-		// if conn != 1 {
-		// 	continue
-		// }
+	for id, idle := range ids {
+		conn := p2p.Hio.Connectedness(id)
+		if msg.ResponseFormat == "b64_json" && conn != 1 {
+			continue
+		}
 		latency := p2p.Hio.Latency(id).Nanoseconds()
-		if latency == 0 {
+		if msg.ResponseFormat == "b64_json" && latency == 0 {
 			continue
 		}
 		peers = append(peers, types.AIProjectPeerInfo{
 			NodeID:       id,
-			Connectivity: p2p.Hio.Connectedness(id),
+			Connectivity: conn,
 			Latency:      latency,
+			Idle:         idle,
 		})
 	}
 	if len(peers) == 0 {
@@ -655,16 +671,7 @@ func ImageGenProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 		return
 	}
 
-	sort.Slice(peers, func(i, j int) bool {
-		if (peers[i].Connectivity == 1 && peers[j].Connectivity == 1) ||
-			(peers[i].Connectivity != 1 && peers[j].Connectivity != 1) {
-			return peers[i].Latency < peers[j].Latency
-		}
-		if peers[i].Connectivity == 1 {
-			return true
-		}
-		return false
-	})
+	sort.Sort(types.AIProjectPeerOrder(peers))
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), requestProcessTimeout)
 	defer cancel()
