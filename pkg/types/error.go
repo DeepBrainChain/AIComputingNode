@@ -6,6 +6,7 @@ type ErrorCode int
 const (
 	ErrCodeParam ErrorCode = iota + 1001
 	ErrCodeParse
+	ErrCodeJson
 	ErrCodeProtobuf
 	ErrCodeTimeout
 	ErrCodeRendezvous
@@ -29,6 +30,7 @@ const (
 var errMsg = map[ErrorCode]string{
 	ErrCodeParam:       "Parameter error",
 	ErrCodeParse:       "Parsing error",
+	ErrCodeJson:        "Json error",
 	ErrCodeProtobuf:    "Protobuf serialization error",
 	ErrCodeTimeout:     "Processing timeout",
 	ErrCodeRendezvous:  "Rendezvous error",

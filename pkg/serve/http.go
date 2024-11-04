@@ -69,13 +69,7 @@ func handleRequest(publishChan chan<- []byte, req *protocol.Message, rsp any) (i
 	}
 
 	notifyChan := make(chan []byte, 1024)
-	requestItem := RequestItem{
-		ID:     requestID,
-		Notify: notifyChan,
-	}
-	QueueLock.Lock()
-	RequestQueue = append(RequestQueue, requestItem)
-	QueueLock.Unlock()
+	AddRequestItem(requestID, notifyChan)
 
 	publishChan <- reqBytes
 
@@ -92,14 +86,7 @@ func handleRequest(publishChan chan<- []byte, req *protocol.Message, rsp any) (i
 		}
 	case <-time.After(requestProcessTimeout):
 		log.Logger.Warnf("request id %s message type %s timeout", requestID, req.Type)
-		QueueLock.Lock()
-		for i, item := range RequestQueue {
-			if item.ID == requestID {
-				RequestQueue = append(RequestQueue[:i], RequestQueue[i+1:]...)
-				break
-			}
-		}
-		QueueLock.Unlock()
+		DeleteRequestItem(requestID)
 		close(notifyChan)
 		return http.StatusGatewayTimeout, int(types.ErrCodeTimeout), types.ErrCodeTimeout.String()
 	}

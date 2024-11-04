@@ -790,20 +790,22 @@ The following lists the common error codes and error messages defined by this pr
 | ---- | ---- |
 | 1001 | Parameter error |
 | 1002 | JSON and other parsing errors |
-| 1003 | Protobuf serialization/deserialization errors |
-| 1004 | Timeout |
-| 1005 | Rendezvous node discovery and routing errors |
-| 1006 | AI model error |
-| 1007 | IPFS upload/download errors |
-| 1008 | Buffer errors |
-| 1009 | Permission errors |
-| 1010 | Not supported/not implemented yet |
-| 1011 | Failed to obtain machine information |
-| 1012 | Encryption failed |
-| 1013 | Decryption failed |
-| 1014 | UUID error |
-| 1015 | Database error |
-| 1016 | Unable to find supported nodes or all nodes report errors when executing AI requests using project names |
-| 1017 | Stream error for text-to-text model |
+| 1003 | JSON serialization/deserialization errors |
+| 1004 | Protobuf serialization/deserialization errors |
+| 1005 | Timeout |
+| 1006 | Rendezvous node discovery and routing errors |
+| 1007 | AI model error |
+| 1008 | IPFS upload/download errors |
+| 1009 | Buffer errors |
+| 1010 | Permission errors |
+| 1011 | Not supported/not implemented yet |
+| 1012 | Failed to obtain machine information |
+| 1013 | Encryption failed |
+| 1014 | Decryption failed |
+| 1015 | UUID error |
+| 1016 | Database error |
+| 1017 | Unable to find supported nodes or all nodes report errors when executing AI requests using project names |
+| 1018 | Stream error for text-to-text model |
+| 1019 | Deprecated functions |
 | .... | Reserved for future expansion |
 | 5000 | Internal error |

@@ -79,57 +79,70 @@ func ReadFromTopic(ctx context.Context, sub *pubsub.Subscription, publishChan ch
 }
 
 func handleBroadcastMessage(ctx context.Context, msg *protocol.Message, publishChan chan<- []byte) {
-	msgBody, err := host.Decrypt(msg.Header.GetNodePubKey(), msg.Body)
-	if err != nil {
-		res := TransformErrorResponse(msg, int32(types.ErrCodeDecrypt), types.ErrCodeDecrypt.String())
-		resBytes, err := proto.Marshal(res)
+	existed := serve.ExistRequestItem(msg.Header.GetId())
+	var code int
+	var message string
+	if msg.GetResultCode() == 0 {
+		msgBody, err := host.Decrypt(msg.Header.GetNodePubKey(), msg.Body)
 		if err != nil {
-			log.Logger.Errorf("Marshal ErrCodeDecrypt Response %v", err)
+			code = int(types.ErrCodeDecrypt)
+			message = types.ErrCodeDecrypt.String()
+			log.Logger.Warnf("Decrypt %s message from %s failed %v", msg.Type.String(), msg.Header.GetNodeId(), err)
+		} else {
+			switch msg.Type {
+			case protocol.MessageType_PEER_IDENTITY:
+				code, message = handlePeerIdentityMessage(ctx, msg, msgBody, publishChan)
+			case protocol.MessageType_HOST_INFO:
+				code, message = handleHostInfoMessage(ctx, msg, msgBody, publishChan)
+			case protocol.MessageType_AI_PROJECT:
+				code, message = handleAIProjectMessage(ctx, msg, msgBody, publishChan)
+			case protocol.MessageType_CHAT_COMPLETION:
+				code, message = handleChatCompletionMessage(ctx, msg, msgBody, publishChan)
+			case protocol.MessageType_IMAGE_GENERATION:
+				code, message = handleImageGenerationMessage(ctx, msg, msgBody, publishChan)
+			default:
+				code = int(types.ErrCodeUnsupported)
+				message = MsgNotSupported
+				log.Logger.Warnf("Unknowned message type", msg.Type)
+			}
+			log.Logger.Infof("Handle %s message from %s result {code: %v, message: %v}",
+				msg.Type.String(), msg.Header.GetNodeId(), code, message)
 		}
-		publishChan <- resBytes
-		log.Logger.Warnf("Decrypt message body failed %v", err)
+	} else {
+		code = int(msg.GetResultCode())
+		message = msg.GetResultMessage()
+	}
+
+	if code == 0 {
 		return
 	}
-
-	switch msg.Type {
-	case protocol.MessageType_PEER_IDENTITY:
-		handlePeerIdentityMessage(ctx, msg, msgBody, publishChan)
-	case protocol.MessageType_HOST_INFO:
-		handleHostInfoMessage(ctx, msg, msgBody, publishChan)
-	case protocol.MessageType_AI_PROJECT:
-		handleAIProjectMessage(ctx, msg, msgBody, publishChan)
-	case protocol.MessageType_CHAT_COMPLETION:
-		handleChatCompletionMessage(ctx, msg, msgBody, publishChan)
-	case protocol.MessageType_IMAGE_GENERATION:
-		handleImageGenerationMessage(ctx, msg, msgBody, publishChan)
-	default:
-		res := TransformErrorResponse(msg, int32(types.ErrCodeUnsupported), MsgNotSupported)
-		resBytes, err := proto.Marshal(res)
-		if err != nil {
-			log.Logger.Errorf("Marshal Unsupported Response %v", err)
-			break
-		}
-		publishChan <- resBytes
-		log.Logger.Warnf("Unknowned message type", msg.Type)
-	}
-}
-
-func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) {
-	pi := &protocol.PeerIdentityBody{}
-	if msg.ResultCode != 0 {
-		res := types.PeerResponse{
-			BaseHttpResponse: types.BaseHttpResponse{
-				Code:    int(msg.ResultCode),
-				Message: msg.ResultMessage,
-			},
+	if existed {
+		res := types.BaseHttpResponse{
+			Code:    code,
+			Message: message,
 		}
 		notifyData, err := json.Marshal(res)
 		if err != nil {
-			log.Logger.Errorf("Marshal Identity Protocol %v", err)
+			log.Logger.Errorf("Marshal %s json %v", msg.Type.String(), err)
 			return
 		}
 		serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
-	} else if err := proto.Unmarshal(decBody, pi); err == nil {
+		log.Logger.Warnf("Send %s json response {code: %v, message: %v}", msg.Type.String(), code, message)
+	} else {
+		res := TransformErrorResponse(msg, int32(code), message)
+		resBytes, err := proto.Marshal(res)
+		if err != nil {
+			log.Logger.Errorf("Marshal %s proto %v", msg.Type.String(), err)
+			return
+		}
+		publishChan <- resBytes
+		log.Logger.Warnf("Send %s proto response {code: %v, message: %v}", msg.Type.String(), code, message)
+	}
+}
+
+func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) (int, string) {
+	pi := &protocol.PeerIdentityBody{}
+	if err := proto.Unmarshal(decBody, pi); err == nil {
 		if piReq := pi.GetReq(); piReq != nil {
 			idp := host.Hio.GetIdentifyProtocol()
 			piBody := &protocol.PeerIdentityBody{
@@ -145,7 +158,7 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 			resBody, err := proto.Marshal(piBody)
 			if err != nil {
 				log.Logger.Errorf("Marshal Identity Response Body %v", err)
-				return
+				return int(types.ErrCodeProtobuf), types.ErrCodeProtobuf.String()
 			}
 			resBody, err = host.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
 			res := protocol.Message{
@@ -166,10 +179,11 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 			resBytes, err := proto.Marshal(&res)
 			if err != nil {
 				log.Logger.Errorf("Marshal Identity Response %v", err)
-				return
+				return int(types.ErrCodeProtobuf), types.ErrCodeProtobuf.String()
 			}
 			publishChan <- resBytes
 			log.Logger.Info("Sending Peer Identity Response")
+			return 0, ""
 		} else if piRes := pi.GetRes(); piRes != nil {
 			res := types.PeerResponse{
 				BaseHttpResponse: types.BaseHttpResponse{
@@ -187,31 +201,23 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 			notifyData, err := json.Marshal(res)
 			if err != nil {
 				log.Logger.Errorf("Marshal Identity Protocol %v", err)
-				return
+				return int(types.ErrCodeJson), types.ErrCodeJson.String()
 			}
 			serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
+			return 0, ""
+		} else {
+			log.Logger.Error("No request or response found")
+			return int(types.ErrCodeProtobuf), "No request or response found"
 		}
 	} else {
 		log.Logger.Warn("Message type and body do not match")
+		return int(types.ErrCodeProtobuf), "Message type and body do not match"
 	}
 }
 
-func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) {
+func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) (int, string) {
 	ccb := &protocol.ChatCompletionBody{}
-	if msg.ResultCode != 0 {
-		res := types.ChatCompletionResponse{
-			BaseHttpResponse: types.BaseHttpResponse{
-				Code:    int(msg.ResultCode),
-				Message: msg.ResultMessage,
-			},
-		}
-		notifyData, err := json.Marshal(res)
-		if err != nil {
-			log.Logger.Errorf("Marshal Chat Completion Protocol %v", err)
-			return
-		}
-		serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
-	} else if err := proto.Unmarshal(decBody, ccb); err == nil {
+	if err := proto.Unmarshal(decBody, ccb); err == nil {
 		if chatReq := ccb.GetReq(); chatReq != nil {
 			code, message, chatRes := handleChatCompletionRequest(ctx, chatReq, msg.Header)
 			igBody := &protocol.ChatCompletionBody{
@@ -222,7 +228,7 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 			resBody, err := proto.Marshal(igBody)
 			if err != nil {
 				log.Logger.Errorf("Marshal Chat Completion Response Body %v", err)
-				return
+				return int(types.ErrCodeProtobuf), types.ErrCodeProtobuf.String()
 			}
 			resBody, err = host.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
 			res := protocol.Message{
@@ -244,10 +250,11 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 			resBytes, err := proto.Marshal(&res)
 			if err != nil {
 				log.Logger.Errorf("Marshal Chat Completion Response %v", err)
-				return
+				return int(types.ErrCodeProtobuf), types.ErrCodeProtobuf.String()
 			}
 			publishChan <- resBytes
 			log.Logger.Info("Sending Chat Completion Response")
+			return 0, ""
 		} else if chatRes := ccb.GetRes(); chatRes != nil {
 			res := types.ChatCompletionResponse{
 				BaseHttpResponse: types.BaseHttpResponse{
@@ -277,31 +284,23 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 			notifyData, err := json.Marshal(res)
 			if err != nil {
 				log.Logger.Errorf("Marshal Chat Completion Response %v", err)
-				return
+				return int(types.ErrCodeJson), types.ErrCodeJson.String()
 			}
 			serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
+			return 0, ""
+		} else {
+			log.Logger.Error("No request or response found")
+			return int(types.ErrCodeProtobuf), "No request or response found"
 		}
 	} else {
 		log.Logger.Warn("Message type and body do not match")
+		return int(types.ErrCodeProtobuf), "Message type and body do not match"
 	}
 }
 
-func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) {
+func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) (int, string) {
 	ig := &protocol.ImageGenerationBody{}
-	if msg.ResultCode != 0 {
-		res := types.ImageGenerationResponse{
-			BaseHttpResponse: types.BaseHttpResponse{
-				Code:    int(msg.ResultCode),
-				Message: msg.ResultMessage,
-			},
-		}
-		notifyData, err := json.Marshal(res)
-		if err != nil {
-			log.Logger.Errorf("Marshal Image Generation Protocol %v", err)
-			return
-		}
-		serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
-	} else if err := proto.Unmarshal(decBody, ig); err == nil {
+	if err := proto.Unmarshal(decBody, ig); err == nil {
 		if igReq := ig.GetReq(); igReq != nil {
 			code, message, igRes := handleImageGenerationRequest(ctx, igReq, msg.Header)
 			igBody := &protocol.ImageGenerationBody{
@@ -312,7 +311,7 @@ func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, de
 			resBody, err := proto.Marshal(igBody)
 			if err != nil {
 				log.Logger.Errorf("Marshal Image Generation Response Body %v", err)
-				return
+				return int(types.ErrCodeProtobuf), types.ErrCodeProtobuf.String()
 			}
 			resBody, err = host.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
 			res := protocol.Message{
@@ -334,10 +333,11 @@ func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, de
 			resBytes, err := proto.Marshal(&res)
 			if err != nil {
 				log.Logger.Errorf("Marshal Image Generation Response %v", err)
-				return
+				return int(types.ErrCodeProtobuf), types.ErrCodeProtobuf.String()
 			}
 			publishChan <- resBytes
 			log.Logger.Info("Sending Image Generation Response")
+			return 0, ""
 		} else if igRes := ig.GetRes(); igRes != nil {
 			res := types.ImageGenerationResponse{
 				BaseHttpResponse: types.BaseHttpResponse{
@@ -358,31 +358,23 @@ func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, de
 			notifyData, err := json.Marshal(res)
 			if err != nil {
 				log.Logger.Errorf("Marshal Image Generation Response %v", err)
-				return
+				return int(types.ErrCodeJson), types.ErrCodeJson.String()
 			}
 			serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
+			return 0, ""
+		} else {
+			log.Logger.Error("No request or response found")
+			return int(types.ErrCodeProtobuf), "No request or response found"
 		}
 	} else {
 		log.Logger.Warn("Message type and body do not match")
+		return int(types.ErrCodeProtobuf), "Message type and body do not match"
 	}
 }
 
-func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) {
+func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) (int, string) {
 	hi := &protocol.HostInfoBody{}
-	if msg.ResultCode != 0 {
-		res := types.HostInfoResponse{
-			BaseHttpResponse: types.BaseHttpResponse{
-				Code:    int(msg.ResultCode),
-				Message: msg.ResultMessage,
-			},
-		}
-		notifyData, err := json.Marshal(res)
-		if err != nil {
-			log.Logger.Errorf("Marshal Host Info Protocol %v", err)
-			return
-		}
-		serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
-	} else if err := proto.Unmarshal(decBody, hi); err == nil {
+	if err := proto.Unmarshal(decBody, hi); err == nil {
 		if hiReq := hi.GetReq(); hiReq != nil {
 			hostInfo, err := hardware.GetHostInfo()
 			var code int32 = 0
@@ -400,7 +392,7 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 			resBody, err := proto.Marshal(hiBody)
 			if err != nil {
 				log.Logger.Warnf("Marshal HostInfo Response Body %v", err)
-				return
+				return int(types.ErrCodeProtobuf), types.ErrCodeProtobuf.String()
 			}
 			resBody, err = host.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
 			res := protocol.Message{
@@ -422,10 +414,11 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 			resBytes, err := proto.Marshal(&res)
 			if err != nil {
 				log.Logger.Errorf("Marshal HostInfo Response %v", err)
-				return
+				return int(types.ErrCodeProtobuf), types.ErrCodeProtobuf.String()
 			}
 			publishChan <- resBytes
 			log.Logger.Info("Sending HostInfo Response")
+			return 0, ""
 		} else if hiRes := hi.GetRes(); hiRes != nil {
 			res := types.HostInfoResponse{
 				BaseHttpResponse: types.BaseHttpResponse{
@@ -437,31 +430,23 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 			notifyData, err := json.Marshal(res)
 			if err != nil {
 				log.Logger.Errorf("Marshal HostInfo Protocol %v", err)
-				return
+				return int(types.ErrCodeJson), types.ErrCodeJson.String()
 			}
 			serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
+			return 0, ""
+		} else {
+			log.Logger.Error("No request or response found")
+			return int(types.ErrCodeProtobuf), "No request or response found"
 		}
 	} else {
 		log.Logger.Warn("Message type and body do not match")
+		return int(types.ErrCodeProtobuf), "Message type and body do not match"
 	}
 }
 
-func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) {
+func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) (int, string) {
 	aip := &protocol.AIProjectBody{}
-	if msg.ResultCode != 0 {
-		res := types.AIProjectListResponse{
-			BaseHttpResponse: types.BaseHttpResponse{
-				Code:    int(msg.ResultCode),
-				Message: msg.ResultMessage,
-			},
-		}
-		notifyData, err := json.Marshal(res)
-		if err != nil {
-			log.Logger.Errorf("Marshal AI Project Protocol %v", err)
-			return
-		}
-		serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
-	} else if err := proto.Unmarshal(decBody, aip); err == nil {
+	if err := proto.Unmarshal(decBody, aip); err == nil {
 		if aiReq := aip.GetReq(); aiReq != nil {
 			projects := model.GetAIProjects()
 			aiBody := &protocol.AIProjectBody{
@@ -472,7 +457,7 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 			resBody, err := proto.Marshal(aiBody)
 			if err != nil {
 				log.Logger.Warnf("Marshal AI Project Response Body %v", err)
-				return
+				return int(types.ErrCodeProtobuf), types.ErrCodeProtobuf.String()
 			}
 			resBody, err = host.Encrypt(ctx, msg.Header.GetNodeId(), resBody)
 			res := protocol.Message{
@@ -494,10 +479,11 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 			resBytes, err := proto.Marshal(&res)
 			if err != nil {
 				log.Logger.Errorf("Marshal AI Project Response %v", err)
-				return
+				return int(types.ErrCodeProtobuf), types.ErrCodeProtobuf.String()
 			}
 			publishChan <- resBytes
 			log.Logger.Info("Sending AI Project Response")
+			return 0, ""
 		} else if aiRes := aip.GetRes(); aiRes != nil {
 			res := types.AIProjectListResponse{
 				BaseHttpResponse: types.BaseHttpResponse{
@@ -509,12 +495,17 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 			notifyData, err := json.Marshal(res)
 			if err != nil {
 				log.Logger.Errorf("Marshal AI Project Protocol %v", err)
-				return
+				return int(types.ErrCodeJson), types.ErrCodeJson.String()
 			}
 			serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
+			return 0, ""
+		} else {
+			log.Logger.Error("No request or response found")
+			return int(types.ErrCodeProtobuf), "No request or response found"
 		}
 	} else {
 		log.Logger.Warn("Message type and body do not match")
+		return int(types.ErrCodeProtobuf), "Message type and body do not match"
 	}
 }
 
