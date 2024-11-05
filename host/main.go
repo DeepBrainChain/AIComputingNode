@@ -51,11 +51,6 @@ var version string
 
 const ProtocolVersion string = "aicn/0.0.1"
 
-type connectionResult struct {
-	IsPublic bool // Is it a public network node?
-	Success  bool // Is the connection successful?
-}
-
 func main() {
 	configPath := flag.String("config", "", "run using the configuration file")
 	versionFlag := flag.Bool("version", false, "show version number and exit")
@@ -133,6 +128,9 @@ func main() {
 	if err != nil {
 		log.Logger.Fatalf("Parse bootstrap: %v", err)
 	}
+	if len(DefaultBootstrapPeers) < 1 {
+		log.Logger.Fatal("Not enough bootstrap peers")
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -205,6 +203,7 @@ func main() {
 			if cfg.Routing.ProtocolPrefix != "" {
 				dhtOpts = append(dhtOpts, dht.ProtocolPrefix(protocol.ID(cfg.Routing.ProtocolPrefix)))
 			}
+			dhtOpts = append(dhtOpts, dht.BootstrapPeers(DefaultBootstrapPeers...))
 			kadDHT, err = dht.New(p2pCtx, h, dhtOpts...)
 			return kadDHT, err
 		}))
@@ -301,64 +300,59 @@ func main() {
 
 	// Let's connect to the bootstrap nodes first. They will tell us about the
 	// other nodes in the network.
+	errs := make(chan error, len(DefaultBootstrapPeers))
 	var wg sync.WaitGroup
-	var connectionResults sync.Map
+	for _, peerinfo := range DefaultBootstrapPeers {
+		wg.Add(1)
+		go func(pi peer.AddrInfo) {
+			defer wg.Done()
+
+			h.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
+			if err := h.Connect(p2pCtx, pi); err != nil {
+				log.Logger.Warnf("Connect bootstrap node %v : %v", pi, err)
+				errs <- err
+				return
+			}
+			log.Logger.Info("Connection established with bootstrap node:", pi)
+		}(peerinfo)
+	}
+	wg.Wait()
+
+	// our failure condition is when no connection attempt succeeded.
+	// So drain the errs channel, counting the results.
+	close(errs)
+	errCount := 0
+	for err = range errs {
+		if err != nil {
+			errCount++
+		}
+	}
+	if errCount == len(DefaultBootstrapPeers) {
+		log.Logger.Fatalf("Failed to bootstrap. %s", err)
+	}
+
 	for _, peerinfo := range PeersHistory {
 		wg.Add(1)
 		go func(pi peer.AddrInfo) {
 			defer wg.Done()
-			ispub := host.IsPublicNode(pi)
-			result := connectionResult{
-				IsPublic: ispub,
+			if h.Network().Connectedness(pi.ID) == network.Connected {
+				return
 			}
+			ispub := host.IsPublicNode(pi)
 			if ispub {
 				h.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
 			}
 			if err := h.Connect(p2pCtx, pi); err != nil {
 				log.Logger.Warnf("Connect history node %v : %v", pi, err)
-				result.Success = false
-			} else {
-				log.Logger.Info("Connection established with history node:", pi)
-				result.Success = true
+				db.PeerConnectFailed(pi.ID.String())
+				return
 			}
-			connectionResults.Store(pi.ID, result)
+			log.Logger.Info("Connection established with history node:", pi)
 		}(peerinfo)
 	}
 	wg.Wait()
 
-	publishConns := 0
-	connectionResults.Range(func(key, value any) bool {
-		pi := key.(peer.ID)
-		result := value.(connectionResult)
-		if !result.Success {
-			db.PeerConnectFailed(pi.String())
-		}
-		if result.IsPublic && result.Success {
-			publishConns++
-		}
-		return true
-	})
-
-	if publishConns < 4 {
-		for _, peerinfo := range DefaultBootstrapPeers {
-			wg.Add(1)
-			go func(pi peer.AddrInfo) {
-				defer wg.Done()
-				if h.Network().Connectedness(pi.ID) != network.Connected {
-					h.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
-					if err := h.Connect(p2pCtx, pi); err != nil {
-						log.Logger.Warnf("Connect bootstrap node %v : %v", pi, err)
-					} else {
-						log.Logger.Info("Connection established with bootstrap node:", pi)
-					}
-				}
-			}(peerinfo)
-		}
-		wg.Wait()
-	}
-
-	err = kadDHT.Bootstrap(p2pCtx)
-	if err != nil {
+	if err := kadDHT.Bootstrap(p2pCtx); err != nil {
 		log.Logger.Fatalf("Bootstrap the host: %v", err)
 	}
 
