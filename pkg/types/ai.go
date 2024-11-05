@@ -4,6 +4,13 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"time"
+)
+
+var (
+	OrdinaryRequestTimeout        = 2 * time.Minute
+	ChatCompletionRequestTimeout  = 3 * time.Minute
+	ImageGenerationRequestTimeout = 5 * time.Minute
 )
 
 type AIProjectConfig struct {

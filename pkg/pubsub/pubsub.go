@@ -531,7 +531,7 @@ func TransformErrorResponse(msg *protocol.Message, code int32, message string) *
 func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompletionRequest, reqHeader *protocol.MessageHeader) (int, string, *protocol.ChatCompletionResponse) {
 	response := &protocol.ChatCompletionResponse{}
 
-	modelAPI := config.GC.GetModelAPI(req.GetProject(), req.GetModel())
+	modelAPI, _ := config.GC.GetModelAPI(req.GetProject(), req.GetModel())
 	if modelAPI == "" {
 		return int(types.ErrCodeModel), "Model API configuration is empty", response
 	}
@@ -603,7 +603,7 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenerationRequest, reqHeader *protocol.MessageHeader) (int, string, *protocol.ImageGenerationResponse) {
 	response := &protocol.ImageGenerationResponse{}
 
-	modelAPI := config.GC.GetModelAPI(req.GetProject(), req.GetModel())
+	modelAPI, _ := config.GC.GetModelAPI(req.GetProject(), req.GetModel())
 	if modelAPI == "" {
 		return int(types.ErrCodeModel), "Model API configuration is empty", response
 	}

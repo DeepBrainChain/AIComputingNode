@@ -241,20 +241,20 @@ func (config AppPeersCollectConfig) Validate() error {
 	return nil
 }
 
-func (config Config) GetModelAPI(projectName, modelName string) string {
+func (config Config) GetModelAPI(projectName, modelName string) (string, int) {
 	if projectName == "" || modelName == "" {
-		return ""
+		return "", -1
 	}
 	for _, project := range config.AIProjects {
 		if project.Project == projectName {
 			for _, model := range project.Models {
 				if model.Model == modelName {
-					return model.API
+					return model.API, model.Type
 				}
 			}
 		}
 	}
-	return ""
+	return "", -1
 }
 
 func (config Config) SaveConfig(configPath string) error {

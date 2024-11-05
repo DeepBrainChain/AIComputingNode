@@ -458,11 +458,11 @@ func main() {
 		v0.GET("/debug/metrics/prometheus", gin.WrapH(promhttp.Handler()))
 	}
 	srv := &http.Server{
-		Addr:         cfg.API.Addr,
-		Handler:      router,
-		ReadTimeout:  20 * time.Second,
-		WriteTimeout: 150 * time.Second,
-		IdleTimeout:  120 * time.Second,
+		Addr:    cfg.API.Addr,
+		Handler: router,
+		// ReadTimeout:  120 * time.Second,
+		// WriteTimeout: 120 * time.Second,
+		// IdleTimeout:  120 * time.Second,
 	}
 
 	go ps.PublishToTopic(pubCtx, topic, publishChan)

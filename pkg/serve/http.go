@@ -30,8 +30,6 @@ type httpService struct {
 
 var httpServer *http.Server
 
-var requestProcessTimeout = 2 * time.Minute
-
 func httpStatus(code types.ErrorCode) int {
 	switch code {
 	case 0:
@@ -61,7 +59,7 @@ func PeersHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, rsp)
 }
 
-func handleRequest(publishChan chan<- []byte, req *protocol.Message, rsp any) (int, int, string) {
+func handleRequest(publishChan chan<- []byte, req *protocol.Message, rsp any, timeout time.Duration) (int, int, string) {
 	requestID := req.Header.Id
 	reqBytes, err := proto.Marshal(req)
 	if err != nil {
@@ -84,7 +82,7 @@ func handleRequest(publishChan chan<- []byte, req *protocol.Message, rsp any) (i
 		} else {
 			return http.StatusInternalServerError, int(types.ErrCodeInternal), "pubsub channel error"
 		}
-	case <-time.After(requestProcessTimeout):
+	case <-time.After(timeout):
 		log.Logger.Warnf("request id %s message type %s timeout", requestID, req.Type)
 		DeleteRequestItem(requestID)
 		close(notifyChan)
@@ -159,7 +157,7 @@ func PeerHandler(c *gin.Context, publishChan chan<- []byte) {
 	if err == nil {
 		req.Header.NodePubKey, _ = host.MarshalPubKeyFromPrivKey(host.Hio.PrivKey)
 	}
-	status, code, message := handleRequest(publishChan, req, &rsp)
+	status, code, message := handleRequest(publishChan, req, &rsp, types.OrdinaryRequestTimeout)
 	if code != 0 {
 		c.JSON(status, types.BaseHttpResponse{
 			Code:    code,
@@ -242,7 +240,7 @@ func HostInfoHandler(c *gin.Context, publishChan chan<- []byte) {
 	if err == nil {
 		req.Header.NodePubKey, _ = host.MarshalPubKeyFromPrivKey(host.Hio.PrivKey)
 	}
-	status, code, message := handleRequest(publishChan, req, &rsp)
+	status, code, message := handleRequest(publishChan, req, &rsp, types.OrdinaryRequestTimeout)
 	if code != 0 {
 		c.JSON(status, types.BaseHttpResponse{
 			Code:    code,
@@ -521,7 +519,7 @@ func GetAIProjectOfNodeHandler(c *gin.Context, publishChan chan<- []byte) {
 	if err == nil {
 		req.Header.NodePubKey, _ = host.MarshalPubKeyFromPrivKey(host.Hio.PrivKey)
 	}
-	status, code, message := handleRequest(publishChan, req, &rsp)
+	status, code, message := handleRequest(publishChan, req, &rsp, types.OrdinaryRequestTimeout)
 	if code != 0 {
 		c.JSON(status, types.BaseHttpResponse{
 			Code:    code,
@@ -672,9 +670,9 @@ func GetPeersOfAIProjectHandler(c *gin.Context) {
 // 	httpServer = &http.Server{
 // 		Addr:         config.GC.API.Addr,
 // 		Handler:      mux,
-// 		ReadTimeout:  20 * time.Second,
-// 		WriteTimeout: 150 * time.Second,
-// 		IdleTimeout:  150 * time.Second,
+// 		ReadTimeout:  120 * time.Second,
+// 		WriteTimeout: 120 * time.Second,
+// 		IdleTimeout:  120 * time.Second,
 // 	}
 // 	go func() {
 // 		log.Logger.Info("HTTP server is running on http://", httpServer.Addr)

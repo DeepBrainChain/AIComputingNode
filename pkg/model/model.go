@@ -38,7 +38,10 @@ func ChatModel(api string, chatReq types.ChatModelRequest) *types.ChatCompletion
 		result.Message = "Marshal model request error"
 		return result
 	}
-	resp, err := http.Post(
+	client := &http.Client{
+		Timeout: types.ChatCompletionRequestTimeout,
+	}
+	resp, err := client.Post(
 		api,
 		"application/json",
 		bytes.NewBuffer(jsonData),
@@ -86,7 +89,10 @@ func ImageGenerationModel(api string, req types.ImageGenModelRequest) *types.Ima
 		result.Message = "Marshal model request error"
 		return result
 	}
-	resp, err := http.Post(
+	client := &http.Client{
+		Timeout: types.ImageGenerationRequestTimeout,
+	}
+	resp, err := client.Post(
 		api,
 		"application/json",
 		bytes.NewBuffer(jsonData),

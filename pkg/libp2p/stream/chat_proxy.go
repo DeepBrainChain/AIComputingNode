@@ -81,7 +81,6 @@ func NewHttpClientTrace() *httptrace.ClientTrace {
 // to parse, make on behalf of the original node, and then write the response
 // on the stream, before closing it.
 func ChatProxyStreamHandler(stream network.Stream) {
-	stream.SetDeadline(time.Now().Add(types.ChatProxyStreamTimeout))
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
@@ -133,7 +132,7 @@ func ChatProxyStreamHandler(stream network.Stream) {
 	queryValues := req.URL.Query()
 	projectName := queryValues.Get("project")
 	modelName := queryValues.Get("model")
-	modelUrl := config.GC.GetModelAPI(projectName, modelName)
+	modelUrl, modelType := config.GC.GetModelAPI(projectName, modelName)
 	if modelUrl == "" {
 		stream.Reset()
 		log.Logger.Errorf("Get model api interface failed: %v", err)
@@ -157,9 +156,15 @@ func ChatProxyStreamHandler(stream network.Stream) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	pctx, cancel := context.WithTimeout(ctx, types.ChatProxyStreamTimeout)
+	timeout := types.ChatCompletionRequestTimeout
+	if modelType == 1 {
+		timeout = types.ImageGenerationRequestTimeout
+	}
+	pctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	outreq := req.WithContext(httptrace.WithClientTrace(pctx, NewHttpClientTrace()))
+
+	stream.SetDeadline(time.Now().Add(timeout))
 
 	model.IncRef(projectName, modelName)
 	timer.AIT.SendAIProjects()

@@ -27,7 +27,7 @@ import (
 
 func handleChatCompletionRequest(ctx context.Context, publishChan chan<- []byte, req *types.ChatCompletionRequest, rsp *types.ChatCompletionResponse) (int, int, string) {
 	if req.NodeID == config.GC.Identity.PeerID {
-		modelAPI := config.GC.GetModelAPI(req.Project, req.Model)
+		modelAPI, _ := config.GC.GetModelAPI(req.Project, req.Model)
 		if modelAPI == "" {
 			return http.StatusInternalServerError, int(types.ErrCodeModel), "Model API configuration is empty"
 		}
@@ -94,12 +94,12 @@ func handleChatCompletionRequest(ctx context.Context, publishChan chan<- []byte,
 		ResultCode: 0,
 	}
 	msg.Header.NodePubKey, _ = host.MarshalPubKeyFromPrivKey(host.Hio.PrivKey)
-	return handleRequest(publishChan, msg, rsp)
+	return handleRequest(publishChan, msg, rsp, types.ChatCompletionRequestTimeout)
 }
 
 func handleChatCompletionStreamRequest(ctx context.Context, w http.ResponseWriter, req *types.ChatCompletionRequest, rsp *types.ChatCompletionResponse) (int, int, string) {
 	if req.NodeID == config.GC.Identity.PeerID {
-		modelAPI := config.GC.GetModelAPI(req.Project, req.Model)
+		modelAPI, _ := config.GC.GetModelAPI(req.Project, req.Model)
 		log.Logger.Info("Received chat completion stream request from the node itself")
 		if modelAPI == "" {
 			return http.StatusInternalServerError, int(types.ErrCodeModel), "Model API configuration is empty"
@@ -166,16 +166,6 @@ func handleChatCompletionStreamRequest(ctx context.Context, w http.ResponseWrite
 	}
 
 	log.Logger.Info("Received chat completion stream request")
-	stream, err := host.Hio.NewStream(ctx, req.NodeID)
-	if err != nil {
-		// rsp.Code = int(types.ErrCodeStream)
-		// rsp.Message = "Open stream with peer node failed"
-		log.Logger.Errorf("Open stream with peer node failed: %v", err)
-		return http.StatusInternalServerError, int(types.ErrCodeStream), "Open stream with peer node failed"
-	}
-	stream.SetDeadline(time.Now().Add(types.ChatProxyStreamTimeout))
-	defer stream.Close()
-	log.Logger.Infof("Create libp2p stream with %s success", req.NodeID)
 
 	jsonData, err := json.Marshal(req.ChatModelRequest)
 	if err != nil {
@@ -193,10 +183,22 @@ func handleChatCompletionStreamRequest(ctx context.Context, w http.ResponseWrite
 	}
 
 	hreq.Header.Set("Content-Type", "application/json")
+
 	queryValues := hreq.URL.Query()
 	queryValues.Add("project", req.Project)
 	queryValues.Add("model", req.Model)
 	hreq.URL.RawQuery = queryValues.Encode()
+
+	stream, err := host.Hio.NewStream(ctx, req.NodeID)
+	if err != nil {
+		// rsp.Code = int(types.ErrCodeStream)
+		// rsp.Message = "Open stream with peer node failed"
+		log.Logger.Errorf("Open stream with peer node failed: %v", err)
+		return http.StatusInternalServerError, int(types.ErrCodeStream), "Open stream with peer node failed"
+	}
+	stream.SetDeadline(time.Now().Add(types.ChatCompletionRequestTimeout))
+	defer stream.Close()
+	log.Logger.Infof("Create libp2p stream with %s success", req.NodeID)
 
 	err = hreq.Write(stream)
 	if err != nil {
@@ -206,8 +208,8 @@ func handleChatCompletionStreamRequest(ctx context.Context, w http.ResponseWrite
 		log.Logger.Errorf("Write chat stream failed: %v", err)
 		return http.StatusInternalServerError, int(types.ErrCodeStream), "Write chat stream failed"
 	}
+	log.Logger.Info("Write chat request into libp2p stream success")
 
-	log.Logger.Info("Read the response that was send from dest peer")
 	buf := bufio.NewReader(stream)
 	resp, err := http.ReadResponse(buf, hreq)
 	if err != nil {
@@ -218,6 +220,7 @@ func handleChatCompletionStreamRequest(ctx context.Context, w http.ResponseWrite
 		return http.StatusInternalServerError, int(types.ErrCodeStream), "Read chat stream failed"
 	}
 	defer resp.Body.Close()
+	log.Logger.Info("Read chat response from libp2p stream success")
 
 	if resp.Header.Get("Content-Type") == "application/json" {
 		body, err := io.ReadAll(resp.Body)
@@ -235,7 +238,8 @@ func handleChatCompletionStreamRequest(ctx context.Context, w http.ResponseWrite
 			log.Logger.Errorf("Unmarshal model response json error: %v", err)
 			return http.StatusInternalServerError, int(types.ErrCodeStream), "Unmarshal model response json error"
 		}
-		stream.Reset()
+		// stream.Reset()
+		log.Logger.Infof("Read chat json response from libp2p stream {code: %v, message: %v}", rsp.Code, rsp.Message)
 		return http.StatusOK, rsp.Code, rsp.Message
 	}
 
@@ -274,10 +278,8 @@ func ChatCompletionHandler(c *gin.Context, publishChan chan<- []byte) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(c.Request.Context(), requestProcessTimeout)
-	defer cancel()
-	if msg.Stream {
-		status, code, message := handleChatCompletionStreamRequest(ctx, c.Writer, &msg, &rsp)
+	if !msg.Stream {
+		status, code, message := handleChatCompletionRequest(c.Request.Context(), publishChan, &msg, &rsp)
 		if code != 0 {
 			c.JSON(status, types.BaseHttpResponse{
 				Code:    code,
@@ -285,11 +287,15 @@ func ChatCompletionHandler(c *gin.Context, publishChan chan<- []byte) {
 			})
 		} else if rsp.Code != 0 {
 			c.JSON(http.StatusInternalServerError, rsp)
+		} else {
+			c.JSON(http.StatusOK, rsp)
 		}
 		return
 	}
 
-	status, code, message := handleChatCompletionRequest(ctx, publishChan, &msg, &rsp)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), types.ChatCompletionRequestTimeout)
+	defer cancel()
+	status, code, message := handleChatCompletionStreamRequest(ctx, c.Writer, &msg, &rsp)
 	if code != 0 {
 		c.JSON(status, types.BaseHttpResponse{
 			Code:    code,
@@ -297,8 +303,6 @@ func ChatCompletionHandler(c *gin.Context, publishChan chan<- []byte) {
 		})
 	} else if rsp.Code != 0 {
 		c.JSON(http.StatusInternalServerError, rsp)
-	} else {
-		c.JSON(http.StatusOK, rsp)
 	}
 }
 
@@ -354,8 +358,6 @@ func ChatCompletionProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 
 	sort.Sort(types.AIProjectPeerOrder(peers))
 
-	ctx, cancel := context.WithTimeout(c.Request.Context(), requestProcessTimeout)
-	defer cancel()
 	failed_count := 0
 	for _, peer := range peers {
 		if failed_count >= 3 {
@@ -367,6 +369,8 @@ func ChatCompletionProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 			ChatModelRequest: msg.ChatModelRequest,
 		}
 		if msg.Stream {
+			ctx, cancel := context.WithTimeout(c.Request.Context(), types.ChatCompletionRequestTimeout)
+			defer cancel()
 			status, code, message := handleChatCompletionStreamRequest(ctx, c.Writer, &chatReq, &rsp)
 			if code != 0 {
 				log.Logger.Warnf("Roundtrip chat completion proxy %v %v %v to %s in %d time", status, code, message, peer.NodeID, failed_count)
@@ -381,7 +385,7 @@ func ChatCompletionProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 				return
 			}
 		}
-		status, code, message := handleChatCompletionRequest(ctx, publishChan, &chatReq, &rsp)
+		status, code, message := handleChatCompletionRequest(c.Request.Context(), publishChan, &chatReq, &rsp)
 		if code != 0 {
 			log.Logger.Warnf("Roundtrip chat completion proxy %v %v %v to %s in %d time", status, code, message, peer.NodeID, failed_count)
 			failed_count += 1
@@ -404,7 +408,7 @@ func ChatCompletionProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 
 func handleImageGenRequest(ctx context.Context, publishChan chan<- []byte, req types.ImageGenerationRequest, rsp *types.ImageGenerationResponse) (int, int, string) {
 	if req.NodeID == config.GC.Identity.PeerID {
-		modelAPI := config.GC.GetModelAPI(req.Project, req.Model)
+		modelAPI, _ := config.GC.GetModelAPI(req.Project, req.Model)
 		if modelAPI == "" {
 			return http.StatusInternalServerError, int(types.ErrCodeModel), "Model API configuration is empty"
 		}
@@ -421,16 +425,8 @@ func handleImageGenRequest(ctx context.Context, publishChan chan<- []byte, req t
 
 	if req.ResponseFormat == "b64_json" {
 		log.Logger.Info("Received image gen b64_json request")
-		stream, err := host.Hio.NewStream(ctx, req.NodeID)
-		if err != nil {
-			// rsp.Code = int(types.ErrCodeStream)
-			// rsp.Message = "Open stream with peer node failed"
-			log.Logger.Errorf("Open stream with peer node failed: %v", err)
-			return http.StatusInternalServerError, int(types.ErrCodeStream), "Open stream with peer node failed"
-		}
-		stream.SetDeadline(time.Now().Add(types.ChatProxyStreamTimeout))
-		defer stream.Close()
-		log.Logger.Infof("Create libp2p stream with %s success", req.NodeID)
+		ctx, cancel := context.WithTimeout(ctx, types.ImageGenerationRequestTimeout)
+		defer cancel()
 
 		jsonData, err := json.Marshal(req.ImageGenModelRequest)
 		if err != nil {
@@ -448,10 +444,22 @@ func handleImageGenRequest(ctx context.Context, publishChan chan<- []byte, req t
 		}
 
 		hreq.Header.Set("Content-Type", "application/json")
+
 		queryValues := hreq.URL.Query()
 		queryValues.Add("project", req.Project)
 		queryValues.Add("model", req.Model)
 		hreq.URL.RawQuery = queryValues.Encode()
+
+		stream, err := host.Hio.NewStream(ctx, req.NodeID)
+		if err != nil {
+			// rsp.Code = int(types.ErrCodeStream)
+			// rsp.Message = "Open stream with peer node failed"
+			log.Logger.Errorf("Open stream with peer node failed: %v", err)
+			return http.StatusInternalServerError, int(types.ErrCodeStream), "Open stream with peer node failed"
+		}
+		stream.SetDeadline(time.Now().Add(types.ImageGenerationRequestTimeout))
+		defer stream.Close()
+		log.Logger.Infof("Create libp2p stream with %s success", req.NodeID)
 
 		err = hreq.Write(stream)
 		if err != nil {
@@ -585,7 +593,7 @@ func handleImageGenRequest(ctx context.Context, publishChan chan<- []byte, req t
 		ResultCode: 0,
 	}
 	msg.Header.NodePubKey, _ = host.MarshalPubKeyFromPrivKey(host.Hio.PrivKey)
-	return handleRequest(publishChan, msg, rsp)
+	return handleRequest(publishChan, msg, rsp, types.ImageGenerationRequestTimeout)
 }
 
 func ImageGenHandler(c *gin.Context, publishChan chan<- []byte) {
@@ -606,9 +614,7 @@ func ImageGenHandler(c *gin.Context, publishChan chan<- []byte) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(c.Request.Context(), requestProcessTimeout)
-	defer cancel()
-	status, code, message := handleImageGenRequest(ctx, publishChan, msg, &rsp)
+	status, code, message := handleImageGenRequest(c.Request.Context(), publishChan, msg, &rsp)
 	if code != 0 {
 		c.JSON(status, types.BaseHttpResponse{
 			Code:    code,
@@ -673,8 +679,6 @@ func ImageGenProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 
 	sort.Sort(types.AIProjectPeerOrder(peers))
 
-	ctx, cancel := context.WithTimeout(c.Request.Context(), requestProcessTimeout)
-	defer cancel()
 	failed_count := 0
 	for _, peer := range peers {
 		if failed_count >= 3 {
@@ -685,7 +689,7 @@ func ImageGenProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 			Project:              msg.Project,
 			ImageGenModelRequest: msg.ImageGenModelRequest,
 		}
-		status, code, message := handleImageGenRequest(ctx, publishChan, igReq, &rsp)
+		status, code, message := handleImageGenRequest(c.Request.Context(), publishChan, igReq, &rsp)
 		if code != 0 {
 			log.Logger.Warnf("Roundtrip image gen proxy %v %v %v to %s in %d time", status, code, message, peer.NodeID, failed_count)
 			failed_count += 1
