@@ -449,6 +449,14 @@ func main() {
 		v0.GET("/ai/projects/models", serve.GetModelsOfAIProjectHandler)
 		v0.GET("/ai/projects/peers", serve.GetPeersOfAIProjectHandler)
 
+		v0.GET("/bootstrap/list", serve.ListBootstrapHandler)
+		v0.POST("/bootstrap/add", func(ctx *gin.Context) {
+			serve.AddBootstrapHandler(ctx, *configPath)
+		})
+		v0.POST("/bootstrap/rm", func(ctx *gin.Context) {
+			serve.RemoveBootstrapHandler(ctx, *configPath)
+		})
+
 		v0.GET("/debug/metrics/prometheus", gin.WrapH(promhttp.Handler()))
 	}
 	srv := &http.Server{

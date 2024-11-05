@@ -13,6 +13,7 @@ import (
 	libp2phost "github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr/net"
@@ -114,6 +115,9 @@ func (hio *HostInfo) SwarmConnect(ctx context.Context, addr string) error {
 	if err != nil {
 		return err
 	}
+	if hio.Host.Network().Connectedness(pi.ID) == network.Connected {
+		return nil
+	}
 	if swrm, ok := hio.Host.Network().(*swarm.Swarm); ok {
 		swrm.Backoff().Clear(pi.ID)
 	}
@@ -140,6 +144,51 @@ func (hio *HostInfo) SwarmDisconnect(addr string) error {
 	if err := net.ClosePeer(pi.ID); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (hio *HostInfo) SwarmConnectBootstrap(ctx context.Context, addr string) error {
+	maddr, err := multiaddr.NewMultiaddr(addr)
+	if err != nil {
+		return err
+	}
+	pi, err := peer.AddrInfoFromP2pAddr(maddr)
+	if err != nil {
+		return err
+	}
+	if hio.Host.Network().Connectedness(pi.ID) == network.Connected {
+		hio.Host.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
+		return nil
+	}
+	if swrm, ok := hio.Host.Network().(*swarm.Swarm); ok {
+		swrm.Backoff().Clear(pi.ID)
+	}
+	if err := hio.Host.Connect(ctx, *pi); err != nil {
+		return err
+	}
+	hio.Host.ConnManager().TagPeer(pi.ID, connectionManagerTag, connectionManagerWeight)
+	hio.Host.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
+	return nil
+}
+
+func (hio *HostInfo) SwarmDisconnectBootstrap(addr string) error {
+	maddr, err := multiaddr.NewMultiaddr(addr)
+	if err != nil {
+		return err
+	}
+	pi, err := peer.AddrInfoFromP2pAddr(maddr)
+	if err != nil {
+		return err
+	}
+	net := hio.Host.Network()
+	if net.Connectedness(pi.ID) != network.Connected {
+		hio.Host.Peerstore().ClearAddrs(pi.ID)
+		return nil
+	}
+	if err := net.ClosePeer(pi.ID); err != nil {
+		return err
+	}
+	hio.Host.Peerstore().ClearAddrs(pi.ID)
 	return nil
 }
 

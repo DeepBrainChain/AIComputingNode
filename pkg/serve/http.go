@@ -628,6 +628,125 @@ func GetPeersOfAIProjectHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, rsp)
 }
 
+func ListBootstrapHandler(c *gin.Context) {
+	rsp := types.PeerListResponse{
+		Data: config.GC.Bootstrap,
+	}
+	c.JSON(http.StatusOK, rsp)
+}
+
+func AddBootstrapHandler(c *gin.Context, configPath string) {
+	rsp := types.SwarmConnectResponse{
+		Code:    0,
+		Message: "ok",
+	}
+
+	var req types.SwarmConnectRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		rsp.Code = int(types.ErrCodeParse)
+		rsp.Message = types.ErrCodeParse.String()
+		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		rsp.Code = int(types.ErrCodeParam)
+		rsp.Message = err.Error()
+		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 60*time.Second)
+	defer cancel()
+	if err := host.Hio.SwarmConnectBootstrap(ctx, req.NodeAddr); err != nil {
+		rsp.Code = int(types.ErrCodeInternal)
+		rsp.Message = err.Error()
+		c.JSON(http.StatusInternalServerError, rsp)
+		return
+	}
+
+	var find bool = false
+	for _, ps := range config.GC.Bootstrap {
+		if ps == req.NodeAddr {
+			find = true
+			break
+		}
+	}
+	if find {
+		c.JSON(http.StatusOK, rsp)
+		return
+	}
+
+	backup := make([]string, len(config.GC.Bootstrap))
+	copy(backup, config.GC.Bootstrap)
+
+	config.GC.Bootstrap = append(config.GC.Bootstrap, req.NodeAddr)
+
+	if err := config.GC.SaveConfig(configPath); err != nil {
+		rsp.Code = int(types.ErrCodeInternal)
+		rsp.Message = fmt.Sprintf("config save err %v", err)
+		c.JSON(http.StatusInternalServerError, rsp)
+		config.GC.Bootstrap = backup
+		return
+	}
+	c.JSON(http.StatusOK, rsp)
+}
+
+func RemoveBootstrapHandler(c *gin.Context, configPath string) {
+	rsp := types.SwarmConnectResponse{
+		Code:    0,
+		Message: "ok",
+	}
+
+	var req types.SwarmConnectRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		rsp.Code = int(types.ErrCodeParse)
+		rsp.Message = types.ErrCodeParse.String()
+		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		rsp.Code = int(types.ErrCodeParam)
+		rsp.Message = err.Error()
+		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
+	if err := host.Hio.SwarmDisconnectBootstrap(req.NodeAddr); err != nil {
+		rsp.Code = int(types.ErrCodeInternal)
+		rsp.Message = err.Error()
+		c.JSON(http.StatusInternalServerError, rsp)
+		return
+	}
+
+	var find int = -1
+	for index, ps := range config.GC.Bootstrap {
+		if ps == req.NodeAddr {
+			find = index
+			break
+		}
+	}
+	if find == -1 {
+		c.JSON(http.StatusOK, rsp)
+		return
+	}
+
+	backup := make([]string, len(config.GC.Bootstrap))
+	copy(backup, config.GC.Bootstrap)
+
+	config.GC.Bootstrap = append(config.GC.Bootstrap[:find], config.GC.Bootstrap[find+1:]...)
+
+	if err := config.GC.SaveConfig(configPath); err != nil {
+		rsp.Code = int(types.ErrCodeInternal)
+		rsp.Message = fmt.Sprintf("config save err %v", err)
+		c.JSON(http.StatusInternalServerError, rsp)
+		config.GC.Bootstrap = backup
+		return
+	}
+	c.JSON(http.StatusOK, rsp)
+}
+
 // func NewHttpServe(router *gin.Engine, pcn chan<- []byte, configFilePath string) {
 // 	hs := &httpService{
 // 		publishChan: pcn,
