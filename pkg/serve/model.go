@@ -358,52 +358,87 @@ func ChatCompletionProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 
 	sort.Sort(types.AIProjectPeerOrder(peers))
 
-	failed_count := 0
-	for _, peer := range peers {
-		if failed_count >= 3 {
-			break
-		}
-		chatReq := types.ChatCompletionRequest{
-			NodeID:           peer.NodeID,
-			Project:          msg.Project,
-			ChatModelRequest: msg.ChatModelRequest,
-		}
-		if msg.Stream {
-			ctx, cancel := context.WithTimeout(c.Request.Context(), types.ChatCompletionRequestTimeout)
-			defer cancel()
-			status, code, message := handleChatCompletionStreamRequest(ctx, c.Writer, &chatReq, &rsp)
-			if code != 0 {
-				log.Logger.Warnf("Roundtrip chat completion proxy %v %v %v to %s in %d time", status, code, message, peer.NodeID, failed_count)
-				failed_count += 1
-				continue
-			} else if rsp.Code != 0 {
-				log.Logger.Warnf("Roundtrip chat completion proxy %v %v %v to %s in %d time", status, rsp.Code, rsp.Message, peer.NodeID, failed_count)
-				failed_count += 1
-				continue
-			} else {
-				log.Logger.Infof("Handle chat completion proxy stream request to %s success in %d time", peer.NodeID, failed_count)
-				return
-			}
-		}
-		status, code, message := handleChatCompletionRequest(c.Request.Context(), publishChan, &chatReq, &rsp)
-		if code != 0 {
-			log.Logger.Warnf("Roundtrip chat completion proxy %v %v %v to %s in %d time", status, code, message, peer.NodeID, failed_count)
-			failed_count += 1
-			continue
-		} else if rsp.Code != 0 {
-			log.Logger.Warnf("Roundtrip chat completion proxy %v %v %v to %s in %d time", status, rsp.Code, rsp.Message, peer.NodeID, failed_count)
-			failed_count += 1
-			continue
-		} else {
-			c.JSON(http.StatusOK, rsp)
-			log.Logger.Infof("Handle chat completion proxy stream request to %s success in %d time", peer.NodeID, failed_count)
-			return
-		}
+	chatReq := types.ChatCompletionRequest{
+		NodeID:           peers[0].NodeID,
+		Project:          msg.Project,
+		ChatModelRequest: msg.ChatModelRequest,
 	}
 
-	rsp.Code = int(types.ErrCodeProxy)
-	rsp.Message = fmt.Sprintf("Failed %d times", failed_count)
-	c.JSON(http.StatusInternalServerError, rsp)
+	if !msg.Stream {
+		status, code, message := handleChatCompletionRequest(c.Request.Context(), publishChan, &chatReq, &rsp)
+		if code != 0 {
+			c.JSON(status, types.BaseHttpResponse{
+				Code:    code,
+				Message: message,
+			})
+		} else if rsp.Code != 0 {
+			c.JSON(http.StatusInternalServerError, rsp)
+		} else {
+			c.JSON(http.StatusOK, rsp)
+		}
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), types.ChatCompletionRequestTimeout)
+	defer cancel()
+	status, code, message := handleChatCompletionStreamRequest(ctx, c.Writer, &chatReq, &rsp)
+	if code != 0 {
+		c.JSON(status, types.BaseHttpResponse{
+			Code:    code,
+			Message: message,
+		})
+	} else if rsp.Code != 0 {
+		c.JSON(http.StatusInternalServerError, rsp)
+	}
+	/*
+	   failed_count := 0
+
+	   	for _, peer := range peers {
+	   		if failed_count >= 3 {
+	   			break
+	   		}
+	   		chatReq := types.ChatCompletionRequest{
+	   			NodeID:           peer.NodeID,
+	   			Project:          msg.Project,
+	   			ChatModelRequest: msg.ChatModelRequest,
+	   		}
+	   		if msg.Stream {
+	   			ctx, cancel := context.WithTimeout(c.Request.Context(), types.ChatCompletionRequestTimeout)
+	   			defer cancel()
+	   			status, code, message := handleChatCompletionStreamRequest(ctx, c.Writer, &chatReq, &rsp)
+	   			if code != 0 {
+	   				log.Logger.Warnf("Roundtrip chat completion proxy %v %v %v to %s in %d time", status, code, message, peer.NodeID, failed_count)
+	   				failed_count += 1
+	   				continue
+	   			} else if rsp.Code != 0 {
+	   				log.Logger.Warnf("Roundtrip chat completion proxy %v %v %v to %s in %d time", status, rsp.Code, rsp.Message, peer.NodeID, failed_count)
+	   				failed_count += 1
+	   				continue
+	   			} else {
+	   				log.Logger.Infof("Handle chat completion proxy stream request to %s success in %d time", peer.NodeID, failed_count)
+	   				return
+	   			}
+	   		}
+	   		status, code, message := handleChatCompletionRequest(c.Request.Context(), publishChan, &chatReq, &rsp)
+	   		if code != 0 {
+	   			log.Logger.Warnf("Roundtrip chat completion proxy %v %v %v to %s in %d time", status, code, message, peer.NodeID, failed_count)
+	   			failed_count += 1
+	   			continue
+	   		} else if rsp.Code != 0 {
+	   			log.Logger.Warnf("Roundtrip chat completion proxy %v %v %v to %s in %d time", status, rsp.Code, rsp.Message, peer.NodeID, failed_count)
+	   			failed_count += 1
+	   			continue
+	   		} else {
+	   			c.JSON(http.StatusOK, rsp)
+	   			log.Logger.Infof("Handle chat completion proxy stream request to %s success in %d time", peer.NodeID, failed_count)
+	   			return
+	   		}
+	   	}
+
+	   rsp.Code = int(types.ErrCodeProxy)
+	   rsp.Message = fmt.Sprintf("Failed %d times", failed_count)
+	   c.JSON(http.StatusInternalServerError, rsp)
+	*/
 }
 
 func handleImageGenRequest(ctx context.Context, publishChan chan<- []byte, req types.ImageGenerationRequest, rsp *types.ImageGenerationResponse) (int, int, string) {
@@ -679,33 +714,52 @@ func ImageGenProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 
 	sort.Sort(types.AIProjectPeerOrder(peers))
 
-	failed_count := 0
-	for _, peer := range peers {
-		if failed_count >= 3 {
-			break
-		}
-		igReq := types.ImageGenerationRequest{
-			NodeID:               peer.NodeID,
-			Project:              msg.Project,
-			ImageGenModelRequest: msg.ImageGenModelRequest,
-		}
-		status, code, message := handleImageGenRequest(c.Request.Context(), publishChan, igReq, &rsp)
-		if code != 0 {
-			log.Logger.Warnf("Roundtrip image gen proxy %v %v %v to %s in %d time", status, code, message, peer.NodeID, failed_count)
-			failed_count += 1
-			continue
-		} else if rsp.Code != 0 {
-			log.Logger.Warnf("Roundtrip image gen proxy %v %v to %s in %d time", rsp.Code, rsp.Message, peer.NodeID, failed_count)
-			failed_count += 1
-			continue
-		} else {
-			c.JSON(http.StatusOK, rsp)
-			log.Logger.Infof("Handle image gen proxy request to %s success in %d time", peer.NodeID, failed_count)
-			return
-		}
+	igReq := types.ImageGenerationRequest{
+		NodeID:               peers[0].NodeID,
+		Project:              msg.Project,
+		ImageGenModelRequest: msg.ImageGenModelRequest,
 	}
+	status, code, message := handleImageGenRequest(c.Request.Context(), publishChan, igReq, &rsp)
+	if code != 0 {
+		c.JSON(status, types.BaseHttpResponse{
+			Code:    code,
+			Message: message,
+		})
+	} else if rsp.Code != 0 {
+		c.JSON(http.StatusInternalServerError, rsp)
+	} else {
+		c.JSON(http.StatusOK, rsp)
+	}
+	/*
+	   failed_count := 0
 
-	rsp.Code = int(types.ErrCodeProxy)
-	rsp.Message = fmt.Sprintf("Failed %d times", failed_count)
-	c.JSON(http.StatusInternalServerError, rsp)
+	   	for _, peer := range peers {
+	   		if failed_count >= 3 {
+	   			break
+	   		}
+	   		igReq := types.ImageGenerationRequest{
+	   			NodeID:               peer.NodeID,
+	   			Project:              msg.Project,
+	   			ImageGenModelRequest: msg.ImageGenModelRequest,
+	   		}
+	   		status, code, message := handleImageGenRequest(c.Request.Context(), publishChan, igReq, &rsp)
+	   		if code != 0 {
+	   			log.Logger.Warnf("Roundtrip image gen proxy %v %v %v to %s in %d time", status, code, message, peer.NodeID, failed_count)
+	   			failed_count += 1
+	   			continue
+	   		} else if rsp.Code != 0 {
+	   			log.Logger.Warnf("Roundtrip image gen proxy %v %v to %s in %d time", rsp.Code, rsp.Message, peer.NodeID, failed_count)
+	   			failed_count += 1
+	   			continue
+	   		} else {
+	   			c.JSON(http.StatusOK, rsp)
+	   			log.Logger.Infof("Handle image gen proxy request to %s success in %d time", peer.NodeID, failed_count)
+	   			return
+	   		}
+	   	}
+
+	   rsp.Code = int(types.ErrCodeProxy)
+	   rsp.Message = fmt.Sprintf("Failed %d times", failed_count)
+	   c.JSON(http.StatusInternalServerError, rsp)
+	*/
 }
