@@ -43,6 +43,7 @@ type SwarmConfig struct {
 	RelayService         SwarmRelayServiceConfig `json:"RelayService"`
 	EnableHolePunching   bool                    `json:"EnableHolePunching"`
 	EnableAutoNATService bool                    `json:"EnableAutoNATService"`
+	DialTimeout          string                  `json:"DialTimeout"`
 }
 
 type SwarmRelayClientConfig struct {

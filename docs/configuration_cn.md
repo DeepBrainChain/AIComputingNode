@@ -75,7 +75,10 @@
     // 这会将节点配置为向对等点提供服务以确定其可达性状态。
     // 如果节点部署在有公网 IP 的服务器上，请启用它，否则请禁用它。
     // 此服务具有严格的速率限制，不会导致任何性能问题。
-    "EnableAutoNATService": true
+    "EnableAutoNATService": true,
+    // 拨打连接别的节点的超时时间，包括拨打原始网络连接、协议选择以及握手（如果适用）之间的时间。
+    // 可以设置为 "5s" "10s" "15s" 等值，默认为空(使用 libp2p 库的默认值)。
+    "DialTimeout": ""
   },
   // 发布和订阅配置
   "Pubsub": {
@@ -190,7 +193,8 @@
       "Enabled": false
     },
     "EnableHolePunching": true,
-    "EnableAutoNATService": true
+    "EnableAutoNATService": true,
+    "DialTimeout": ""
   },
   "Pubsub": {
     "Enabled": true,
@@ -264,7 +268,8 @@
       "Enabled": true
     },
     "EnableHolePunching": false,
-    "EnableAutoNATService": true
+    "EnableAutoNATService": true,
+    "DialTimeout": ""
   },
   "Pubsub": {
     "Enabled": true,

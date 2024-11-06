@@ -84,7 +84,11 @@ Although the list of AI projects supported by the node is also saved in this con
     // This configures the node to provide a service to peers for determining their reachability status.
     // If the node is deployed on a public server, please enable it, otherwise disable it.
     // This service is highly rate-limited and should not cause any performance issues.
-    "EnableAutoNATService": true
+    "EnableAutoNATService": true,
+    // The timeout for dialing another node, including the time between dialing the original network
+    // connection, protocol selection, and handshake (if applicable).
+    // Can be set to "5s" "10s" "15s" etc. Defaults to empty (use libp2p library defaults).
+    "DialTimeout": ""
   },
   // Publish and subscribe configuration
   "Pubsub": {
@@ -211,7 +215,8 @@ This example is used for the worker node without a public IP address.
       "Enabled": false
     },
     "EnableHolePunching": true,
-    "EnableAutoNATService": true
+    "EnableAutoNATService": true,
+    "DialTimeout": ""
   },
   "Pubsub": {
     "Enabled": true,
@@ -285,7 +290,8 @@ This example is used for the worker node without a public IP address.
       "Enabled": true
     },
     "EnableHolePunching": false,
-    "EnableAutoNATService": true
+    "EnableAutoNATService": true,
+    "DialTimeout": ""
   },
   "Pubsub": {
     "Enabled": true,

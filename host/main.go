@@ -226,6 +226,9 @@ func main() {
 	if cfg.Swarm.EnableHolePunching {
 		opts = append(opts, libp2p.EnableHolePunching())
 	}
+	if dialTimeout, err := time.ParseDuration(cfg.Swarm.DialTimeout); err == nil && dialTimeout != 0 {
+		opts = append(opts, libp2p.WithDialTimeout(dialTimeout))
+	}
 	h, err := libp2p.New(opts...)
 	if err != nil {
 		log.Logger.Fatalf("Create libp2p host: %v", err)
@@ -502,8 +505,12 @@ func main() {
 
 	p2pStopCancel()
 
-	kadDHT.Close()
-	h.Close()
+	if err := kadDHT.Close(); err != nil {
+		log.Logger.Errorf("Error closing kadDHT: %v", err)
+	}
+	if err := h.Close(); err != nil {
+		log.Logger.Errorf("Error closing host: %v", err)
+	}
 
 	log.Logger.Info("################################################################")
 	log.Logger.Info("#                          OVER                                #")
