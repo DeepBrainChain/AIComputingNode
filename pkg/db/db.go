@@ -208,8 +208,8 @@ func ListAIProjects(limit int) ([]string, int) {
 
 	set := types.NewSet()
 	iter := peersCollectDB.NewIterator(nil, nil)
-	var info PeerCollectInfo
 	for iter.Next() && set.Size() < limit {
+		var info PeerCollectInfo
 		if err := json.Unmarshal(iter.Value(), &info); err != nil {
 			log.Logger.Warn("Parse failed when load peer collect info of ", iter.Key(), err)
 			continue
@@ -239,8 +239,8 @@ func GetModelsOfAIProjects(project string, limit int) ([]string, int) {
 
 	set := types.NewSet()
 	iter := peersCollectDB.NewIterator(nil, nil)
-	var info PeerCollectInfo
 	for iter.Next() && set.Size() < limit {
+		var info PeerCollectInfo
 		if err := json.Unmarshal(iter.Value(), &info); err != nil {
 			log.Logger.Warn("Parse failed when load peer collect info of ", iter.Key(), err)
 			continue
@@ -273,9 +273,9 @@ func GetPeersOfAIProjects(project, model string, limit int) (map[string]int, int
 	}
 
 	iter := peersCollectDB.NewIterator(nil, nil)
-	var info PeerCollectInfo
 	timestamp := time.Now().Add(-time.Minute * 10)
 	for iter.Next() && len(ids) < limit {
+		var info PeerCollectInfo
 		if err := json.Unmarshal(iter.Value(), &info); err != nil {
 			log.Logger.Warn("Parse failed when load peer collect info of ", iter.Key(), err)
 			continue
@@ -315,9 +315,9 @@ func CleanExpiredPeerCollectInfo() {
 	}
 
 	iter := peersCollectDB.NewIterator(nil, nil)
-	var info PeerCollectInfo
 	timestamp := time.Now().Add(-time.Hour * 24)
 	for iter.Next() {
+		var info PeerCollectInfo
 		if err := json.Unmarshal(iter.Value(), &info); err != nil {
 			log.Logger.Warn("Parse failed when load peer collect info of ", iter.Key(), err)
 			continue
