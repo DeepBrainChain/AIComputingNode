@@ -1,10 +1,11 @@
 package main
 
 import (
-	"AIComputingNode/pkg/host"
 	"encoding/json"
 	"fmt"
 	"os"
+
+	"AIComputingNode/pkg/hardware"
 
 	"github.com/jaypipes/ghw"
 	psutil "github.com/shirou/gopsutil/v3/host"
@@ -54,7 +55,7 @@ func main() {
 		fmt.Printf(" %v\n", card)
 	}
 
-	hi, err := host.GetHostInfo()
+	hi, err := hardware.GetHostInfo()
 	if err != nil {
 		fmt.Printf("Error getting host info: %v", err)
 	}
