@@ -155,13 +155,19 @@ type AIProjectListResponse struct {
 	Data map[string]map[string]ModelInfo `json:"data"`
 }
 
+type GetAIProjectsRequest struct {
+	Number int `json:"number" form:"number"`
+}
+
 type GetModelsOfAIProjectRequest struct {
-	Project string `json:"project"`
+	Project string `json:"project" form:"project"`
+	Number  int    `json:"number" form:"number"`
 }
 
 type GetPeersOfAIProjectRequest struct {
-	Project string `json:"project"`
-	Model   string `json:"model"`
+	Project string `json:"project" form:"project"`
+	Model   string `json:"model" form:"model"`
+	Number  int    `json:"number" form:"number"`
 }
 
 type AIProjectPeerInfo struct {
@@ -346,9 +352,19 @@ func (req AIProjectListRequest) Validate() error {
 	return nil
 }
 
+func (req GetAIProjectsRequest) Validate() error {
+	if req.Number < 0 {
+		return errors.New("invalid number")
+	}
+	return nil
+}
+
 func (req GetModelsOfAIProjectRequest) Validate() error {
 	if req.Project == "" {
 		return errors.New("empty project")
+	}
+	if req.Number < 0 {
+		return errors.New("invalid number")
 	}
 	return nil
 }
@@ -356,6 +372,12 @@ func (req GetModelsOfAIProjectRequest) Validate() error {
 func (req GetPeersOfAIProjectRequest) Validate() error {
 	if req.Project == "" {
 		return errors.New("empty project")
+	}
+	if req.Model == "" {
+		return errors.New("empty model")
+	}
+	if req.Number < 0 {
+		return errors.New("invalid number")
 	}
 	return nil
 }

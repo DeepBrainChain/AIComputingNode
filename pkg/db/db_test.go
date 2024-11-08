@@ -26,14 +26,16 @@ func TestLevelDB(t *testing.T) {
 	data, err := connsDB.Get([]byte("16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF"), nil)
 	if err != nil {
 		t.Errorf("Level db get item failed %v", err)
+	} else {
+		t.Logf("Level db get item value %s", string(data))
 	}
-	t.Logf("Level db get item value %s", string(data))
 
 	none, err := connsDB.Get([]byte("1234567"), nil)
 	if err != nil {
 		t.Errorf("Level db get not existed item failed %v", err)
+	} else {
+		t.Logf("Level db get not existed item value %v", none)
 	}
-	t.Logf("Level db get not existed item value %v", none)
 
 	connsDB.Close()
 	os.RemoveAll("./conns.db")

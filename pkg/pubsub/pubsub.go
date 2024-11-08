@@ -61,8 +61,8 @@ func ReadFromTopic(ctx context.Context, sub *pubsub.Subscription, publishChan ch
 		}
 
 		if pmsg.Header.GetId() == "" && pmsg.Header.GetReceiver() == "" {
-			timer.AIT.HandleBroadcastMessage(ctx, pmsg)
 			log.Logger.Infof("Received heartbeat message type %s from %s", pmsg.Type, pmsg.Header.GetNodeId())
+			timer.AIT.HandleBroadcastMessage(ctx, pmsg)
 			continue
 		} else if pmsg.Header.GetNodeId() == config.GC.Identity.PeerID {
 			log.Logger.Infof("Received message type %s from the node itself", pmsg.Type)

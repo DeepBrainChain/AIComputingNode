@@ -82,7 +82,9 @@ func (service AITimer) HandleBroadcastMessage(ctx context.Context, msg *protocol
 			return
 		}
 		if aiRes := aip.GetRes(); aiRes != nil {
-			service.HandleAIProjectMessage(msg.Header.NodeId, types.ProtocolMessage2AIProject(aiRes), aiRes.NodeType)
+			service.HandleAIProjectMessage(msg.Header.GetNodeId(), types.ProtocolMessage2AIProject(aiRes), aiRes.NodeType)
+		} else {
+			log.Logger.Warn("No ai project response found")
 		}
 	default:
 		log.Logger.Warnf("Unsupported heartbeat message type", msg.Type)

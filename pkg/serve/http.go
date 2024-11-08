@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"AIComputingNode/pkg/config"
@@ -534,20 +533,9 @@ func GetAIProjectOfNodeHandler(c *gin.Context, publishChan chan<- []byte) {
 
 func ListAIProjectsHandler(c *gin.Context) {
 	rsp := types.PeerListResponse{}
-	rsp.Data, rsp.Code = db.ListAIProjects(100)
-	if rsp.Code != 0 {
-		rsp.Message = types.ErrorCode(rsp.Code).String()
-		c.JSON(http.StatusInternalServerError, rsp)
-		return
-	}
-	c.JSON(http.StatusOK, rsp)
-}
 
-func GetModelsOfAIProjectHandler(c *gin.Context) {
-	rsp := types.PeerListResponse{}
-
-	var req types.GetModelsOfAIProjectRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var req types.GetAIProjectsRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
 		c.JSON(http.StatusBadRequest, rsp)
@@ -561,7 +549,42 @@ func GetModelsOfAIProjectHandler(c *gin.Context) {
 		return
 	}
 
-	rsp.Data, rsp.Code = db.GetModelsOfAIProjects(req.Project, 100)
+	if req.Number == 0 {
+		req.Number = 100
+	}
+
+	rsp.Data, rsp.Code = db.ListAIProjects(req.Number)
+	if rsp.Code != 0 {
+		rsp.Message = types.ErrorCode(rsp.Code).String()
+		c.JSON(http.StatusInternalServerError, rsp)
+		return
+	}
+	c.JSON(http.StatusOK, rsp)
+}
+
+func GetModelsOfAIProjectHandler(c *gin.Context) {
+	rsp := types.PeerListResponse{}
+
+	var req types.GetModelsOfAIProjectRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		rsp.Code = int(types.ErrCodeParse)
+		rsp.Message = types.ErrCodeParse.String()
+		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		rsp.Code = int(types.ErrCodeParam)
+		rsp.Message = err.Error()
+		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
+	if req.Number == 0 {
+		req.Number = 100
+	}
+
+	rsp.Data, rsp.Code = db.GetModelsOfAIProjects(req.Project, req.Number)
 	if rsp.Code != 0 {
 		rsp.Message = types.ErrorCode(rsp.Code).String()
 		c.JSON(http.StatusInternalServerError, rsp)
@@ -580,7 +603,7 @@ func GetPeersOfAIProjectHandler(c *gin.Context) {
 	}
 
 	var req types.GetPeersOfAIProjectRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindQuery(&req); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
 		rsp.Message = types.ErrCodeParse.String()
 		c.JSON(http.StatusBadRequest, rsp)
@@ -594,23 +617,13 @@ func GetPeersOfAIProjectHandler(c *gin.Context) {
 		return
 	}
 
-	number := 20
-	if num, ok := c.GetQuery("number"); ok {
-		// num := c.Query("number")
-		if rnum, err := strconv.Atoi(num); err != nil || rnum <= 0 {
-			rsp.Code = int(types.ErrCodeParse)
-			rsp.Message = types.ErrCodeParse.String()
-			c.JSON(http.StatusBadRequest, rsp)
-			return
-		} else {
-			number = rnum
-		}
-		if number > 100 {
-			number = 100
-		}
+	if req.Number == 0 {
+		req.Number = 20
+	} else if req.Number > 100 {
+		req.Number = 100
 	}
 
-	ids, code := db.GetPeersOfAIProjects(req.Project, req.Model, number)
+	ids, code := db.GetPeersOfAIProjects(req.Project, req.Model, req.Number)
 	if code != 0 {
 		rsp.Code = code
 		rsp.Message = types.ErrorCode(code).String()
