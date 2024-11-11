@@ -68,15 +68,32 @@ func UpdateModel(project string, updateFunc func(interface{}) interface{}) {
 	}
 }
 
+// The external map uses the Load method to obtain a reference to the internal map, and the
+// concurrency safety of the internal map cannot be guaranteed unless both layers of maps use sync.Map.
+// Concurrent modification by multiple threads may cause a crash of "fatal error: concurrent map writes".
+
 // Increase Reference
 func IncRef(project, model string) {
 	UpdateModel(project, func(old interface{}) interface{} {
 		if models, ok := old.(map[string]types.ModelInfo); ok {
-			if mi, ok := models[model]; ok {
-				mi.Idle = mi.Idle + 1
-				models[model] = mi
-				return models
+			new := make(map[string]types.ModelInfo)
+			for key, value := range models {
+				if key == model {
+					new[key] = types.ModelInfo{
+						API:  value.API,
+						Type: value.Type,
+						Idle: value.Idle + 1,
+					}
+				} else {
+					new[key] = value
+				}
 			}
+			return new
+			// if mi, ok := models[model]; ok {
+			// 	mi.Idle = mi.Idle + 1
+			// 	models[model] = mi
+			// 	return models
+			// }
 		}
 		return nil
 	})
@@ -86,13 +103,30 @@ func IncRef(project, model string) {
 func DecRef(project, model string) {
 	UpdateModel(project, func(old interface{}) interface{} {
 		if models, ok := old.(map[string]types.ModelInfo); ok {
-			if mi, ok := models[model]; ok {
-				if mi.Idle > 0 {
-					mi.Idle = mi.Idle - 1
-					models[model] = mi
-					return models
+			new := make(map[string]types.ModelInfo)
+			for key, value := range models {
+				if key == model {
+					idle := value.Idle - 1
+					if idle < 0 {
+						idle = 0
+					}
+					new[key] = types.ModelInfo{
+						API:  value.API,
+						Type: value.Type,
+						Idle: idle,
+					}
+				} else {
+					new[key] = value
 				}
 			}
+			return new
+			// if mi, ok := models[model]; ok {
+			// 	if mi.Idle > 0 {
+			// 		mi.Idle = mi.Idle - 1
+			// 		models[model] = mi
+			// 		return models
+			// 	}
+			// }
 		}
 		return nil
 	})
