@@ -42,12 +42,9 @@ func TestSyncMap(t *testing.T) {
 	InitModels(pjt)
 
 	t.Log("Init models")
-	projects.Range(func(key, value any) bool {
-		project := key.(string)
-		models := value.(map[string]types.ModelInfo)
-		t.Log(project, models)
-		return true
-	})
+	for pn, models := range GetAIProjects() {
+		t.Log(pn, models)
+	}
 
 	IncRef("P1", "P1-M1")
 	IncRef("P1", "P1-M2")
@@ -57,32 +54,23 @@ func TestSyncMap(t *testing.T) {
 	IncRef("P2", "P2-M2")
 
 	t.Log("Increase reference")
-	projects.Range(func(key, value any) bool {
-		project := key.(string)
-		models := value.(map[string]types.ModelInfo)
-		t.Log(project, models)
-		return true
-	})
+	for pn, models := range GetAIProjects() {
+		t.Log(pn, models)
+	}
 
 	DecRef("P2", "P2-M1")
 
 	t.Log("Decrease reference")
-	projects.Range(func(key, value any) bool {
-		project := key.(string)
-		models := value.(map[string]types.ModelInfo)
-		t.Log(project, models)
-		return true
-	})
+	for pn, models := range GetAIProjects() {
+		t.Log(pn, models)
+	}
 
 	DecRef("P2", "P2-M1")
 
 	t.Log("Decrease reference")
-	projects.Range(func(key, value any) bool {
-		project := key.(string)
-		models := value.(map[string]types.ModelInfo)
-		t.Log(project, models)
-		return true
-	})
+	for pn, models := range GetAIProjects() {
+		t.Log(pn, models)
+	}
 
 	RegisterAIProject(types.AIProjectConfig{
 		Project: "P2",
@@ -106,12 +94,9 @@ func TestSyncMap(t *testing.T) {
 	})
 
 	t.Log("Register AI Project")
-	projects.Range(func(key, value any) bool {
-		project := key.(string)
-		models := value.(map[string]types.ModelInfo)
-		t.Log(project, models)
-		return true
-	})
+	for pn, models := range GetAIProjects() {
+		t.Log(pn, models)
+	}
 
 	RegisterAIProject(types.AIProjectConfig{
 		Project: "P2",
@@ -125,22 +110,16 @@ func TestSyncMap(t *testing.T) {
 	})
 
 	t.Log("Register AI Project again")
-	projects.Range(func(key, value any) bool {
-		project := key.(string)
-		models := value.(map[string]types.ModelInfo)
-		t.Log(project, models)
-		return true
-	})
+	for pn, models := range GetAIProjects() {
+		t.Log(pn, models)
+	}
 
 	UnregisterAIProject("P2")
 
 	t.Log("Unregister AI Project")
-	projects.Range(func(key, value any) bool {
-		project := key.(string)
-		models := value.(map[string]types.ModelInfo)
-		t.Log(project, models)
-		return true
-	})
+	for pn, models := range GetAIProjects() {
+		t.Log(pn, models)
+	}
 }
 
 func TestConcurrentMap(t *testing.T) {
@@ -179,12 +158,9 @@ func TestConcurrentMap(t *testing.T) {
 	InitModels(pjt)
 
 	t.Log("Init models")
-	projects.Range(func(key, value any) bool {
-		project := key.(string)
-		models := value.(map[string]types.ModelInfo)
-		t.Log(project, models)
-		return true
-	})
+	for pn, models := range GetAIProjects() {
+		t.Log(pn, models)
+	}
 
 	t.Log("Before concurrent goroutine")
 
@@ -238,8 +214,7 @@ func TestConcurrentMap(t *testing.T) {
 	// wg.Add(1)
 	// go func() {
 	// 	defer wg.Done()
-	// 	pjts := GetAIProjects()
-	// 	for pn, models := range pjts {
+	// 	for pn, models := range GetAIProjects() {
 	// 		t.Log(pn, models)
 	// 	}
 	// }()
@@ -247,10 +222,7 @@ func TestConcurrentMap(t *testing.T) {
 	wg.Wait()
 
 	t.Log("After concurrent goroutine")
-	projects.Range(func(key, value any) bool {
-		project := key.(string)
-		models := value.(map[string]types.ModelInfo)
-		t.Log(project, models)
-		return true
-	})
+	for pn, models := range GetAIProjects() {
+		t.Log(pn, models)
+	}
 }

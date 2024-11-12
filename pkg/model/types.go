@@ -6,6 +6,109 @@ import (
 	"AIComputingNode/pkg/types"
 )
 
+type ProjectMap struct {
+	mutex    sync.RWMutex
+	elements map[string]map[string]types.ModelInfo
+}
+
+var projects = ProjectMap{
+	mutex:    sync.RWMutex{},
+	elements: make(map[string]map[string]types.ModelInfo),
+}
+
+func InitModels(ms []types.AIProjectConfig) error {
+	for _, pc := range ms {
+		models := make(map[string]types.ModelInfo)
+		for _, model := range pc.Models {
+			models[model.Model] = types.ModelInfo{
+				API:  model.API,
+				Type: model.Type,
+				Idle: 0,
+			}
+		}
+		projects.elements[pc.Project] = models
+	}
+	return nil
+}
+
+func GetAIProjects() map[string]map[string]types.ModelInfo {
+	projects.mutex.RLock()
+	defer projects.mutex.RUnlock()
+	// Do not modify the returned value
+	// return projects.elements
+	res := make(map[string]map[string]types.ModelInfo)
+	for pn, models := range projects.elements {
+		ms := make(map[string]types.ModelInfo)
+		for mn, model := range models {
+			ms[mn] = model
+		}
+		res[pn] = ms
+	}
+	return res
+}
+
+func RegisterAIProject(pjt types.AIProjectConfig) {
+	projects.mutex.Lock()
+	defer projects.mutex.Unlock()
+
+	models := make(map[string]types.ModelInfo)
+	for _, model := range pjt.Models {
+		models[model.Model] = types.ModelInfo{
+			API:  model.API,
+			Type: model.Type,
+			Idle: 0,
+		}
+	}
+	if old, ok := projects.elements[pjt.Project]; ok {
+		for key, value := range old {
+			if mi, ok := models[key]; ok {
+				mi.Idle = value.Idle
+				models[key] = mi
+			}
+		}
+	}
+	projects.elements[pjt.Project] = models
+}
+
+func UnregisterAIProject(project string) {
+	projects.mutex.Lock()
+	defer projects.mutex.Unlock()
+	delete(projects.elements, project)
+}
+
+// Increase Reference
+func IncRef(project, model string) {
+	projects.mutex.Lock()
+	defer projects.mutex.Unlock()
+	if models, ok := projects.elements[project]; ok {
+		if mi, ok := models[model]; ok {
+			// mi.Idle = mi.Idle + 1
+			models[model] = types.ModelInfo{
+				API:  mi.API,
+				Type: mi.Type,
+				Idle: mi.Idle + 1,
+			}
+		}
+	}
+}
+
+// Decrease reference
+func DecRef(project, model string) {
+	projects.mutex.Lock()
+	defer projects.mutex.Unlock()
+	if models, ok := projects.elements[project]; ok {
+		if mi, ok := models[model]; ok && mi.Idle > 0 {
+			// mi.Idle = mi.Idle - 1
+			models[model] = types.ModelInfo{
+				API:  mi.API,
+				Type: mi.Type,
+				Idle: mi.Idle - 1,
+			}
+		}
+	}
+}
+
+/*
 var projects = sync.Map{}
 
 func InitModels(ms []types.AIProjectConfig) error {
@@ -131,3 +234,4 @@ func DecRef(project, model string) {
 		return nil
 	})
 }
+*/
