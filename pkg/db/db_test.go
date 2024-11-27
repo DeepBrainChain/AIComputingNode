@@ -1,8 +1,11 @@
 package db
 
 import (
+	"AIComputingNode/pkg/types"
+	"encoding/json"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestLevelDB(t *testing.T) {
@@ -41,4 +44,191 @@ func TestLevelDB(t *testing.T) {
 	os.RemoveAll("./conns.db")
 	modelsDB.Close()
 	os.RemoveAll("./models.db")
+}
+
+func TestGetPeersOfAIProject(t *testing.T) {
+	if err := InitDb(InitOptions{
+		Folder:             ".",
+		ConnsDBName:        "conns.db",
+		ModelsDBName:       "models.db",
+		EnablePeersCollect: true,
+	}); err != nil {
+		t.Fatal("Init db failed", err)
+	}
+
+	UpdatePeerCollect(
+		"16Uiu2HAkyKgcoYhNsTfrX3mq2wJiZAGnD4DrMdZZb8dbofZ3jrb8",
+		PeerCollectInfo{
+			AIProjects: map[string]map[string]types.ModelInfo{
+				"SuperImageAI": map[string]types.ModelInfo{
+					"superImage": types.ModelInfo{
+						API:  "http://127.0.0.1:1088/v1/images/generations",
+						Type: 1,
+						Idle: 0,
+					},
+				},
+			},
+			NodeType:  4,
+			Timestamp: time.Now().Unix(),
+		},
+	)
+	UpdatePeerCollect(
+		"16Uiu2HAm4szuwGhRmXTBs7F2anRo9y9cQrcfZH7RXwEsVa1GrXVd",
+		PeerCollectInfo{
+			AIProjects: map[string]map[string]types.ModelInfo{
+				"DecentralGPT": map[string]types.ModelInfo{
+					"Codestral-22B-v0.1": types.ModelInfo{
+						API:  "http://127.0.0.1:8100/v1/chat/completions",
+						Type: 0,
+						Idle: 0,
+					},
+				},
+			},
+			NodeType:  4,
+			Timestamp: time.Now().Unix(),
+		},
+	)
+	UpdatePeerCollect(
+		"16Uiu2HAmAZmg7WcW8jK6mkjFx6HBbc1HtPWFk88cjjDyvf6MYw8D",
+		PeerCollectInfo{
+			AIProjects: map[string]map[string]types.ModelInfo{
+				"DecentralGPT": map[string]types.ModelInfo{
+					"DeepSeek-Coder-V2": types.ModelInfo{
+						API:  "http://127.0.0.1:5042/v1/chat/completions",
+						Type: 0,
+						Idle: 0,
+					},
+					"Llama-3.1-Nemotron-70B": types.ModelInfo{
+						API:  "http://127.0.0.1:1042/v1/chat/completions",
+						Type: 0,
+						Idle: 0,
+					},
+					"NVLM-D-72B": types.ModelInfo{
+						API:  "http://127.0.0.1:3042/v1/chat/completions",
+						Type: 0,
+						Idle: 0,
+					},
+					"Qwen2.5-72B": types.ModelInfo{
+						API:  "http://127.0.0.1:4042/v1/chat/completions",
+						Type: 0,
+						Idle: 0,
+					},
+					"Qwen2.5-Coder-32B": types.ModelInfo{
+						API:  "http://127.0.0.1:6042/v1/chat/completions",
+						Type: 0,
+						Idle: 0,
+					},
+				},
+				"SuperImageAI": map[string]types.ModelInfo{
+					"FLUX.1-dev": types.ModelInfo{
+						API:  "http://127.0.0.1:2042/v1/images/generations",
+						Type: 1,
+						Idle: 0,
+					},
+				},
+			},
+			NodeType:  5,
+			Timestamp: time.Now().Unix(),
+		},
+	)
+	UpdatePeerCollect(
+		"16Uiu2HAmDBYxgdKxeCbmn8hYiqwK3xHR9533WDdEYmpEDQ259GTe",
+		PeerCollectInfo{
+			AIProjects: map[string]map[string]types.ModelInfo{},
+			NodeType:   0,
+			Timestamp:  time.Now().Unix(),
+		},
+	)
+	UpdatePeerCollect(
+		"16Uiu2HAmDR6u7WCPFnhJwx4P9FsXhtu9hdtnyhTC2BF8BGXw1ZiG",
+		PeerCollectInfo{
+			AIProjects: map[string]map[string]types.ModelInfo{},
+			NodeType:   0,
+			Timestamp:  time.Now().Unix(),
+		},
+	)
+	UpdatePeerCollect(
+		"16Uiu2HAmEav9vvFGZR4qLey63Khrc7Bqnu58ESDt2NHzWrZByntU",
+		PeerCollectInfo{
+			AIProjects: map[string]map[string]types.ModelInfo{
+				"DecentralGPT": map[string]types.ModelInfo{
+					"Llama-3.1-405B": types.ModelInfo{
+						API:  "http://127.0.0.1:1042/v1/chat/completions",
+						Type: 0,
+						Idle: 0,
+					},
+				},
+			},
+			NodeType:  4,
+			Timestamp: time.Now().Unix(),
+		},
+	)
+	UpdatePeerCollect(
+		"16Uiu2HAmKk7Fg4WysTpEGd5q1wH2NL4wmxyQ5Nj4HhkQHyB3bDhm",
+		PeerCollectInfo{
+			AIProjects: map[string]map[string]types.ModelInfo{},
+			NodeType:   2,
+			Timestamp:  time.Now().Unix(),
+		},
+	)
+	UpdatePeerCollect(
+		"16Uiu2HAmLCRpZv6nUmeAmXoWpXeyrKjZ7pUvqx5m3e5gZMmUzScp",
+		PeerCollectInfo{
+			AIProjects: map[string]map[string]types.ModelInfo{},
+			NodeType:   3,
+			Timestamp:  time.Now().Unix(),
+		},
+	)
+	UpdatePeerCollect(
+		"16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM",
+		PeerCollectInfo{
+			AIProjects: map[string]map[string]types.ModelInfo{},
+			NodeType:   3,
+			Timestamp:  time.Now().Unix(),
+		},
+	)
+	UpdatePeerCollect(
+		"16Uiu2HAmS4CErxrmPryJbbEX2HFQbLK8r8xCA5rmzdSU59rHc9AF",
+		PeerCollectInfo{
+			AIProjects: map[string]map[string]types.ModelInfo{},
+			NodeType:   3,
+			Timestamp:  time.Now().Unix(),
+		},
+	)
+
+	iter := peersCollectDB.NewIterator(nil, nil)
+	for iter.Next() {
+		var info PeerCollectInfo
+		if err := json.Unmarshal(iter.Value(), &info); err != nil {
+			t.Logf("Parse failed when load peer collect info of %s : %v", string(iter.Key()), err)
+			continue
+		}
+		t.Logf("%s - %v\n", string(iter.Key()), info)
+	}
+
+	iter.Release()
+	if err := iter.Error(); err != nil {
+		t.Logf("Iterator failed when load peer collect info %v", err)
+	}
+
+	ids, code := GetPeersOfAIProjects("DecentralGPT", "Codestral-22B-v0.1", 20)
+	if code != 0 {
+		t.Log("GetPeersOfAIProjects failed ", code)
+	} else {
+		t.Log("GetPeersOfAIProjects of Codestral-22B-v0.1 ", ids)
+	}
+
+	ids, code = GetPeersOfAIProjects("DecentralGPT", "Qwen2.5-Coder-32B", 20)
+	if code != 0 {
+		t.Log("GetPeersOfAIProjects failed ", code)
+	} else {
+		t.Log("GetPeersOfAIProjects of Qwen2.5-Coder-32B ", ids)
+	}
+
+	connsDB.Close()
+	os.RemoveAll("./conns.db")
+	modelsDB.Close()
+	os.RemoveAll("./models.db")
+	peersCollectDB.Close()
+	os.RemoveAll("./peers_collect.db")
 }
