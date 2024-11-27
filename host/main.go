@@ -114,7 +114,7 @@ func main() {
 	if err := db.InitDb(db.InitOptions{
 		Folder: cfg.App.Datastore,
 		// the node is deployed on a public server && enable peers collect
-		EnablePeersCollect: (cfg.Swarm.RelayService.Enabled && cfg.App.PeersCollect.Enabled),
+		EnablePeersCollect: cfg.App.PeersCollect.Enabled,
 	}); err != nil {
 		log.Logger.Fatalf("Init database: %v", err)
 	}
@@ -214,7 +214,7 @@ func main() {
 	if cfg.Swarm.RelayService.Enabled {
 		opts = append(opts, libp2p.EnableRelayService())
 	}
-	if cfg.Swarm.RelayService.Enabled && cfg.App.PeersCollect.Enabled {
+	if cfg.Swarm.RelayService.Enabled {
 		opts = append(opts, libp2p.Ping(false))
 	}
 	if !cfg.Swarm.DisableNatPortMap {
@@ -257,7 +257,7 @@ func main() {
 
 	h.SetStreamHandler(types.ChatProxyProtocol, stream.ChatProxyStreamHandler)
 	pingCtx, pingStopCancel := context.WithCancel(ctx)
-	if cfg.Swarm.RelayService.Enabled && cfg.App.PeersCollect.Enabled {
+	if cfg.Swarm.RelayService.Enabled {
 		pingService = &ping.PingService{Host: h}
 		h.SetStreamHandler(ping.ID, pingService.PingHandler)
 	}
@@ -331,29 +331,32 @@ func main() {
 		}
 	}
 	if errCount == len(DefaultBootstrapPeers) {
-		log.Logger.Fatalf("Failed to bootstrap. %s", err)
+		// log.Logger.Fatalf("Failed to bootstrap. %s", err)
+		log.Logger.Warnf("Failed to bootstrap. %s", err)
 	}
 
-	for _, peerinfo := range PeersHistory {
-		wg.Add(1)
-		go func(pi peer.AddrInfo) {
-			defer wg.Done()
-			if h.Network().Connectedness(pi.ID) == network.Connected {
-				return
-			}
-			ispub := host.IsPublicNode(pi)
-			if ispub {
-				h.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
-			}
-			if err := h.Connect(p2pCtx, pi); err != nil {
-				log.Logger.Warnf("Connect history node %v : %v", pi, err)
-				db.PeerConnectFailed(pi.ID.String())
-				return
-			}
-			log.Logger.Info("Connection established with history node:", pi)
-		}(peerinfo)
+	if !cfg.Swarm.RelayService.Enabled {
+		for _, peerinfo := range PeersHistory {
+			wg.Add(1)
+			go func(pi peer.AddrInfo) {
+				defer wg.Done()
+				if h.Network().Connectedness(pi.ID) == network.Connected {
+					return
+				}
+				ispub := host.IsPublicNode(pi)
+				if ispub {
+					h.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
+				}
+				if err := h.Connect(p2pCtx, pi); err != nil {
+					log.Logger.Warnf("Connect history node %v : %v", pi, err)
+					db.PeerConnectFailed(pi.ID.String())
+					return
+				}
+				log.Logger.Info("Connection established with history node:", pi)
+			}(peerinfo)
+		}
+		wg.Wait()
 	}
-	wg.Wait()
 
 	if err := kadDHT.Bootstrap(p2pCtx); err != nil {
 		log.Logger.Fatalf("Bootstrap the host: %v", err)

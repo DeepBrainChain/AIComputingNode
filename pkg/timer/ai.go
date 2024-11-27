@@ -73,7 +73,7 @@ func (service AITimer) SendAIProjects() {
 func (service AITimer) HandleBroadcastMessage(ctx context.Context, msg *protocol.Message) {
 	switch msg.Type {
 	case protocol.MessageType_AI_PROJECT:
-		if !config.GC.Swarm.RelayService.Enabled || !config.GC.App.PeersCollect.Enabled {
+		if !config.GC.App.PeersCollect.Enabled {
 			return
 		}
 		aip := &protocol.AIProjectBody{}

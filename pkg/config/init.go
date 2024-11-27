@@ -131,7 +131,7 @@ func Init(mode string) error {
 		AIProjects: []types.AIProjectConfig{},
 	}
 	if mode == "server" || mode == "input" {
-		config.Swarm.DisableNatPortMap = true
+		// config.Swarm.DisableNatPortMap = true
 		config.Swarm.RelayService.Enabled = true
 		config.Pubsub.Router = "floodsub"
 		config.Routing.Type = "dhtserver"
