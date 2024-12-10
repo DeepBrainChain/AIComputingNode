@@ -32,10 +32,10 @@ func handleChatCompletionRequest(ctx context.Context, publishChan chan<- []byte,
 			return http.StatusInternalServerError, int(types.ErrCodeModel), "Model API configuration is empty"
 		}
 		model.IncRef(req.Project, req.Model)
-		timer.AIT.SendAIProjects()
+		timer.SendAIProjects(publishChan)
 		defer func() {
 			model.DecRef(req.Project, req.Model)
-			timer.AIT.SendAIProjects()
+			timer.SendAIProjects(publishChan)
 		}()
 		*rsp = *model.ChatModel(modelAPI, req.ChatModelRequest)
 		log.Logger.Infof("Execute model %s result {code:%d, message:%s}", req.Model, rsp.Code, rsp.Message)
@@ -448,10 +448,10 @@ func handleImageGenRequest(ctx context.Context, publishChan chan<- []byte, req t
 			return http.StatusInternalServerError, int(types.ErrCodeModel), "Model API configuration is empty"
 		}
 		model.IncRef(req.Project, req.Model)
-		timer.AIT.SendAIProjects()
+		timer.SendAIProjects(publishChan)
 		defer func() {
 			model.DecRef(req.Project, req.Model)
-			timer.AIT.SendAIProjects()
+			timer.SendAIProjects(publishChan)
 		}()
 		*rsp = *model.ImageGenerationModel(modelAPI, req.ImageGenModelRequest)
 		log.Logger.Infof("Execute model %s result {code:%d, message:%s}", req.Model, rsp.Code, rsp.Message)

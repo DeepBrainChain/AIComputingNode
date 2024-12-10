@@ -24,14 +24,28 @@ import (
 
 var MsgNotSupported string = "Not supported"
 
-func PublishToTopic(ctx context.Context, topic *pubsub.Topic, messageChan <-chan []byte) {
+type PubSub struct {
+	topic       *pubsub.Topic
+	sub         *pubsub.Subscription
+	publishChan chan []byte
+}
+
+func NewPubSub(topic *pubsub.Topic, sub *pubsub.Subscription, pc chan []byte) *PubSub {
+	return &PubSub{
+		topic:       topic,
+		sub:         sub,
+		publishChan: pc,
+	}
+}
+
+func (pst *PubSub) PublishToTopic(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			log.Logger.Info("Publish to topic goroutine end")
 			return
-		case message := <-messageChan:
-			if err := topic.Publish(ctx, message); err != nil {
+		case message := <-pst.publishChan:
+			if err := pst.topic.Publish(ctx, message); err != nil {
 				log.Logger.Errorf("Error when publish to topic %v", err)
 			} else {
 				log.Logger.Infof("Published %d bytes", len(message))
@@ -40,10 +54,10 @@ func PublishToTopic(ctx context.Context, topic *pubsub.Topic, messageChan <-chan
 	}
 }
 
-func ReadFromTopic(ctx context.Context, sub *pubsub.Subscription, publishChan chan<- []byte) {
-	defer sub.Cancel()
+func (pst *PubSub) ReadFromTopic(ctx context.Context) {
+	defer pst.sub.Cancel()
 	for {
-		msg, err := sub.Next(ctx)
+		msg, err := pst.sub.Next(ctx)
 		if err != nil {
 			if errors.Is(err, ctx.Err()) {
 				log.Logger.Info("Subscribe read goroutine end")
@@ -61,8 +75,8 @@ func ReadFromTopic(ctx context.Context, sub *pubsub.Subscription, publishChan ch
 		}
 
 		if pmsg.Header.GetId() == "" && pmsg.Header.GetReceiver() == "" {
-			log.Logger.Infof("Received heartbeat message type %s from %s", pmsg.Type, pmsg.Header.GetNodeId())
-			timer.AIT.HandleBroadcastMessage(ctx, pmsg)
+			log.Logger.Infof("Received scheduled broadcast message type %s from %s", pmsg.Type, pmsg.Header.GetNodeId())
+			pst.handleScheduledBroadcastMessage(ctx, pmsg)
 			continue
 		} else if pmsg.Header.GetNodeId() == config.GC.Identity.PeerID {
 			log.Logger.Infof("Received message type %s from the node itself", pmsg.Type)
@@ -74,11 +88,42 @@ func ReadFromTopic(ctx context.Context, sub *pubsub.Subscription, publishChan ch
 			log.Logger.Infof("Received message type %s from %s", pmsg.Type, pmsg.Header.GetNodeId())
 		}
 
-		go handleBroadcastMessage(ctx, pmsg, publishChan)
+		go pst.handleBroadcastMessage(ctx, pmsg)
 	}
 }
 
-func handleBroadcastMessage(ctx context.Context, msg *protocol.Message, publishChan chan<- []byte) {
+func (pst *PubSub) handleScheduledBroadcastMessage(ctx context.Context, msg *protocol.Message) {
+	switch msg.Type {
+	case protocol.MessageType_AI_PROJECT:
+		pst.handleScheduledAIProjectMessage(ctx, msg)
+	default:
+		log.Logger.Warnf("Unsupported scheduled broadcast message type", msg.Type)
+	}
+}
+
+func (pst *PubSub) handleScheduledAIProjectMessage(ctx context.Context, msg *protocol.Message) {
+	if !config.GC.App.PeersCollect.Enabled {
+		log.Logger.Warnf("PeersCollect disabled when received %v message", msg.Type)
+		return
+	}
+	aip := &protocol.AIProjectBody{}
+	if err := proto.Unmarshal(msg.GetBody(), aip); err != nil {
+		log.Logger.Warnf("Unmarshal AI Project Heartbeat %v", err)
+		return
+	}
+	if aiRes := aip.GetRes(); aiRes != nil {
+		info := db.PeerCollectInfo{
+			Timestamp:  time.Now().Unix(),
+			AIProjects: types.ProtocolMessage2AIProject(aiRes),
+			NodeType:   aiRes.NodeType,
+		}
+		db.UpdatePeerCollect(msg.Header.GetNodeId(), info)
+	} else {
+		log.Logger.Warn("No ai project response found")
+	}
+}
+
+func (pst *PubSub) handleBroadcastMessage(ctx context.Context, msg *protocol.Message) {
 	existed := serve.ExistRequestItem(msg.Header.GetId())
 	var code int
 	var message string
@@ -91,15 +136,15 @@ func handleBroadcastMessage(ctx context.Context, msg *protocol.Message, publishC
 		} else {
 			switch msg.Type {
 			case protocol.MessageType_PEER_IDENTITY:
-				code, message = handlePeerIdentityMessage(ctx, msg, msgBody, publishChan)
+				code, message = pst.handlePeerIdentityMessage(ctx, msg, msgBody)
 			case protocol.MessageType_HOST_INFO:
-				code, message = handleHostInfoMessage(ctx, msg, msgBody, publishChan)
+				code, message = pst.handleHostInfoMessage(ctx, msg, msgBody)
 			case protocol.MessageType_AI_PROJECT:
-				code, message = handleAIProjectMessage(ctx, msg, msgBody, publishChan)
+				code, message = pst.handleAIProjectMessage(ctx, msg, msgBody)
 			case protocol.MessageType_CHAT_COMPLETION:
-				code, message = handleChatCompletionMessage(ctx, msg, msgBody, publishChan)
+				code, message = pst.handleChatCompletionMessage(ctx, msg, msgBody)
 			case protocol.MessageType_IMAGE_GENERATION:
-				code, message = handleImageGenerationMessage(ctx, msg, msgBody, publishChan)
+				code, message = pst.handleImageGenerationMessage(ctx, msg, msgBody)
 			default:
 				code = int(types.ErrCodeUnsupported)
 				message = MsgNotSupported
@@ -135,12 +180,12 @@ func handleBroadcastMessage(ctx context.Context, msg *protocol.Message, publishC
 			log.Logger.Errorf("Marshal %s proto %v", msg.Type.String(), err)
 			return
 		}
-		publishChan <- resBytes
+		pst.publishChan <- resBytes
 		log.Logger.Warnf("Send %s proto response {code: %v, message: %v}", msg.Type.String(), code, message)
 	}
 }
 
-func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) (int, string) {
+func (pst *PubSub) handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBody []byte) (int, string) {
 	pi := &protocol.PeerIdentityBody{}
 	if err := proto.Unmarshal(decBody, pi); err == nil {
 		if piReq := pi.GetReq(); piReq != nil {
@@ -181,7 +226,7 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 				log.Logger.Errorf("Marshal Identity Response %v", err)
 				return int(types.ErrCodeProtobuf), types.ErrCodeProtobuf.String()
 			}
-			publishChan <- resBytes
+			pst.publishChan <- resBytes
 			log.Logger.Info("Sending Peer Identity Response")
 			return 0, ""
 		} else if piRes := pi.GetRes(); piRes != nil {
@@ -215,11 +260,11 @@ func handlePeerIdentityMessage(ctx context.Context, msg *protocol.Message, decBo
 	}
 }
 
-func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) (int, string) {
+func (pst *PubSub) handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, decBody []byte) (int, string) {
 	ccb := &protocol.ChatCompletionBody{}
 	if err := proto.Unmarshal(decBody, ccb); err == nil {
 		if chatReq := ccb.GetReq(); chatReq != nil {
-			code, message, chatRes := handleChatCompletionRequest(ctx, chatReq, msg.Header)
+			code, message, chatRes := pst.handleChatCompletionRequest(ctx, chatReq, msg.Header)
 			igBody := &protocol.ChatCompletionBody{
 				Data: &protocol.ChatCompletionBody_Res{
 					Res: chatRes,
@@ -252,7 +297,7 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 				log.Logger.Errorf("Marshal Chat Completion Response %v", err)
 				return int(types.ErrCodeProtobuf), types.ErrCodeProtobuf.String()
 			}
-			publishChan <- resBytes
+			pst.publishChan <- resBytes
 			log.Logger.Info("Sending Chat Completion Response")
 			return 0, ""
 		} else if chatRes := ccb.GetRes(); chatRes != nil {
@@ -298,11 +343,11 @@ func handleChatCompletionMessage(ctx context.Context, msg *protocol.Message, dec
 	}
 }
 
-func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) (int, string) {
+func (pst *PubSub) handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, decBody []byte) (int, string) {
 	ig := &protocol.ImageGenerationBody{}
 	if err := proto.Unmarshal(decBody, ig); err == nil {
 		if igReq := ig.GetReq(); igReq != nil {
-			code, message, igRes := handleImageGenerationRequest(ctx, igReq, msg.Header)
+			code, message, igRes := pst.handleImageGenerationRequest(ctx, igReq, msg.Header)
 			igBody := &protocol.ImageGenerationBody{
 				Data: &protocol.ImageGenerationBody_Res{
 					Res: igRes,
@@ -335,7 +380,7 @@ func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, de
 				log.Logger.Errorf("Marshal Image Generation Response %v", err)
 				return int(types.ErrCodeProtobuf), types.ErrCodeProtobuf.String()
 			}
-			publishChan <- resBytes
+			pst.publishChan <- resBytes
 			log.Logger.Info("Sending Image Generation Response")
 			return 0, ""
 		} else if igRes := ig.GetRes(); igRes != nil {
@@ -372,7 +417,7 @@ func handleImageGenerationMessage(ctx context.Context, msg *protocol.Message, de
 	}
 }
 
-func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) (int, string) {
+func (pst *PubSub) handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody []byte) (int, string) {
 	hi := &protocol.HostInfoBody{}
 	if err := proto.Unmarshal(decBody, hi); err == nil {
 		if hiReq := hi.GetReq(); hiReq != nil {
@@ -416,7 +461,7 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 				log.Logger.Errorf("Marshal HostInfo Response %v", err)
 				return int(types.ErrCodeProtobuf), types.ErrCodeProtobuf.String()
 			}
-			publishChan <- resBytes
+			pst.publishChan <- resBytes
 			log.Logger.Info("Sending HostInfo Response")
 			return 0, ""
 		} else if hiRes := hi.GetRes(); hiRes != nil {
@@ -444,7 +489,7 @@ func handleHostInfoMessage(ctx context.Context, msg *protocol.Message, decBody [
 	}
 }
 
-func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody []byte, publishChan chan<- []byte) (int, string) {
+func (pst *PubSub) handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody []byte) (int, string) {
 	aip := &protocol.AIProjectBody{}
 	if err := proto.Unmarshal(decBody, aip); err == nil {
 		if aiReq := aip.GetReq(); aiReq != nil {
@@ -481,7 +526,7 @@ func handleAIProjectMessage(ctx context.Context, msg *protocol.Message, decBody 
 				log.Logger.Errorf("Marshal AI Project Response %v", err)
 				return int(types.ErrCodeProtobuf), types.ErrCodeProtobuf.String()
 			}
-			publishChan <- resBytes
+			pst.publishChan <- resBytes
 			log.Logger.Info("Sending AI Project Response")
 			return 0, ""
 		} else if aiRes := aip.GetRes(); aiRes != nil {
@@ -528,7 +573,7 @@ func TransformErrorResponse(msg *protocol.Message, code int32, message string) *
 	return &res
 }
 
-func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompletionRequest, reqHeader *protocol.MessageHeader) (int, string, *protocol.ChatCompletionResponse) {
+func (pst *PubSub) handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompletionRequest, reqHeader *protocol.MessageHeader) (int, string, *protocol.ChatCompletionResponse) {
 	response := &protocol.ChatCompletionResponse{}
 
 	modelAPI, _ := config.GC.GetModelAPI(req.GetProject(), req.GetModel())
@@ -553,10 +598,10 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 	}
 
 	model.IncRef(req.GetProject(), req.GetModel())
-	timer.AIT.SendAIProjects()
+	timer.SendAIProjects(pst.publishChan)
 	defer func() {
 		model.DecRef(req.GetProject(), req.GetModel())
-		timer.AIT.SendAIProjects()
+		timer.SendAIProjects(pst.publishChan)
 	}()
 	chatRes := model.ChatModel(modelAPI, chatReq)
 
@@ -600,7 +645,7 @@ func handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompleti
 	return chatRes.Code, chatRes.Message, response
 }
 
-func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenerationRequest, reqHeader *protocol.MessageHeader) (int, string, *protocol.ImageGenerationResponse) {
+func (pst *PubSub) handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenerationRequest, reqHeader *protocol.MessageHeader) (int, string, *protocol.ImageGenerationResponse) {
 	response := &protocol.ImageGenerationResponse{}
 
 	modelAPI, _ := config.GC.GetModelAPI(req.GetProject(), req.GetModel())
@@ -624,10 +669,10 @@ func handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenera
 	}
 
 	model.IncRef(req.GetProject(), req.GetModel())
-	timer.AIT.SendAIProjects()
+	timer.SendAIProjects(pst.publishChan)
 	defer func() {
 		model.DecRef(req.GetProject(), req.GetModel())
-		timer.AIT.SendAIProjects()
+		timer.SendAIProjects(pst.publishChan)
 	}()
 	igRes := model.ImageGenerationModel(modelAPI, igReq)
 

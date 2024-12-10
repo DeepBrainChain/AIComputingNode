@@ -350,7 +350,7 @@ func PubsubPeersHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, rsp)
 }
 
-func RegisterAIProjectHandler(c *gin.Context, configPath string) {
+func RegisterAIProjectHandler(c *gin.Context, configPath string, publishChan chan<- []byte) {
 	rsp := types.BaseHttpResponse{
 		Code:    0,
 		Message: "ok",
@@ -403,10 +403,10 @@ func RegisterAIProjectHandler(c *gin.Context, configPath string) {
 	}
 	c.JSON(http.StatusOK, rsp)
 	model.RegisterAIProject(req)
-	timer.AIT.SendAIProjects()
+	timer.SendAIProjects(publishChan)
 }
 
-func UnregisterAIProjectHandler(c *gin.Context, configPath string) {
+func UnregisterAIProjectHandler(c *gin.Context, configPath string, publishChan chan<- []byte) {
 	rsp := types.BaseHttpResponse{
 		Code:    0,
 		Message: "ok",
@@ -452,7 +452,7 @@ func UnregisterAIProjectHandler(c *gin.Context, configPath string) {
 	}
 	c.JSON(http.StatusOK, rsp)
 	model.UnregisterAIProject(req.Project)
-	timer.AIT.SendAIProjects()
+	timer.SendAIProjects(publishChan)
 }
 
 func GetAIProjectOfNodeHandler(c *gin.Context, publishChan chan<- []byte) {

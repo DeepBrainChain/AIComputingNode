@@ -1,11 +1,9 @@
 package timer
 
 import (
-	"context"
 	"time"
 
 	"AIComputingNode/pkg/config"
-	"AIComputingNode/pkg/db"
 	"AIComputingNode/pkg/libp2p/host"
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/model"
@@ -15,13 +13,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type AITimer struct {
-	PublishChan chan<- []byte
-}
-
-var AIT *AITimer
-
-func (service AITimer) SendAIProjects() {
+func SendAIProjects(pcn chan<- []byte) {
 	projects := model.GetAIProjects()
 	var nt types.NodeType = 0x00
 	if config.GC.Swarm.RelayService.Enabled {
@@ -66,56 +58,6 @@ func (service AITimer) SendAIProjects() {
 		log.Logger.Errorf("Marshal AI Project Heartbeat %v", err)
 		return
 	}
-	service.PublishChan <- message
+	pcn <- message
 	log.Logger.Info("Sending AI Project Heartbeat")
-}
-
-func (service AITimer) HandleBroadcastMessage(ctx context.Context, msg *protocol.Message) {
-	switch msg.Type {
-	case protocol.MessageType_AI_PROJECT:
-		if !config.GC.App.PeersCollect.Enabled {
-			return
-		}
-		aip := &protocol.AIProjectBody{}
-		if err := proto.Unmarshal(msg.GetBody(), aip); err != nil {
-			log.Logger.Warnf("Unmarshal AI Project Heartbeat %v", err)
-			return
-		}
-		if aiRes := aip.GetRes(); aiRes != nil {
-			service.HandleAIProjectMessage(msg.Header.GetNodeId(), types.ProtocolMessage2AIProject(aiRes), aiRes.NodeType)
-		} else {
-			log.Logger.Warn("No ai project response found")
-		}
-	default:
-		log.Logger.Warnf("Unsupported heartbeat message type", msg.Type)
-	}
-}
-
-func (service AITimer) HandleAIProjectMessage(node_id string, projects map[string]map[string]types.ModelInfo, nodeType uint32) {
-	info := db.PeerCollectInfo{
-		Timestamp:  time.Now().Unix(),
-		AIProjects: projects,
-		NodeType:   nodeType,
-	}
-	db.UpdatePeerCollect(node_id, info)
-}
-
-func StartTimer(ctx context.Context, interval time.Duration, pcn chan<- []byte) {
-	AIT = &AITimer{
-		PublishChan: pcn,
-	}
-	go func() {
-		ticker := time.NewTicker(interval)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				log.Logger.Info("ai timer goroutine over")
-				return
-			case <-ticker.C:
-				db.CleanExpiredPeerCollectInfo()
-				AIT.SendAIProjects()
-			}
-		}
-	}()
 }

@@ -26,6 +26,7 @@ import (
 	"AIComputingNode/pkg/types"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-co-op/gocron/v2"
 	"github.com/libp2p/go-libp2p"
 	libp2phost "github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -255,7 +256,12 @@ func main() {
 		},
 	})
 
-	h.SetStreamHandler(types.ChatProxyProtocol, stream.ChatProxyStreamHandler)
+	// Topic publish channel
+	publishChan := make(chan []byte, 1024)
+
+	libp2pStream := stream.NewLibp2pStream(publishChan)
+	h.SetStreamHandler(types.ChatProxyProtocol, libp2pStream.ChatProxyStreamHandler)
+
 	pingCtx, pingStopCancel := context.WithCancel(ctx)
 	if cfg.Swarm.RelayService.Enabled {
 		pingService = &ping.PingService{Host: h}
@@ -377,7 +383,7 @@ func main() {
 
 	pubCtx, pubStopCancel := context.WithCancel(ctx)
 	subCtx, subStopCancel := context.WithCancel(ctx)
-	timerCtx, timerStopCancel := context.WithCancel(ctx)
+	// timerCtx, timerStopCancel := context.WithCancel(ctx)
 
 	host.Hio = &host.HostInfo{
 		Host:            h,
@@ -390,9 +396,6 @@ func main() {
 		Topic:           topic,
 	}
 
-	// Topic publish channel
-	publishChan := make(chan []byte, 1024)
-	heartbeatInterval, _ := time.ParseDuration(cfg.App.PeersCollect.HeartbeatInterval)
 	// router := gin.Default()
 	// router.Use(gin.Recovery())
 	// router.Use(errorHandler)
@@ -443,10 +446,10 @@ func main() {
 		})
 
 		v0.POST("/ai/project/register", func(ctx *gin.Context) {
-			serve.RegisterAIProjectHandler(ctx, *configPath)
+			serve.RegisterAIProjectHandler(ctx, *configPath, publishChan)
 		})
 		v0.POST("/ai/project/unregister", func(ctx *gin.Context) {
-			serve.UnregisterAIProjectHandler(ctx, *configPath)
+			serve.UnregisterAIProjectHandler(ctx, *configPath, publishChan)
 		})
 		v0.POST("/ai/project/peer", func(ctx *gin.Context) {
 			serve.GetAIProjectOfNodeHandler(ctx, publishChan)
@@ -473,9 +476,24 @@ func main() {
 		// IdleTimeout:  120 * time.Second,
 	}
 
-	go ps.PublishToTopic(pubCtx, topic, publishChan)
-	timer.StartTimer(timerCtx, heartbeatInterval, publishChan)
-	go ps.ReadFromTopic(subCtx, sub, publishChan)
+	heartbeatInterval, _ := time.ParseDuration(cfg.App.PeersCollect.HeartbeatInterval)
+	scheduler, err := gocron.NewScheduler()
+	if err != nil {
+		log.Logger.Fatalf("NewScheduler failed: %v", err)
+	}
+	job, err := scheduler.NewJob(
+		gocron.DurationJob(heartbeatInterval),
+		gocron.NewTask(timer.SendAIProjects, publishChan),
+	)
+	if err != nil {
+		log.Logger.Fatalf("Create scheduled ai projects job failed: %v", err)
+	}
+	log.Logger.Infof("Scheduled ai projects job: %v", job.ID())
+
+	pst := ps.NewPubSub(topic, sub, publishChan)
+	go pst.PublishToTopic(pubCtx)
+	scheduler.Start()
+	go pst.ReadFromTopic(subCtx)
 	// serve.NewHttpServe(router, publishChan, *configPath)
 	go func() {
 		log.Logger.Info("HTTP server is running on http://", cfg.API.Addr)
@@ -503,7 +521,10 @@ func main() {
 		log.Logger.Info("HTTP server is shutdown gracefully")
 	}
 	subStopCancel()
-	timerStopCancel()
+	// timerStopCancel()
+	if err := scheduler.Shutdown(); err != nil {
+		log.Logger.Errorf("Error shutdowning scheduler: %v", err)
+	}
 	pubStopCancel()
 
 	p2pStopCancel()

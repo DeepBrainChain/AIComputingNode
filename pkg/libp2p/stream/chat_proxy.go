@@ -19,23 +19,33 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 )
 
-var DefaultTransport http.RoundTripper = &http.Transport{
-	// Proxy: ProxyFromEnvironment,
-	DialContext: (&net.Dialer{
-		Timeout:   10 * time.Second,
-		KeepAlive: 30 * time.Second,
-	}).DialContext,
-	DisableCompression: true,
-	// ForceAttemptHTTP2:     true,
-	MaxIdleConns: 100,
-	// DisableKeepAlives:   true,
-	// MaxIdleConnsPerHost: -1,
-	DisableKeepAlives:     false,
-	MaxIdleConnsPerHost:   20,
-	MaxConnsPerHost:       128,
-	IdleConnTimeout:       90 * time.Second,
-	TLSHandshakeTimeout:   10 * time.Second,
-	ExpectContinueTimeout: 1 * time.Second,
+type Libp2pStream struct {
+	pcn              chan<- []byte
+	DefaultTransport http.RoundTripper
+}
+
+func NewLibp2pStream(publishChan chan<- []byte) *Libp2pStream {
+	return &Libp2pStream{
+		pcn: publishChan,
+		DefaultTransport: &http.Transport{
+			// Proxy: ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   10 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			DisableCompression: true,
+			// ForceAttemptHTTP2:     true,
+			MaxIdleConns: 100,
+			// DisableKeepAlives:   true,
+			// MaxIdleConnsPerHost: -1,
+			DisableKeepAlives:     false,
+			MaxIdleConnsPerHost:   20,
+			MaxConnsPerHost:       128,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+	}
 }
 
 func NewHttpClientTrace() *httptrace.ClientTrace {
@@ -80,7 +90,7 @@ func NewHttpClientTrace() *httptrace.ClientTrace {
 // to our protocol. The streams should contain an HTTP request which we need
 // to parse, make on behalf of the original node, and then write the response
 // on the stream, before closing it.
-func ChatProxyStreamHandler(stream network.Stream) {
+func (ls *Libp2pStream) ChatProxyStreamHandler(stream network.Stream) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
@@ -167,15 +177,15 @@ func ChatProxyStreamHandler(stream network.Stream) {
 	stream.SetDeadline(time.Now().Add(timeout))
 
 	model.IncRef(projectName, modelName)
-	timer.AIT.SendAIProjects()
+	timer.SendAIProjects(ls.pcn)
 	defer func() {
 		model.DecRef(projectName, modelName)
-		timer.AIT.SendAIProjects()
+		timer.SendAIProjects(ls.pcn)
 	}()
 
 	// We now make the request
 	log.Logger.Infof("Making request to %s", req.URL)
-	resp, err := DefaultTransport.RoundTrip(outreq)
+	resp, err := ls.DefaultTransport.RoundTrip(outreq)
 	if err != nil {
 		stream.Reset()
 		log.Logger.Errorf("RoundTrip chat proxy request failed: %v", err)
