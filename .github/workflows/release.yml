@@ -32,12 +32,16 @@ jobs:
       - name: Build Program windows_amd64
         run: |
           CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=${{ github.ref_name }}" -o host_${{ github.ref_name }}_windows_amd64.exe ./host/main.go
+      - name: Calculate SHA256 hash of the binary
+        run: |
+          sha256sum host_${{ github.ref_name }}_* > checksums.txt
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           draft: true
           prerelease: false
           files: |
+            checksums.txt
             host_${{ github.ref_name }}_linux_amd64
             host_${{ github.ref_name }}_linux_arm64
             host_${{ github.ref_name }}_darwin_arm64

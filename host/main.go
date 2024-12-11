@@ -21,6 +21,7 @@ import (
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/model"
 	ps "AIComputingNode/pkg/pubsub"
+	"AIComputingNode/pkg/selfupdate"
 	"AIComputingNode/pkg/serve"
 	"AIComputingNode/pkg/timer"
 	"AIComputingNode/pkg/types"
@@ -383,7 +384,7 @@ func main() {
 
 	pubCtx, pubStopCancel := context.WithCancel(ctx)
 	subCtx, subStopCancel := context.WithCancel(ctx)
-	// timerCtx, timerStopCancel := context.WithCancel(ctx)
+	timerCtx, timerStopCancel := context.WithCancel(ctx)
 
 	host.Hio = &host.HostInfo{
 		Host:            h,
@@ -481,14 +482,22 @@ func main() {
 	if err != nil {
 		log.Logger.Fatalf("NewScheduler failed: %v", err)
 	}
-	job, err := scheduler.NewJob(
+	job1, err := scheduler.NewJob(
 		gocron.DurationJob(heartbeatInterval),
 		gocron.NewTask(timer.SendAIProjects, publishChan),
 	)
 	if err != nil {
 		log.Logger.Fatalf("Create scheduled ai projects job failed: %v", err)
 	}
-	log.Logger.Infof("Scheduled ai projects job: %v", job.ID())
+	log.Logger.Infof("Scheduled ai projects job: %v", job1.ID())
+	job2, err := scheduler.NewJob(
+		gocron.DurationJob(1*time.Hour),
+		gocron.NewTask(selfupdate.UpdateGithubLatestRelease, timerCtx, version),
+	)
+	if err != nil {
+		log.Logger.Fatalf("Create scheduled selftupdate job failed: %v", err)
+	}
+	log.Logger.Infof("Scheduled selfupdate job: %v", job2.ID())
 
 	pst := ps.NewPubSub(topic, sub, publishChan)
 	go pst.PublishToTopic(pubCtx)
@@ -521,7 +530,7 @@ func main() {
 		log.Logger.Info("HTTP server is shutdown gracefully")
 	}
 	subStopCancel()
-	// timerStopCancel()
+	timerStopCancel()
 	if err := scheduler.Shutdown(); err != nil {
 		log.Logger.Errorf("Error shutdowning scheduler: %v", err)
 	}
