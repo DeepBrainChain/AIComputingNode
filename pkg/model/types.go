@@ -31,6 +31,18 @@ func InitModels(ms []types.AIProjectConfig) error {
 	return nil
 }
 
+func IdleCount() int {
+	projects.mutex.RLock()
+	defer projects.mutex.RUnlock()
+	idleCount := 0
+	for _, models := range projects.elements {
+		for _, model := range models {
+			idleCount += model.Idle
+		}
+	}
+	return idleCount
+}
+
 func GetAIProjects() map[string]map[string]types.ModelInfo {
 	projects.mutex.RLock()
 	defer projects.mutex.RUnlock()

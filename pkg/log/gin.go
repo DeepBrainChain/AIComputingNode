@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime/debug"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -33,7 +34,7 @@ type GinConfig struct {
 // Skipper is a function to skip logs based on provided Context
 type Skipper func(c *gin.Context) bool
 
-func GinzapWithConfig(conf *GinConfig) gin.HandlerFunc {
+func GinzapWithConfig(conf *GinConfig, activeReqs *int32) gin.HandlerFunc {
 	var skip map[string]struct{}
 
 	if length := len(conf.SkipPaths); length > 0 {
@@ -45,6 +46,9 @@ func GinzapWithConfig(conf *GinConfig) gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
+		atomic.AddInt32(activeReqs, 1)
+		defer atomic.AddInt32(activeReqs, -1)
+
 		start := time.Now()
 		path := c.Request.URL.Path
 		query := c.Request.URL.RawQuery

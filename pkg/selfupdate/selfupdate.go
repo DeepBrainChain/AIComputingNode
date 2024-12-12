@@ -7,12 +7,14 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"AIComputingNode/pkg/log"
+	"AIComputingNode/pkg/model"
 )
 
-func UpdateGithubLatestRelease(ctx context.Context, cur_version string) {
+func UpdateGithubLatestRelease(ctx context.Context, cur_version string, activeReqs *int32) {
 	// 1. Detect github latest release
 	glr, err := DetectLatestGithubRelease(ctx, 15*time.Second)
 	if err != nil {
@@ -121,9 +123,31 @@ func UpdateGithubLatestRelease(ctx context.Context, cur_version string) {
 	log.Logger.Info("Check sha256 hash of download file success")
 
 	// 4. Automatic restart during idle time
-	os.Rename(execPath, execPath+".bak")
-	os.Rename(filePath, execPath)
-	os.Remove(execPath + ".bak")
-	log.Logger.Info("Begin to restart program")
+	activeHttpReqs := atomic.LoadInt32(activeReqs)
+	activeModelReqs := model.IdleCount()
+	log.Logger.Infof(
+		"Currently active http requests %v, model idle count %v",
+		activeHttpReqs,
+		activeModelReqs,
+	)
+	if activeHttpReqs != 0 || activeModelReqs != 0 {
+		log.Logger.Warnf("Wait for idle time to automatically restart")
+		return
+	}
+	// os.Rename(execPath, execPath+".bak")
+	backupOld := filepath.Join(
+		filepath.Dir(execPath),
+		fmt.Sprintf("host_%v_%v.old", cur_version, os_arch_ext),
+	)
+	if err := os.Rename(execPath, backupOld); err != nil {
+		log.Logger.Errorf("Failed to mv %v -> %v: %v", execPath, backupOld, err)
+		return
+	}
+	if err := os.Rename(filePath, execPath); err != nil {
+		log.Logger.Errorf("Failed to replace the program file using mv: %v", err)
+		return
+	}
+	// os.Remove(execPath + ".bak")
+	log.Logger.Info("Begin to restart program......")
 	os.Exit(0)
 }

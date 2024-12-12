@@ -397,6 +397,7 @@ func main() {
 		Topic:           topic,
 	}
 
+	var activeHttpReqs int32 = 0
 	// router := gin.Default()
 	// router.Use(gin.Recovery())
 	// router.Use(errorHandler)
@@ -409,10 +410,13 @@ func main() {
 	// 	ctx.JSON(http.StatusMethodNotAllowed, gin.H{"code": "METHOD_NOT_ALLOWED", "message": "Method not allowed"})
 	// })
 	router.Use(
-		log.GinzapWithConfig(&log.GinConfig{
-			SkipPaths: []string{},
-			Skip:      nil,
-		}),
+		log.GinzapWithConfig(
+			&log.GinConfig{
+				SkipPaths: []string{},
+				Skip:      nil,
+			},
+			&activeHttpReqs,
+		),
 		log.GinzapRecovery(true),
 	)
 	// router.GET("/api/v0/id", serve.IdHandler)
@@ -498,7 +502,7 @@ func main() {
 				func(ctx context.Context, timeout time.Duration, cur_version string) {
 					upgradeCtx, pgradeCancel := context.WithTimeout(ctx, timeout)
 					defer pgradeCancel()
-					selfupdate.UpdateGithubLatestRelease(upgradeCtx, cur_version)
+					selfupdate.UpdateGithubLatestRelease(upgradeCtx, cur_version, &activeHttpReqs)
 				},
 				timerCtx,
 				upgraderInterval,
