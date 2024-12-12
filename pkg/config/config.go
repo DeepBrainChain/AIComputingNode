@@ -74,14 +74,20 @@ type RoutingConfig struct {
 }
 
 type AppConfig struct {
-	LogLevel     string `json:"LogLevel"`
-	LogFile      string `json:"LogFile"`
-	LogOutput    string `json:"LogOutput"`
-	PreSharedKey string `json:"PreSharedKey"`
-	TopicName    string `json:"TopicName"`
-	Datastore    string `json:"Datastore"`
+	LogLevel     string            `json:"LogLevel"`
+	LogFile      string            `json:"LogFile"`
+	LogOutput    string            `json:"LogOutput"`
+	PreSharedKey string            `json:"PreSharedKey"`
+	TopicName    string            `json:"TopicName"`
+	Datastore    string            `json:"Datastore"`
+	AutoUpgrade  AutoUpgradeConfig `json:"AutoUpgrade"`
 	// peers collect config
 	PeersCollect AppPeersCollectConfig `json:"PeersCollect"`
+}
+
+type AutoUpgradeConfig struct {
+	Enabled      bool   `json:"Enabled"`
+	TimeInterval string `json:"TimeInterval"`
 }
 
 type AppPeersCollectConfig struct {
@@ -229,7 +235,17 @@ func (config AppConfig) Validate() error {
 	if s, err := os.Stat(config.Datastore); err != nil || !s.IsDir() {
 		return fmt.Errorf("datastore must be a folder that already exists")
 	}
+	if err := config.AutoUpgrade.Validate(); err != nil {
+		return err
+	}
 	if err := config.PeersCollect.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (config AutoUpgradeConfig) Validate() error {
+	if _, err := time.ParseDuration(config.TimeInterval); err != nil {
 		return err
 	}
 	return nil
@@ -314,6 +330,10 @@ func LoadConfig(configPath string) (*Config, error) {
 
 	if GC.App.LogOutput == "" {
 		GC.App.LogOutput = "stderr"
+	}
+
+	if GC.App.AutoUpgrade.TimeInterval == "" {
+		GC.App.AutoUpgrade.TimeInterval = "1h"
 	}
 
 	if GC.App.PeersCollect.HeartbeatInterval == "" {

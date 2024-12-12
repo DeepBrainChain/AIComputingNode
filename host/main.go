@@ -490,14 +490,26 @@ func main() {
 		log.Logger.Fatalf("Create scheduled ai projects job failed: %v", err)
 	}
 	log.Logger.Infof("Scheduled ai projects job: %v", job1.ID())
-	job2, err := scheduler.NewJob(
-		gocron.DurationJob(1*time.Hour),
-		gocron.NewTask(selfupdate.UpdateGithubLatestRelease, timerCtx, version),
-	)
-	if err != nil {
-		log.Logger.Fatalf("Create scheduled selftupdate job failed: %v", err)
+	if cfg.App.AutoUpgrade.Enabled {
+		upgraderInterval, _ := time.ParseDuration(cfg.App.AutoUpgrade.TimeInterval)
+		job2, err := scheduler.NewJob(
+			gocron.DurationJob(upgraderInterval),
+			gocron.NewTask(
+				func(ctx context.Context, timeout time.Duration, cur_version string) {
+					upgradeCtx, pgradeCancel := context.WithTimeout(ctx, timeout)
+					defer pgradeCancel()
+					selfupdate.UpdateGithubLatestRelease(upgradeCtx, cur_version)
+				},
+				timerCtx,
+				upgraderInterval,
+				version,
+			),
+		)
+		if err != nil {
+			log.Logger.Fatalf("Create scheduled selftupdate job failed: %v", err)
+		}
+		log.Logger.Infof("Scheduled selfupdate job: %v", job2.ID())
 	}
-	log.Logger.Infof("Scheduled selfupdate job: %v", job2.ID())
 
 	pst := ps.NewPubSub(topic, sub, publishChan)
 	go pst.PublishToTopic(pubCtx)

@@ -21,6 +21,8 @@ func TestUpdateGithubLatestRelease(t *testing.T) {
 	t.Log("Operating System:", runtime.GOOS)
 	t.Log("Architecture:", runtime.GOARCH)
 	ctx := context.Background()
+
+	// 1. Detect github latest release
 	glr, err := DetectLatestGithubRelease(ctx, 15*time.Second)
 	if err != nil {
 		t.Fatalf("Failed to detect github latest release: %v", err)
@@ -48,45 +50,73 @@ func TestUpdateGithubLatestRelease(t *testing.T) {
 		}
 	}
 
-	if asset.Url == "" {
-		t.Fatal("Url of github latest release is empty")
+	if asset.Url == "" || asset.Name == "" {
+		t.Fatalf("github latest release is empty: %v", asset)
 	}
-	t.Log("asset:", asset)
+	t.Log("Get latest asset:", asset)
 
+	if checksum.Url == "" {
+		t.Fatal("Url of github latest release's checksum is empty")
+	}
+	t.Logf("Get checksum asset: %v", checksum)
+
+	// 2. Get sha256sum value of asset from github latest release
+	checksums, err := checksum.DownloadChecksums(ctx, 15*time.Second)
+	if err != nil {
+		t.Fatalf("Failed to download checkoutsums of github latest release: %v", err)
+	}
+	t.Logf("Get checksums of github latest release: %v", checksums)
+
+	var originHash = ""
+	for key, value := range checksums {
+		// if strings.HasSuffix(value, os_arch_ext) {
+		if value == asset.Name {
+			originHash = key
+			break
+		}
+	}
+	if originHash == "" {
+		t.Fatalf("sha256 hash of %v from github is empty", asset.Name)
+	}
+	t.Logf("sha256 hash of %v from github is %v", asset.Name, originHash)
+
+	// 3. Download github latest release and check sha256 hash
 	cwd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Failed to get program directory: %v", err)
 	}
 	filePath := filepath.Join(cwd, asset.Name)
-	if err := asset.DownloadRelease(ctx, 5*time.Minute, filePath); err != nil {
-		t.Fatalf("Failed to download github latest release: %v", err)
-	}
-	t.Logf("Download github latest release success from: %v, save in: %v\n", asset.Url, filePath)
+	t.Logf("Get the filepath where the executable file is saved: %v", filePath)
 
 	hashsum, err := sha256sum(filePath)
 	if err != nil {
-		t.Fatalf("sha256sum %v error: %v", filePath, err)
+		if os.IsNotExist(err) {
+			if err := asset.DownloadRelease(ctx, 5*time.Minute, filePath); err != nil {
+				t.Fatalf("Failed to download github latest release: %v", err)
+			}
+			t.Logf("Download github latest release success from: %v, save in: %v", asset.Url, filePath)
+
+			hashsum, err = sha256sum(filePath)
+			if err != nil {
+				t.Fatalf("sha256sum %v error: %v", filePath, err)
+			}
+		} else {
+			t.Fatalf("sha256sum %v error: %v", filePath, err)
+		}
 	}
 	if hashsum == "" {
 		t.Fatal("Failed to calcute sha256 hash of download file")
 	}
 	t.Logf("sha256sum %v -> %v", filePath, hashsum)
 
-	checksums, err := checksum.DownloadChecksums(ctx, 15*time.Second)
-	if err != nil {
-		t.Fatalf("Failed to download checkoutsums of github latest release: %v", err)
-	}
-	t.Logf("Get checksums of github latest release: %v", checksums)
-	value, ok := checksums[hashsum]
-	if !ok {
-		t.Fatal("sha256 hash of download file not match")
+	if hashsum != originHash {
 		// delete file
-	}
-	if value != asset.Name {
+		os.Remove(filePath)
 		t.Fatal("sha256 hash of download file not match")
-		// delete file
 	}
 	t.Log("Check sha256 hash of download file success")
+
+	// 4. Automatic restart during idle time
 }
 
 // go test -v -timeout 30s -count=1 -run TestFilePath AIComputingNode/pkg/selfupdate
@@ -114,6 +144,10 @@ func TestCalculateSHA256(t *testing.T) {
 	} else {
 		t.Logf("sha256sum: %v", hashstr)
 	}
+
+	emptyhash, err := sha256sum("not_existed_file")
+	t.Log("sha256sum not_existed_file:", emptyhash, err)
+	t.Log(os.IsNotExist(err))
 
 	file, err := os.Open("github_releases.go")
 	if err != nil {

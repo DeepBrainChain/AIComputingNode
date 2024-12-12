@@ -65,12 +65,14 @@ func sha256sum(filepath string) (string, error) {
 	file, err := os.Open(filepath)
 	if err != nil {
 		log.Logger.Errorf("Failed to open download file: %v", err)
+		return "", err
 	}
 	defer file.Close()
 
 	hash := sha256.New()
 	if _, err := io.Copy(hash, file); err != nil {
 		log.Logger.Errorf("Failed to copy download data when calcute hash: %v", err)
+		return "", err
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }

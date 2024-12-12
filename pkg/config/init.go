@@ -122,6 +122,10 @@ func Init(mode string) error {
 			PreSharedKey: PreSharedKey,
 			TopicName:    TopicName,
 			Datastore:    dataPath,
+			AutoUpgrade: AutoUpgradeConfig{
+				Enabled:      true,
+				TimeInterval: "1h",
+			},
 			PeersCollect: AppPeersCollectConfig{
 				Enabled:           false,
 				HeartbeatInterval: "180s",
