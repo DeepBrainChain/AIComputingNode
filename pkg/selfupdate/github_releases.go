@@ -152,7 +152,7 @@ func (asset *GithubReleaseAsset) DownloadRelease(ctx context.Context, downloadTi
 	// if written != asset.Size {
 	// 	log.Logger.Warn("The number of bytes copied from latest release is not equal with asset's size")
 	// }
-	log.Logger.Infof("Download github latest release success from: %v, size: %v, save in: %v", asset.Url, written, filepath)
+	log.Logger.Infof("Download %v bytes from: %v", written, asset.Url)
 	return nil
 }
 

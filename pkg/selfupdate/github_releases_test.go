@@ -94,7 +94,7 @@ func TestUpdateGithubLatestRelease(t *testing.T) {
 			if err := asset.DownloadRelease(ctx, 5*time.Minute, filePath); err != nil {
 				t.Fatalf("Failed to download github latest release: %v", err)
 			}
-			t.Logf("Download github latest release success from: %v, save in: %v", asset.Url, filePath)
+			t.Logf("Download github latest release success from: %v, size: %v, save in: %v", asset.Url, asset.Size, filePath)
 
 			hashsum, err = sha256sum(filePath)
 			if err != nil {

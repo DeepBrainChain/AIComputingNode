@@ -136,6 +136,19 @@ Although the list of AI projects supported by the node is also saved in this con
     // Please create this folder in advance and ensure that this node program has read and
     // write permissions.
     "Datastore": "./datastore",
+    // Automatic upgrade configuration
+    // 1. Automatically detect and download updates published in the Release of the Github project.
+    // 2. Automatically verify the hash value of the latest application.
+    // 3. Automatically stop the program when the application is idle (the number of HTTP requests and model
+    // requests currently being processed is 0).
+    // Please note: When it is determined that an upgrade is required, the program will be automatically stopped,
+    // but the new process will not be restarted, so please set up a daemon process similar to Systemd/pm2 yourself.
+    "AutoUpgrade": {
+      // Whether to enable automatic upgrade. If enabled, please ensure that the node's network can access github.com normally.
+      "Enabled": true,
+      // The interval of the automatic upgrade timer, which is executed once every hour by default.
+      "TimeInterval": "1h"
+    },
     // Collect the heartbeat information broadcast by the node, which includes the supported
     // AI projects and models.
     "PeersCollect": {
@@ -234,6 +247,10 @@ This example is used for the worker node without a public IP address.
     "PreSharedKey": "f504f536a912a8cf7d00adacee8ed20270c5040d961d7f3da4fccbcbec0ec48a",
     "TopicName": "DeepBrainChain",
     "Datastore": "./datastore",
+    "AutoUpgrade": {
+      "Enabled": true,
+      "TimeInterval": "1h"
+    },
     "PeersCollect": {
       "Enabled": false,
       "HeartbeatInterval": "180s",
@@ -309,6 +326,10 @@ This example is used for the worker node without a public IP address.
     "PreSharedKey": "f504f536a912a8cf7d00adacee8ed20270c5040d961d7f3da4fccbcbec0ec48a",
     "TopicName": "DeepBrainChain",
     "Datastore": "./datastore",
+    "AutoUpgrade": {
+      "Enabled": true,
+      "TimeInterval": "1h"
+    },
     "PeersCollect": {
       "Enabled": true,
       "HeartbeatInterval": "180s",

@@ -96,7 +96,12 @@ func UpdateGithubLatestRelease(ctx context.Context, cur_version string, activeRe
 				log.Logger.Errorf("Failed to download github latest release: %v", err)
 				return
 			}
-			log.Logger.Infof("Download github latest release success from: %v, save in: %v", asset.Url, filePath)
+			log.Logger.Infof(
+				"Download github latest release success from: %v, size: %v, save in: %v",
+				asset.Url,
+				asset.Size,
+				filePath,
+			)
 
 			hashsum, err = sha256sum(filePath)
 			if err != nil {

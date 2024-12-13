@@ -121,6 +121,17 @@
     // 数据存储文件夹持久化了成功连接的对等信息等信息，方便节点启动时快速重新连接网络。
     // 请提前创建此文件夹并确保本节点程序有读写权限。
     "Datastore": "./datastore",
+    // 自动升级配置
+    // 1. 自动检测和下载发布在 Github 项目的 Release 中的更新
+    // 2. 自动校验最新应用程序的哈希值
+    // 3. 在本应用空闲(当前正在处理的 HTTP 请求和模型请求均为 0)时自动停止程序
+    // 请注意: 在判定为需要升级时会自动停止程序，但不会重启新进程，所以请自行设置类似 Systemd/pm2 的守护进程
+    "AutoUpgrade": {
+      // 是否启用自动升级，如果启用，请确保节点的网络能够正常访问 github.com
+      "Enabled": true,
+      // 自动升级定时器的时间间隔，默认每小时执行一次
+      "TimeInterval": "1h"
+    },
     // 收集节点广播的心跳信息，包括支持的AI项目和模型。
     "PeersCollect": {
       // 仅当节点拥有公网 IP 地址，且开启收集功能时，节点信息才会保存到 leveldb 数据库中。
@@ -212,6 +223,10 @@
     "PreSharedKey": "f504f536a912a8cf7d00adacee8ed20270c5040d961d7f3da4fccbcbec0ec48a",
     "TopicName": "DeepBrainChain",
     "Datastore": "./datastore",
+    "AutoUpgrade": {
+      "Enabled": true,
+      "TimeInterval": "1h"
+    },
     "PeersCollect": {
       "Enabled": false,
       "HeartbeatInterval": "180s",
@@ -287,6 +302,10 @@
     "PreSharedKey": "f504f536a912a8cf7d00adacee8ed20270c5040d961d7f3da4fccbcbec0ec48a",
     "TopicName": "DeepBrainChain",
     "Datastore": "./datastore",
+    "AutoUpgrade": {
+      "Enabled": true,
+      "TimeInterval": "1h"
+    },
     "PeersCollect": {
       "Enabled": true,
       "HeartbeatInterval": "180s",
