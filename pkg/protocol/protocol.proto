@@ -91,9 +91,45 @@ message ChatCompletionBody {
   }
 }
 
+message ChatContentPart {
+  enum Type {
+    TEXT = 0;
+    IMAGE = 1;
+    AUDIO = 2;
+  }
+  message Text {
+    string type = 1;
+    string text = 2;
+  }
+  message Image {
+    string type = 1;
+    string url = 2;
+    string detail = 3;
+  }
+  message Audio {
+    string type = 1;
+    string data = 2;
+    string format = 3;
+  }
+  Type type = 1;
+  Text text = 2;
+  Image image = 3;
+  Audio audio = 4;
+}
+
+message ChatContentParts {
+  repeated ChatContentPart parts = 1;
+}
+
 message ChatCompletionMessage {
   string role = 1;
-  string content = 2;
+  bytes content = 2;
+  // oneof content {
+  //  string text = 2;
+    // Fields in oneofs must not have labels (required / optional / repeated).
+    // repeated ChatContentPart parts = 3;
+  //   ChatContentParts parts = 3;
+  // }
 }
 
 message ChatCompletionRequest {
@@ -105,10 +141,15 @@ message ChatCompletionRequest {
   WalletVerification wallet = 16;
 }
 
+message ChatCompletionResponseMessage {
+  string role = 1;
+  string content = 2;
+}
+
 message ChatCompletionResponse {
   message ChatResponseChoice {
     int32 index = 1;
-    ChatCompletionMessage message = 2;
+    ChatCompletionResponseMessage message = 2;
     string finish_reason = 3;
   }
   message ChatResponseUsage {
@@ -119,6 +160,8 @@ message ChatCompletionResponse {
   int64 created = 1;
   repeated ChatResponseChoice choices = 2;
   ChatResponseUsage usage = 3;
+  string id = 4;
+  string object = 5;
 }
 
 message HostInfoBody {

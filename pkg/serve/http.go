@@ -20,6 +20,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
+
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 )
 
 type httpService struct {
@@ -63,6 +65,9 @@ func handleRequest(publishChan chan<- []byte, req *protocol.Message, rsp any, ti
 	reqBytes, err := proto.Marshal(req)
 	if err != nil {
 		return http.StatusInternalServerError, int(types.ErrCodeProtobuf), err.Error()
+	}
+	if len(reqBytes) > pubsub.DefaultMaxMessageSize {
+		return http.StatusRequestEntityTooLarge, int(types.ErrCodeInternal), "message cannot exceed 1 megabyte"
 	}
 
 	notifyChan := make(chan []byte, 1024)

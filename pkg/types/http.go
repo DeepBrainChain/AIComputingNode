@@ -46,21 +46,26 @@ type WalletVerification struct {
 	Hash      string `json:"hash,omitempty"`
 }
 
+type ChatImageContentPart struct {
+	Url    string `json:"url"`
+	Detail string `json:"detail,omitempty"`
+}
+
+type ChatAudioContentPart struct {
+	Data   string `json:"data"`
+	Format string `json:"format"`
+}
+
+type ChatDynamicContentPart struct {
+	Type       string                `json:"type"`
+	Text       string                `json:"text,omitempty"`
+	ImageUrl   *ChatImageContentPart `json:"image_url,omitempty"`
+	InputAudio *ChatAudioContentPart `json:"input_audio,omitempty"`
+}
+
 type ChatCompletionMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type ChatResponseChoice struct {
-	Index        int                   `json:"index"`
-	Message      ChatCompletionMessage `json:"message"`
-	FinishReason string                `json:"finish_reason"`
-}
-
-type StreamChatResponseChoice struct {
-	Index        int                   `json:"index"`
-	Delta        ChatCompletionMessage `json:"delta"`
-	FinishReason string                `json:"finish_reason"`
+	Role    string          `json:"role"`
+	Content json.RawMessage `json:"content"`
 }
 
 type ChatModelRequest struct {
@@ -81,6 +86,23 @@ type ChatCompletionProxyRequest struct {
 	ChatModelRequest
 }
 
+type ChatCompletionResponseMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type ChatResponseChoice struct {
+	Index        int                           `json:"index"`
+	Message      ChatCompletionResponseMessage `json:"message"`
+	FinishReason string                        `json:"finish_reason"`
+}
+
+type StreamChatResponseChoice struct {
+	Index        int                           `json:"index"`
+	Delta        ChatCompletionResponseMessage `json:"delta"`
+	FinishReason string                        `json:"finish_reason"`
+}
+
 type ChatResponseUsage struct {
 	CompletionTokens int `json:"completion_tokens"`
 	PromptTokens     int `json:"prompt_tokens"`
@@ -88,12 +110,16 @@ type ChatResponseUsage struct {
 }
 
 type ChatModelResponseData struct {
+	Id      string               `json:"id"`
+	Object  string               `json:"object"`
 	Created int64                `json:"created"`
 	Choices []ChatResponseChoice `json:"choices"`
 	Usage   ChatResponseUsage    `json:"usage"`
 }
 
 type StreamChatModelResponseData struct {
+	Id      string                     `json:"id"`
+	Object  string                     `json:"object"`
 	Created int64                      `json:"created"`
 	Choices []StreamChatResponseChoice `json:"choices"`
 	Usage   ChatResponseUsage          `json:"usage"`
@@ -280,6 +306,66 @@ func (req WalletVerification) Validate() error {
 	return nil
 }
 
+func (cdcp ChatDynamicContentPart) Validate() error {
+	switch cdcp.Type {
+	case "text":
+	case "image_url":
+		if cdcp.ImageUrl == nil {
+			return errors.New("the url of image content object is nil")
+		}
+	case "input_audio":
+		if cdcp.InputAudio == nil {
+			return errors.New("the data of audio content object is nil")
+		}
+	default:
+		return errors.New("unknowned part type of chat content")
+	}
+	return nil
+}
+
+func (ccm ChatCompletionMessage) Validate() error {
+	switch ccm.Role {
+	case "system":
+	case "user":
+	case "assistant":
+	case "tool":
+	case "function":
+	default:
+		return errors.New("unknowned role of chat message author")
+	}
+	if len(ccm.Content) < 2 {
+		return errors.New("invalid content of chat message")
+	}
+	if ccm.Content[0] == '[' && ccm.Content[len(ccm.Content)-1] == ']' {
+		parts := []ChatDynamicContentPart{}
+		if err := json.Unmarshal(ccm.Content, &parts); err != nil {
+			return err
+		}
+		for _, part := range parts {
+			if err := part.Validate(); err != nil {
+				return err
+			}
+		}
+	} else if ccm.Content[0] == '"' && ccm.Content[len(ccm.Content)-1] == '"' {
+		//
+	} else {
+		return errors.New("invalid content of chat message")
+	}
+	return nil
+}
+
+func (req ChatModelRequest) Validate() error {
+	for _, ccm := range req.Messages {
+		if err := ccm.Validate(); err != nil {
+			return err
+		}
+	}
+	// if err := req.WalletVerification.Validate(); err != nil {
+	// 	return err
+	// }
+	return nil
+}
+
 func (req ChatCompletionRequest) Validate() error {
 	if req.NodeID == "" {
 		return errors.New("empty node_id")
@@ -290,9 +376,9 @@ func (req ChatCompletionRequest) Validate() error {
 	if req.Model == "" {
 		return errors.New("empty model")
 	}
-	// if err := req.ChatModelRequest.WalletVerification.Validate(); err != nil {
-	// 	return err
-	// }
+	if err := req.ChatModelRequest.Validate(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -303,9 +389,9 @@ func (req ChatCompletionProxyRequest) Validate() error {
 	if req.Model == "" {
 		return errors.New("empty model")
 	}
-	// if err := req.ChatModelRequest.WalletVerification.Validate(); err != nil {
-	// 	return err
-	// }
+	if err := req.ChatModelRequest.Validate(); err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -15,11 +15,11 @@ import (
 	"AIComputingNode/pkg/types"
 )
 
-var steamRequest = `阅读下面的材料，根据要求写作。
+var steamRequest = `"阅读下面的材料，根据要求写作。
 随着互联网的普及、人工智能的应用，越来越多的问题能很快得到答案。那么，我们的问题是否会越来越少？
 以上材料引发了你怎样的联想和思考？请写一篇文章。
 要求：选准角度，确定立意，明确文体，自拟标题；不要套作，不得抄袭；不得泄露个人信息；不少于800字。
-`
+"`
 
 // go test -v -timeout 30s -count=1 -run TestChatModel AIComputingNode/pkg/model
 func TestChatModel(t *testing.T) {
@@ -35,11 +35,11 @@ func TestChatModel(t *testing.T) {
 	}
 	req.Messages = append(req.Messages, types.ChatCompletionMessage{
 		Role:    "system",
-		Content: "You are a helpful assistant.",
+		Content: []byte(`"You are a helpful assistant."`),
 	})
 	req.Messages = append(req.Messages, types.ChatCompletionMessage{
 		Role:    "user",
-		Content: "Hello",
+		Content: []byte(`"Hello"`),
 	})
 	res := ChatModel(config.Models.Llama3.API, req)
 	if res.Code != 0 {
@@ -200,11 +200,11 @@ func TestStreamChatModel(t *testing.T) {
 	}
 	req.Messages = append(req.Messages, types.ChatCompletionMessage{
 		Role:    "system",
-		Content: "你是一名参加高考的高三学生",
+		Content: []byte(`"你是一名参加高考的高三学生"`),
 	})
 	req.Messages = append(req.Messages, types.ChatCompletionMessage{
 		Role:    "user",
-		Content: steamRequest,
+		Content: []byte(steamRequest),
 	})
 	code, message := StreamChatModel2(config.Models.Qwen2.API, req)
 	t.Logf("Execute stream chat model %v %s", code, message)
@@ -223,11 +223,11 @@ func TestConcurrentStreamChatModel(t *testing.T) {
 	}
 	req.Messages = append(req.Messages, types.ChatCompletionMessage{
 		Role:    "system",
-		Content: "You are a helpful assistant.",
+		Content: []byte(`"You are a helpful assistant."`),
 	})
 	req.Messages = append(req.Messages, types.ChatCompletionMessage{
 		Role:    "user",
-		Content: "Hello, What's the weather like today? Where is a good place to travel?",
+		Content: []byte(`"Hello, What's the weather like today? Where is a good place to travel?"`),
 	})
 	jsonData, err := json.Marshal(req)
 	if err != nil {

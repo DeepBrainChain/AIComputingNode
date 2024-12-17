@@ -310,7 +310,7 @@ func (pst *PubSub) handleChatCompletionMessage(ctx context.Context, msg *protoco
 			if msg.ResultCode == 0 {
 				res.Created = chatRes.GetCreated()
 				for _, choice := range chatRes.Choices {
-					ccmsg := types.ChatCompletionMessage{
+					ccmsg := types.ChatCompletionResponseMessage{
 						Role:    choice.GetMessage().GetRole(),
 						Content: choice.GetMessage().GetContent(),
 					}
@@ -325,6 +325,8 @@ func (pst *PubSub) handleChatCompletionMessage(ctx context.Context, msg *protoco
 					PromptTokens:     int(chatRes.GetUsage().GetPromptTokens()),
 					TotalTokens:      int(chatRes.GetUsage().GetTotalTokens()),
 				}
+				res.Id = chatRes.GetId()
+				res.Object = chatRes.GetObject()
 			}
 			notifyData, err := json.Marshal(res)
 			if err != nil {
@@ -630,7 +632,7 @@ func (pst *PubSub) handleChatCompletionRequest(ctx context.Context, req *protoco
 	for _, choice := range chatRes.Choices {
 		response.Choices = append(response.Choices, &protocol.ChatCompletionResponse_ChatResponseChoice{
 			Index: int32(choice.Index),
-			Message: &protocol.ChatCompletionMessage{
+			Message: &protocol.ChatCompletionResponseMessage{
 				Role:    choice.Message.Role,
 				Content: choice.Message.Content,
 			},
