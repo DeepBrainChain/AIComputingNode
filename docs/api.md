@@ -409,7 +409,9 @@ This interface uses the project name to call the text-to-image model. The Input 
 This interface is used to query the list of AI projects running in the distributed communication network.
 
 - request method: GET
-- request URL: http://127.0.0.1:6000/api/v0/ai/projects/list
+- request URL: http://127.0.0.1:6000/api/v0/ai/projects/list?number=20
+- request Query parameters:
+  - number: positive integer type optional parameter - Indicates the maximum number of projects you want to query, the default value is 100
 - request Body: None
 - return example:
 ```json
@@ -426,14 +428,11 @@ This interface is used to query the list of AI projects running in the distribut
 This interface is used to query the model list of the specified AI project running in the distributed communication network.
 
 - request method: GET
-- request URL: http://127.0.0.1:6000/api/v0/ai/projects/models
-- request Body:
-```json
-{
-  // AI project name
-  "project": "DecentralGPT"
-}
-```
+- request URL: http://127.0.0.1:6000/api/v0/ai/projects/models?project=DecentralGPT&number=20
+- request Query parameters:
+  - project: AI project name
+  - number: positive integer type optional parameter - Indicates the maximum number of models you want to query, the default value is 100
+- request Body: None
 - return example:
 ```json
 {
@@ -449,18 +448,12 @@ This interface is used to query the model list of the specified AI project runni
 This interface is used to query the list of nodes running the specified AI project and model in the distributed communication network.
 
 - request method: GET
-- request URL: http://127.0.0.1:6000/api/v0/ai/projects/peers
+- request URL: http://127.0.0.1:6000/api/v0/ai/projects/peers?project=DecentralGPT&model=Qwen2.5-72B&number=20
 - request Query parameters:
+  - project: AI project name
+  - model: Model name
   - number: positive integer type optional parameter - Indicates the maximum number of nodes you want to query, the default value is 20
-- request Body:
-```json
-{
-  // AI project name
-  "project": "DecentralGPT",
-  // Model name
-  "model": "Llama3-70B"
-}
-```
+- request Body: None
 - return example:
 ```json
 {
@@ -494,9 +487,6 @@ This interface is used to query the list of nodes running the specified AI proje
   ]
 }
 ```
-
-Starting from version v0.1.3, an optional Query parameter "number" is added to the request URL to limit the maximum number of nodes you want to query. For example, if you only need 3 nodes, you can use the URL
-`http://127.0.0.1:6000/api/v0/ai/projects/peers?number=3`.
 
 ## Node control interface
 

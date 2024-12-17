@@ -409,7 +409,9 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 此接口用来查询分布式通信网络中运行的 AI 项目列表。
 
 - 请求方式: GET
-- 请求 URL: http://127.0.0.1:6000/api/v0/ai/projects/list
+- 请求 URL: http://127.0.0.1:6000/api/v0/ai/projects/list?number=20
+- 请求 Query 参数:
+  - number: 正整数类型可选参数 - 表示想要查询的最大项目数量，默认值为 100
 - 请求 Body: None
 - 返回示例:
 ```json
@@ -426,14 +428,11 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 此接口用来查询分布式通信网络中运行指定 AI 项目的模型列表。
 
 - 请求方式: GET
-- 请求 URL: http://127.0.0.1:6000/api/v0/ai/projects/models
-- 请求 Body:
-```json
-{
-  // AI 项目名称
-  "project": "DecentralGPT"
-}
-```
+- 请求 URL: http://127.0.0.1:6000/api/v0/ai/projects/models?project=DecentralGPT&number=20
+- 请求 Query 参数:
+  - project: AI 项目名称
+  - number: 正整数类型可选参数 - 表示想要查询的最大模型数量，默认值为 100
+- 请求 Body: None
 - 返回示例:
 ```json
 {
@@ -449,18 +448,12 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 此接口用来查询分布式通信网络中运行指定 AI 项目和模型的节点列表。
 
 - 请求方式: GET
-- 请求 URL: http://127.0.0.1:6000/api/v0/ai/projects/peers
+- 请求 URL: http://127.0.0.1:6000/api/v0/ai/projects/peers?project=DecentralGPT&model=Qwen2.5-72B&number=20
 - 请求 Query 参数:
+  - project: AI 项目名称
+  - model: 模型名称
   - number: 正整数类型可选参数 - 表示想要查询的最大节点数量，默认值为 20
-- 请求 Body:
-```json
-{
-  // AI 项目名称
-  "project": "DecentralGPT",
-  // 模型名称
-  "model": "Llama3-70B"
-}
-```
+- 请求 Body: None
 - 返回示例:
 ```json
 {
@@ -492,9 +485,6 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
   ]
 }
 ```
-
-v0.1.3 版本开始在请求 URL 中增加了可选的 Query 参数 "number" 来限制想要查询的最大节点数量，例如仅需 3 个节点，可以使用 URL
-`http://127.0.0.1:6000/api/v0/ai/projects/peers?number=3`。
 
 ## 节点控制接口
 

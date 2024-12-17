@@ -53,55 +53,6 @@ func handleChatCompletionRequest(ctx context.Context, publishChan chan<- []byte,
 			Role:    ccm.Role,
 			Content: ccm.Content,
 		})
-		// parts := []types.ChatDynamicContentPart{}
-		// if err := json.Unmarshal(ccm.Content, &parts); err != nil {
-		// 	ccps := make([]*protocol.ChatContentPart, 0)
-		// 	for _, ccp := range parts {
-		// 		switch ccp.Type {
-		// 		case "text":
-		// 			ccps = append(ccps, &protocol.ChatContentPart{
-		// 				Type: protocol.ChatContentPart_TEXT,
-		// 				Text: &protocol.ChatContentPart_Text{
-		// 					Type: ccp.Type,
-		// 					Text: ccp.Text,
-		// 				},
-		// 			})
-		// 		case "image_url":
-		// 			ccps = append(ccps, &protocol.ChatContentPart{
-		// 				Type: protocol.ChatContentPart_IMAGE,
-		// 				Image: &protocol.ChatContentPart_Image{
-		// 					Type:   ccp.Type,
-		// 					Url:    ccp.ImageUrl.Url,
-		// 					Detail: ccp.ImageUrl.Detail,
-		// 				},
-		// 			})
-		// 		case "input_audio":
-		// 			ccps = append(ccps, &protocol.ChatContentPart{
-		// 				Type: protocol.ChatContentPart_AUDIO,
-		// 				Audio: &protocol.ChatContentPart_Audio{
-		// 					Type:   ccp.Type,
-		// 					Data:   ccp.InputAudio.Data,
-		// 					Format: ccp.InputAudio.Format,
-		// 				},
-		// 			})
-		// 		}
-		// 	}
-		// 	ccms = append(ccms, &protocol.ChatCompletionMessage{
-		// 		Role: ccm.Role,
-		// 		Content: &protocol.ChatCompletionMessage_Parts{
-		// 			Parts: &protocol.ChatContentParts{
-		// 				Parts: ccps,
-		// 			},
-		// 		},
-		// 	})
-		// } else {
-		// 	ccms = append(ccms, &protocol.ChatCompletionMessage{
-		// 		Role: ccm.Role,
-		// 		Content: &protocol.ChatCompletionMessage_Text{
-		// 			Text: string(ccm.Content),
-		// 		},
-		// 	})
-		// }
 	}
 
 	pi := &protocol.ChatCompletionBody{
