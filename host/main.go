@@ -311,8 +311,11 @@ func main() {
 	// Let's connect to the bootstrap nodes first. They will tell us about the
 	// other nodes in the network.
 	errs := make(chan error, len(DefaultBootstrapPeers))
+	mapBootstrapIds := make(map[peer.ID]struct{})
 	var wg sync.WaitGroup
 	for _, peerinfo := range DefaultBootstrapPeers {
+		mapBootstrapIds[peerinfo.ID] = struct{}{}
+
 		wg.Add(1)
 		go func(pi peer.AddrInfo) {
 			defer wg.Done()
@@ -344,6 +347,10 @@ func main() {
 
 	if !cfg.Swarm.RelayService.Enabled {
 		for _, peerinfo := range PeersHistory {
+			if _, ok := mapBootstrapIds[peerinfo.ID]; ok {
+				continue
+			}
+
 			wg.Add(1)
 			go func(pi peer.AddrInfo) {
 				defer wg.Done()
