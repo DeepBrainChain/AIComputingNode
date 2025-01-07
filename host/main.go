@@ -495,7 +495,13 @@ func main() {
 	}
 	job1, err := scheduler.NewJob(
 		gocron.DurationJob(heartbeatInterval),
-		gocron.NewTask(timer.SendAIProjects, publishChan),
+		gocron.NewTask(
+			func(pcn chan<- []byte) {
+				timer.SendAIProjects(pcn)
+				db.CleanExpiredPeerCollectInfo()
+			},
+			publishChan,
+		),
 	)
 	if err != nil {
 		log.Logger.Fatalf("Create scheduled ai projects job failed: %v", err)

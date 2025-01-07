@@ -317,11 +317,11 @@ func GetPeersOfAIProjects(project, model string, limit int) (map[string]int, int
 }
 
 func CleanExpiredPeerCollectInfo() {
-	ids := make(map[string]int64)
 	if peersCollectDB == nil {
 		return
 	}
 
+	ids := make(map[string]int64)
 	iter := peersCollectDB.NewIterator(nil, nil)
 	timestamp := time.Now().Add(-time.Hour * 24)
 	for iter.Next() {
