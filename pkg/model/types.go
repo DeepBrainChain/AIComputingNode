@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"sync"
 
 	"AIComputingNode/pkg/types"
@@ -8,23 +9,22 @@ import (
 
 type ProjectMap struct {
 	mutex    sync.RWMutex
-	elements map[string]map[string]types.ModelInfo
+	elements map[string][]types.ModelIdle
 }
 
 var projects = ProjectMap{
 	mutex:    sync.RWMutex{},
-	elements: make(map[string]map[string]types.ModelInfo),
+	elements: make(map[string][]types.ModelIdle),
 }
 
 func InitModels(ms []types.AIProjectConfig) error {
 	for _, pc := range ms {
-		models := make(map[string]types.ModelInfo)
+		models := make([]types.ModelIdle, 0)
 		for _, model := range pc.Models {
-			models[model.Model] = types.ModelInfo{
-				API:  model.API,
-				Type: model.Type,
-				Idle: 0,
-			}
+			models = append(models, types.ModelIdle{
+				AIModelConfig: model,
+				Idle:          0,
+			})
 		}
 		projects.elements[pc.Project] = models
 	}
@@ -43,39 +43,67 @@ func IdleCount() int {
 	return idleCount
 }
 
-func GetAIProjects() map[string]map[string]types.ModelInfo {
+func GetAIProjects() map[string][]types.ModelIdle {
 	projects.mutex.RLock()
 	defer projects.mutex.RUnlock()
 	// Do not modify the returned value
 	// return projects.elements
-	res := make(map[string]map[string]types.ModelInfo)
+	res := make(map[string][]types.ModelIdle)
 	for pn, models := range projects.elements {
-		ms := make(map[string]types.ModelInfo)
-		for mn, model := range models {
-			ms[mn] = model
-		}
+		ms := make([]types.ModelIdle, len(models))
+		copy(ms, models)
 		res[pn] = ms
 	}
 	return res
+}
+
+func GetModelInfo(projectName, modelName, cid string) (*types.ModelIdle, error) {
+	mi := &types.ModelIdle{}
+	if projectName == "" || modelName == "" {
+		return mi, fmt.Errorf("empty project or model")
+	}
+	projects.mutex.RLock()
+	defer projects.mutex.RUnlock()
+	for pn, models := range projects.elements {
+		if pn == projectName {
+			for _, model := range models {
+				if model.Model == modelName && (cid == "" || model.CID == cid) {
+					if mi.API == "" {
+						*mi = model
+					} else {
+						if model.Idle < mi.Idle {
+							*mi = model
+						}
+					}
+				}
+			}
+		}
+	}
+	if mi.API == "" {
+		return mi, fmt.Errorf("can not find in registered project and model")
+	}
+	return mi, nil
 }
 
 func RegisterAIProject(pjt types.AIProjectConfig) {
 	projects.mutex.Lock()
 	defer projects.mutex.Unlock()
 
-	models := make(map[string]types.ModelInfo)
+	models := make([]types.ModelIdle, 0)
 	for _, model := range pjt.Models {
-		models[model.Model] = types.ModelInfo{
-			API:  model.API,
-			Type: model.Type,
-			Idle: 0,
-		}
+		models = append(models, types.ModelIdle{
+			AIModelConfig: model,
+			Idle:          0,
+		})
 	}
 	if old, ok := projects.elements[pjt.Project]; ok {
-		for key, value := range old {
-			if mi, ok := models[key]; ok {
-				mi.Idle = value.Idle
-				models[key] = mi
+		for _, value := range old {
+			for i, mi := range models {
+				if value.Model == mi.Model && value.CID == mi.CID {
+					mi.Idle = value.Idle
+					models[i] = mi
+					break
+				}
 			}
 		}
 	}
@@ -89,161 +117,33 @@ func UnregisterAIProject(project string) {
 }
 
 // Increase Reference
-func IncRef(project, model string) {
+func IncRef(project, model, cid string) {
 	projects.mutex.Lock()
 	defer projects.mutex.Unlock()
 	if models, ok := projects.elements[project]; ok {
-		if mi, ok := models[model]; ok {
-			// mi.Idle = mi.Idle + 1
-			models[model] = types.ModelInfo{
-				API:  mi.API,
-				Type: mi.Type,
-				Idle: mi.Idle + 1,
+		for i, mi := range models {
+			if mi.Model == model && mi.CID == cid {
+				mi.Idle = mi.Idle + 1
+				models[i] = mi
+				break
 			}
 		}
 	}
 }
 
 // Decrease reference
-func DecRef(project, model string) {
+func DecRef(project, model, cid string) {
 	projects.mutex.Lock()
 	defer projects.mutex.Unlock()
 	if models, ok := projects.elements[project]; ok {
-		if mi, ok := models[model]; ok && mi.Idle > 0 {
-			// mi.Idle = mi.Idle - 1
-			models[model] = types.ModelInfo{
-				API:  mi.API,
-				Type: mi.Type,
-				Idle: mi.Idle - 1,
-			}
-		}
-	}
-}
-
-/*
-var projects = sync.Map{}
-
-func InitModels(ms []types.AIProjectConfig) error {
-	for _, pc := range ms {
-		models := make(map[string]types.ModelInfo)
-		for _, model := range pc.Models {
-			models[model.Model] = types.ModelInfo{
-				API:  model.API,
-				Type: model.Type,
-				Idle: 0,
-			}
-		}
-		projects.Store(pc.Project, models)
-	}
-	return nil
-}
-
-func GetAIProjects() map[string]map[string]types.ModelInfo {
-	projs := make(map[string]map[string]types.ModelInfo)
-	projects.Range(func(key, value any) bool {
-		project := key.(string)
-		models := value.(map[string]types.ModelInfo)
-		projs[project] = models
-		return true
-	})
-	return projs
-}
-
-func RegisterAIProject(pjt types.AIProjectConfig) {
-	models := make(map[string]types.ModelInfo)
-	for _, model := range pjt.Models {
-		models[model.Model] = types.ModelInfo{
-			API:  model.API,
-			Type: model.Type,
-			Idle: 0,
-		}
-	}
-	if old, ok := projects.Load(pjt.Project); ok {
-		if oldModels, ok := old.(map[string]types.ModelInfo); ok {
-			for key, value := range oldModels {
-				if mi, ok := models[key]; ok {
-					mi.Idle = value.Idle
-					models[key] = mi
+		for i, mi := range models {
+			if mi.Model == model && mi.CID == cid {
+				if mi.Idle > 0 {
+					mi.Idle = mi.Idle - 1
+					models[i] = mi
 				}
+				break
 			}
 		}
 	}
-	projects.Store(pjt.Project, models)
 }
-
-func UnregisterAIProject(project string) {
-	projects.Delete(project)
-}
-
-func UpdateModel(project string, updateFunc func(interface{}) interface{}) {
-	if old, ok := projects.Load(project); ok {
-		if models := updateFunc(old); models != nil {
-			projects.Store(project, models)
-		}
-	}
-}
-
-// The external map uses the Load method to obtain a reference to the internal map, and the
-// concurrency safety of the internal map cannot be guaranteed unless both layers of maps use sync.Map.
-// Concurrent modification by multiple threads may cause a crash of "fatal error: concurrent map writes".
-
-// Increase Reference
-func IncRef(project, model string) {
-	UpdateModel(project, func(old interface{}) interface{} {
-		if models, ok := old.(map[string]types.ModelInfo); ok {
-			new := make(map[string]types.ModelInfo)
-			for key, value := range models {
-				if key == model {
-					new[key] = types.ModelInfo{
-						API:  value.API,
-						Type: value.Type,
-						Idle: value.Idle + 1,
-					}
-				} else {
-					new[key] = value
-				}
-			}
-			return new
-			// if mi, ok := models[model]; ok {
-			// 	mi.Idle = mi.Idle + 1
-			// 	models[model] = mi
-			// 	return models
-			// }
-		}
-		return nil
-	})
-}
-
-// Decrease reference
-func DecRef(project, model string) {
-	UpdateModel(project, func(old interface{}) interface{} {
-		if models, ok := old.(map[string]types.ModelInfo); ok {
-			new := make(map[string]types.ModelInfo)
-			for key, value := range models {
-				if key == model {
-					idle := value.Idle - 1
-					if idle < 0 {
-						idle = 0
-					}
-					new[key] = types.ModelInfo{
-						API:  value.API,
-						Type: value.Type,
-						Idle: idle,
-					}
-				} else {
-					new[key] = value
-				}
-			}
-			return new
-			// if mi, ok := models[model]; ok {
-			// 	if mi.Idle > 0 {
-			// 		mi.Idle = mi.Idle - 1
-			// 		models[model] = mi
-			// 		return models
-			// 	}
-			// }
-		}
-		return nil
-	})
-}
-*/

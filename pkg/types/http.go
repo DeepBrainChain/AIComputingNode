@@ -78,6 +78,7 @@ type ChatModelRequest struct {
 type ChatCompletionRequest struct {
 	NodeID  string `json:"node_id"`
 	Project string `json:"project"`
+	CID     string `json:"cid"`
 	ChatModelRequest
 }
 
@@ -144,6 +145,7 @@ type ImageGenModelRequest struct {
 type ImageGenerationRequest struct {
 	NodeID  string `json:"node_id"`
 	Project string `json:"project"`
+	CID     string `json:"cid"`
 	ImageGenModelRequest
 }
 
@@ -178,7 +180,7 @@ type AIProjectListRequest BaseHttpRequest
 
 type AIProjectListResponse struct {
 	BaseHttpResponse
-	Data map[string]map[string]ModelInfo `json:"data"`
+	Data map[string][]ModelIdle `json:"data"`
 }
 
 type GetAIProjectsRequest struct {
@@ -201,6 +203,7 @@ type AIProjectPeerInfo struct {
 	Connectivity int    `json:"connectivity"`
 	Latency      int64  `json:"latency"`
 	Idle         int    `json:"Idle"`
+	CID          string `json:"cid"`
 }
 
 type GetPeersOfAIProjectResponse struct {

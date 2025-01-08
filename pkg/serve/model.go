@@ -27,17 +27,17 @@ import (
 
 func handleChatCompletionRequest(ctx context.Context, publishChan chan<- []byte, req *types.ChatCompletionRequest, rsp *types.ChatCompletionResponse) (int, int, string) {
 	if req.NodeID == config.GC.Identity.PeerID {
-		modelAPI, _ := config.GC.GetModelAPI(req.Project, req.Model)
-		if modelAPI == "" {
-			return http.StatusInternalServerError, int(types.ErrCodeModel), "Model API configuration is empty"
+		mi, err := model.GetModelInfo(req.Project, req.Model, req.CID)
+		if err != nil {
+			return http.StatusInternalServerError, int(types.ErrCodeModel), err.Error()
 		}
-		model.IncRef(req.Project, req.Model)
+		model.IncRef(req.Project, req.Model, mi.CID)
 		timer.SendAIProjects(publishChan)
 		defer func() {
-			model.DecRef(req.Project, req.Model)
+			model.DecRef(req.Project, req.Model, mi.CID)
 			timer.SendAIProjects(publishChan)
 		}()
-		*rsp = *model.ChatModel(modelAPI, req.ChatModelRequest)
+		*rsp = *model.ChatModel(mi.API, req.ChatModelRequest)
 		log.Logger.Infof("Execute model %s result {code:%d, message:%s}", req.Model, rsp.Code, rsp.Message)
 		return http.StatusOK, rsp.Code, rsp.Message
 	}
@@ -67,6 +67,7 @@ func handleChatCompletionRequest(ctx context.Context, publishChan chan<- []byte,
 					Signature: req.Signature,
 					Hash:      req.Hash,
 				},
+				Cid: req.CID,
 			},
 		},
 	}
@@ -99,10 +100,10 @@ func handleChatCompletionRequest(ctx context.Context, publishChan chan<- []byte,
 
 func handleChatCompletionStreamRequest(ctx context.Context, w http.ResponseWriter, req *types.ChatCompletionRequest, rsp *types.ChatCompletionResponse) (int, int, string) {
 	if req.NodeID == config.GC.Identity.PeerID {
-		modelAPI, _ := config.GC.GetModelAPI(req.Project, req.Model)
+		mi, err := model.GetModelInfo(req.Project, req.Model, req.CID)
 		log.Logger.Info("Received chat completion stream request from the node itself")
-		if modelAPI == "" {
-			return http.StatusInternalServerError, int(types.ErrCodeModel), "Model API configuration is empty"
+		if err != nil {
+			return http.StatusInternalServerError, int(types.ErrCodeModel), err.Error()
 		}
 
 		jsonData, err := json.Marshal(req.ChatModelRequest)
@@ -112,7 +113,7 @@ func handleChatCompletionStreamRequest(ctx context.Context, w http.ResponseWrite
 			log.Logger.Errorf("Marshal model request body failed: %v", err)
 			return http.StatusInternalServerError, int(types.ErrCodeModel), "Marshal model request body failed"
 		}
-		hreq, err := http.NewRequestWithContext(ctx, "POST", modelAPI, bytes.NewBuffer(jsonData))
+		hreq, err := http.NewRequestWithContext(ctx, "POST", mi.API, bytes.NewBuffer(jsonData))
 		if err != nil {
 			// rsp.Code = int(types.ErrCodeModel)
 			// rsp.Message = "Create http request for stream failed"
@@ -187,6 +188,7 @@ func handleChatCompletionStreamRequest(ctx context.Context, w http.ResponseWrite
 	queryValues := hreq.URL.Query()
 	queryValues.Add("project", req.Project)
 	queryValues.Add("model", req.Model)
+	queryValues.Add("cid", req.CID)
 	hreq.URL.RawQuery = queryValues.Encode()
 
 	stream, err := host.Hio.NewStream(ctx, req.NodeID)
@@ -309,6 +311,13 @@ func ChatCompletionHandler(c *gin.Context, publishChan chan<- []byte) {
 func ChatCompletionProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 	rsp := types.ChatCompletionResponse{}
 
+	if !config.GC.App.PeersCollect.Enabled {
+		rsp.Code = int(types.ErrCodeUnsupported)
+		rsp.Message = types.ErrCodeUnsupported.String()
+		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
 	var msg types.ChatCompletionProxyRequest
 	if err := c.ShouldBindJSON(&msg); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
@@ -333,7 +342,7 @@ func ChatCompletionProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 	}
 
 	peers := []types.AIProjectPeerInfo{}
-	for id, idle := range ids {
+	for id, mi := range ids {
 		conn := host.Hio.Connectedness(id)
 		if msg.Stream && conn != 1 {
 			continue
@@ -346,7 +355,8 @@ func ChatCompletionProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 			NodeID:       id,
 			Connectivity: conn,
 			Latency:      latency,
-			Idle:         idle,
+			Idle:         mi.Idle,
+			CID:          mi.CID,
 		})
 	}
 	if len(peers) == 0 {
@@ -360,6 +370,7 @@ func ChatCompletionProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 
 	chatReq := types.ChatCompletionRequest{
 		NodeID:           peers[0].NodeID,
+		CID:              peers[0].CID,
 		Project:          msg.Project,
 		ChatModelRequest: msg.ChatModelRequest,
 	}
@@ -443,17 +454,17 @@ func ChatCompletionProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 
 func handleImageGenRequest(ctx context.Context, publishChan chan<- []byte, req types.ImageGenerationRequest, rsp *types.ImageGenerationResponse) (int, int, string) {
 	if req.NodeID == config.GC.Identity.PeerID {
-		modelAPI, _ := config.GC.GetModelAPI(req.Project, req.Model)
-		if modelAPI == "" {
-			return http.StatusInternalServerError, int(types.ErrCodeModel), "Model API configuration is empty"
+		mi, err := model.GetModelInfo(req.Project, req.Model, req.CID)
+		if err != nil {
+			return http.StatusInternalServerError, int(types.ErrCodeModel), err.Error()
 		}
-		model.IncRef(req.Project, req.Model)
+		model.IncRef(req.Project, req.Model, mi.CID)
 		timer.SendAIProjects(publishChan)
 		defer func() {
-			model.DecRef(req.Project, req.Model)
+			model.DecRef(req.Project, req.Model, mi.CID)
 			timer.SendAIProjects(publishChan)
 		}()
-		*rsp = *model.ImageGenerationModel(modelAPI, req.ImageGenModelRequest)
+		*rsp = *model.ImageGenerationModel(mi.API, req.ImageGenModelRequest)
 		log.Logger.Infof("Execute model %s result {code:%d, message:%s}", req.Model, rsp.Code, rsp.Message)
 		return http.StatusOK, rsp.Code, rsp.Message
 	}
@@ -483,6 +494,7 @@ func handleImageGenRequest(ctx context.Context, publishChan chan<- []byte, req t
 		queryValues := hreq.URL.Query()
 		queryValues.Add("project", req.Project)
 		queryValues.Add("model", req.Model)
+		queryValues.Add("cid", req.CID)
 		hreq.URL.RawQuery = queryValues.Encode()
 
 		stream, err := host.Hio.NewStream(ctx, req.NodeID)
@@ -601,6 +613,7 @@ func handleImageGenRequest(ctx context.Context, publishChan chan<- []byte, req t
 					Signature: req.Signature,
 					Hash:      req.Hash,
 				},
+				Cid: req.CID,
 			},
 		},
 	}
@@ -665,6 +678,13 @@ func ImageGenHandler(c *gin.Context, publishChan chan<- []byte) {
 func ImageGenProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 	rsp := types.ImageGenerationResponse{}
 
+	if !config.GC.App.PeersCollect.Enabled {
+		rsp.Code = int(types.ErrCodeUnsupported)
+		rsp.Message = types.ErrCodeUnsupported.String()
+		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
 	var msg types.ImageGenerationProxyRequest
 	if err := c.ShouldBindJSON(&msg); err != nil {
 		rsp.Code = int(types.ErrCodeParse)
@@ -689,7 +709,7 @@ func ImageGenProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 	}
 
 	peers := []types.AIProjectPeerInfo{}
-	for id, idle := range ids {
+	for id, mi := range ids {
 		conn := host.Hio.Connectedness(id)
 		if msg.ResponseFormat == "b64_json" && conn != 1 {
 			continue
@@ -702,7 +722,8 @@ func ImageGenProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 			NodeID:       id,
 			Connectivity: conn,
 			Latency:      latency,
-			Idle:         idle,
+			Idle:         mi.Idle,
+			CID:          mi.CID,
 		})
 	}
 	if len(peers) == 0 {
@@ -716,6 +737,7 @@ func ImageGenProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 
 	igReq := types.ImageGenerationRequest{
 		NodeID:               peers[0].NodeID,
+		CID:                  peers[0].CID,
 		Project:              msg.Project,
 		ImageGenModelRequest: msg.ImageGenModelRequest,
 	}

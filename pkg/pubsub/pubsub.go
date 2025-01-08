@@ -578,9 +578,9 @@ func TransformErrorResponse(msg *protocol.Message, code int32, message string) *
 func (pst *PubSub) handleChatCompletionRequest(ctx context.Context, req *protocol.ChatCompletionRequest, reqHeader *protocol.MessageHeader) (int, string, *protocol.ChatCompletionResponse) {
 	response := &protocol.ChatCompletionResponse{}
 
-	modelAPI, _ := config.GC.GetModelAPI(req.GetProject(), req.GetModel())
-	if modelAPI == "" {
-		return int(types.ErrCodeModel), "Model API configuration is empty", response
+	mi, err := model.GetModelInfo(req.GetProject(), req.GetModel(), req.GetCid())
+	if err != nil {
+		return int(types.ErrCodeModel), err.Error(), response
 	}
 
 	chatReq := types.ChatModelRequest{
@@ -599,13 +599,13 @@ func (pst *PubSub) handleChatCompletionRequest(ctx context.Context, req *protoco
 		})
 	}
 
-	model.IncRef(req.GetProject(), req.GetModel())
+	model.IncRef(req.GetProject(), req.GetModel(), mi.CID)
 	timer.SendAIProjects(pst.publishChan)
 	defer func() {
-		model.DecRef(req.GetProject(), req.GetModel())
+		model.DecRef(req.GetProject(), req.GetModel(), mi.CID)
 		timer.SendAIProjects(pst.publishChan)
 	}()
-	chatRes := model.ChatModel(modelAPI, chatReq)
+	chatRes := model.ChatModel(mi.API, chatReq)
 
 	log.Logger.Infof("Execute model %s in %s result {code:%d, message:%s}", req.GetProject(), req.GetModel(), chatRes.Code, chatRes.Message)
 	modelHistory := &types.ModelHistory{
@@ -650,9 +650,9 @@ func (pst *PubSub) handleChatCompletionRequest(ctx context.Context, req *protoco
 func (pst *PubSub) handleImageGenerationRequest(ctx context.Context, req *protocol.ImageGenerationRequest, reqHeader *protocol.MessageHeader) (int, string, *protocol.ImageGenerationResponse) {
 	response := &protocol.ImageGenerationResponse{}
 
-	modelAPI, _ := config.GC.GetModelAPI(req.GetProject(), req.GetModel())
-	if modelAPI == "" {
-		return int(types.ErrCodeModel), "Model API configuration is empty", response
+	mi, err := model.GetModelInfo(req.GetProject(), req.GetModel(), req.GetCid())
+	if err != nil {
+		return int(types.ErrCodeModel), err.Error(), response
 	}
 
 	igReq := types.ImageGenModelRequest{
@@ -670,13 +670,13 @@ func (pst *PubSub) handleImageGenerationRequest(ctx context.Context, req *protoc
 		},
 	}
 
-	model.IncRef(req.GetProject(), req.GetModel())
+	model.IncRef(req.GetProject(), req.GetModel(), mi.CID)
 	timer.SendAIProjects(pst.publishChan)
 	defer func() {
-		model.DecRef(req.GetProject(), req.GetModel())
+		model.DecRef(req.GetProject(), req.GetModel(), mi.CID)
 		timer.SendAIProjects(pst.publishChan)
 	}()
-	igRes := model.ImageGenerationModel(modelAPI, igReq)
+	igRes := model.ImageGenerationModel(mi.API, igReq)
 
 	if igRes.Code == 0 {
 		log.Logger.Infof("Execute model %s with (%q, %d, %s) result %v",

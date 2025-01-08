@@ -42,12 +42,19 @@ func TestJsonStruct(t *testing.T) {
 	}
 	t.Logf("orignal json %s", string(jsonData))
 
-	var value string = "{\"key\":\"Test\",\"Value\":\"value\"}"
+	var value string = "{\"key\":\"Test\",\"value\":\"abc\"}"
 	js := testJson{}
 	if err := json.Unmarshal([]byte(value), &js); err != nil {
 		t.Fatalf("Unmarshal json %v", err)
 	}
 	t.Logf("Unmarshal json sucess %v", js)
+
+	value = "{\"KEY\":\"Test\",\"Value\":\"abc\"}"
+	js2 := testJson{}
+	if err := json.Unmarshal([]byte(value), &js2); err != nil {
+		t.Fatalf("Unmarshal json %v", err)
+	}
+	t.Logf("Unmarshal json sucess %v", js2)
 
 	test2 := testJson{
 		Key: "Test",
@@ -57,6 +64,13 @@ func TestJsonStruct(t *testing.T) {
 		t.Fatalf("Marshal json %v", err)
 	}
 	t.Logf("orignal json %s from struct %v", string(jsonData), test2)
+
+	value = "{\"Model\":\"degpt\",\"API\":\"https://api.openai.com/v1/chat/completions/\",\"type\":1,\"cid\":\"246\"}"
+	js3 := AIModelConfig{}
+	if err := json.Unmarshal([]byte(value), &js3); err != nil {
+		t.Fatalf("Unmarshal json %v", err)
+	}
+	t.Logf("Unmarshal json sucess %v", js3)
 }
 
 func TestDynamicJsonStruct(t *testing.T) {

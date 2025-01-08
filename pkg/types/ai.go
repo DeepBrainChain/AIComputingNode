@@ -22,12 +22,12 @@ type AIModelConfig struct {
 	Model string `json:"Model"`
 	API   string `json:"API"`
 	Type  int    `json:"Type"`
+	CID   string `json:"CID"`
 }
 
-type ModelInfo struct {
-	API  string `json:"API"`
-	Type int    `json:"Type"`
-	Idle int    `json:"Idle"`
+type ModelIdle struct {
+	AIModelConfig
+	Idle int `json:"Idle"`
 }
 
 func (config AIProjectConfig) Validate() error {

@@ -240,7 +240,7 @@ func TestHttpReuse(t *testing.T) {
 	}
 }
 
-// go test -v -timeout 300s -count=1 -run TestStreamChatModel AIComputingNode/pkg/p2p > 1.log 2>&1
+// go test -v -timeout 300s -count=1 -run TestStreamChatModel AIComputingNode/pkg/libp2p/stream > 1.log 2>&1
 func TestStreamChatModel(t *testing.T) {
 	golog.SetAllLoggers(golog.LevelInfo)
 	config, err := test.LoadConfig("D:/Code/AIComputingNode/test.json")
@@ -255,11 +255,11 @@ func TestStreamChatModel(t *testing.T) {
 	}
 	req.Messages = append(req.Messages, types.ChatCompletionMessage{
 		Role:    "system",
-		Content: "You are a helpful assistant.",
+		Content: []byte(`"You are a helpful assistant."`),
 	})
 	req.Messages = append(req.Messages, types.ChatCompletionMessage{
 		Role:    "user",
-		Content: "Hello, What's the weather like today? Where is a good place to travel?",
+		Content: []byte(`"Hello, What's the weather like today? Where is a good place to travel?"`),
 	})
 	jsonData, err := json.Marshal(req)
 	if err != nil {

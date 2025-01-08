@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+// go test -v -timeout 30s -count=1 -run TestSyncMap AIComputingNode/pkg/model
 func TestSyncMap(t *testing.T) {
 	pjt := make([]types.AIProjectConfig, 0)
 	pjt = append(pjt, types.AIProjectConfig{
@@ -15,11 +16,13 @@ func TestSyncMap(t *testing.T) {
 				Model: "P1-M1",
 				API:   "P1-url1",
 				Type:  0,
+				CID:   "P1-M1",
 			},
 			{
 				Model: "P1-M2",
 				API:   "P1-url2",
 				Type:  0,
+				CID:   "P1-M2",
 			},
 		},
 	})
@@ -30,11 +33,13 @@ func TestSyncMap(t *testing.T) {
 				Model: "P2-M1",
 				API:   "P2-url1",
 				Type:  0,
+				CID:   "P2-M1",
 			},
 			{
 				Model: "P2-M2",
 				API:   "P2-url2",
 				Type:  0,
+				CID:   "P2-M2",
 			},
 		},
 	})
@@ -46,26 +51,27 @@ func TestSyncMap(t *testing.T) {
 		t.Log(pn, models)
 	}
 
-	IncRef("P1", "P1-M1")
-	IncRef("P1", "P1-M2")
+	IncRef("P1", "P1-M1", "")
+	IncRef("P1", "P1-M1", "P1-M1")
+	IncRef("P1", "P1-M2", "P1-M2")
 
-	IncRef("P2", "P2-M1")
-	IncRef("P2", "P2-M2")
-	IncRef("P2", "P2-M2")
+	IncRef("P2", "P2-M1", "P2-M1")
+	IncRef("P2", "P2-M2", "P2-M2")
+	IncRef("P2", "P2-M2", "P2-M2")
 
 	t.Log("Increase reference")
 	for pn, models := range GetAIProjects() {
 		t.Log(pn, models)
 	}
 
-	DecRef("P2", "P2-M1")
+	DecRef("P2", "P2-M1", "P2-M1")
 
 	t.Log("Decrease reference")
 	for pn, models := range GetAIProjects() {
 		t.Log(pn, models)
 	}
 
-	DecRef("P2", "P2-M1")
+	DecRef("P2", "P2-M1", "P2-M1")
 
 	t.Log("Decrease reference")
 	for pn, models := range GetAIProjects() {
@@ -79,16 +85,19 @@ func TestSyncMap(t *testing.T) {
 				Model: "P2-M1",
 				API:   "P2-url1",
 				Type:  0,
+				CID:   "P2-M1",
 			},
 			{
 				Model: "P2-M2",
 				API:   "P2-url2",
 				Type:  0,
+				CID:   "P2-M2",
 			},
 			{
 				Model: "P2-M3",
 				API:   "P2-url3",
 				Type:  0,
+				CID:   "P2-M3",
 			},
 		},
 	})
@@ -105,6 +114,7 @@ func TestSyncMap(t *testing.T) {
 				Model: "P2-M1",
 				API:   "P2-url1",
 				Type:  0,
+				CID:   "P2-M1",
 			},
 		},
 	})
@@ -122,6 +132,7 @@ func TestSyncMap(t *testing.T) {
 	}
 }
 
+// go test -v -timeout 30s -count=1 -run TestConcurrentMap AIComputingNode/pkg/model
 func TestConcurrentMap(t *testing.T) {
 	pjt := make([]types.AIProjectConfig, 0)
 	pjt = append(pjt, types.AIProjectConfig{
@@ -131,11 +142,13 @@ func TestConcurrentMap(t *testing.T) {
 				Model: "P1-M1",
 				API:   "P1-url1",
 				Type:  0,
+				CID:   "P1-M1",
 			},
 			{
 				Model: "P1-M2",
 				API:   "P1-url2",
 				Type:  0,
+				CID:   "P1-M2",
 			},
 		},
 	})
@@ -146,11 +159,13 @@ func TestConcurrentMap(t *testing.T) {
 				Model: "P2-M1",
 				API:   "P2-url1",
 				Type:  0,
+				CID:   "P2-M1",
 			},
 			{
 				Model: "P2-M2",
 				API:   "P2-url2",
 				Type:  0,
+				CID:   "P2-M2",
 			},
 		},
 	})
@@ -170,45 +185,45 @@ func TestConcurrentMap(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			defer DecRef("P1", "P1-M1")
-			IncRef("P1", "P1-M1")
+			defer DecRef("P1", "P1-M1", "P1-M1")
+			IncRef("P1", "P1-M1", "P1-M1")
 		}()
 	}
 
 	// wg.Add(1)
 	// go func() {
 	// 	defer wg.Done()
-	// 	IncRef("P1", "P1-M1")
+	// 	IncRef("P1", "P1-M1", "P1-M1")
 	// }()
 
 	// wg.Add(1)
 	// go func() {
 	// 	defer wg.Done()
-	// 	IncRef("P1", "P1-M1")
+	// 	IncRef("P1", "P1-M1", "P1-M1")
 	// }()
 
 	// wg.Add(1)
 	// go func() {
 	// 	defer wg.Done()
-	// 	DecRef("P1", "P1-M1")
+	// 	DecRef("P1", "P1-M1", "P1-M1")
 	// }()
 
 	// wg.Add(1)
 	// go func() {
 	// 	defer wg.Done()
-	// 	IncRef("P1", "P1-M2")
+	// 	IncRef("P1", "P1-M2", "P1-M2")
 	// }()
 
 	// wg.Add(1)
 	// go func() {
 	// 	defer wg.Done()
-	// 	IncRef("P1", "P1-M3")
+	// 	IncRef("P1", "P1-M3", "P1-M3")
 	// }()
 
 	// wg.Add(1)
 	// go func() {
 	// 	defer wg.Done()
-	// 	IncRef("P3", "P3-M1")
+	// 	IncRef("P3", "P3-M1", "P3-M1")
 	// }()
 
 	// wg.Add(1)

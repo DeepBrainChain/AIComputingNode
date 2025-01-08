@@ -32,9 +32,9 @@ type connInfo struct {
 }
 
 type PeerCollectInfo struct {
-	AIProjects map[string]map[string]types.ModelInfo `json:"AIProjects"`
-	NodeType   uint32                                `json:"NodeType"`
-	Timestamp  int64                                 `json:"timestamp"`
+	AIProjects map[string][]types.ModelIdle `json:"AIProjects"`
+	NodeType   uint32                       `json:"NodeType"`
+	Timestamp  int64                        `json:"timestamp"`
 }
 
 func InitDb(opts InitOptions) error {
@@ -255,8 +255,8 @@ func GetModelsOfAIProjects(project string, limit int) ([]string, int) {
 		}
 		for pn, item := range info.AIProjects {
 			if pn == project {
-				for model := range item {
-					set.Add(model)
+				for _, model := range item {
+					set.Add(model.Model)
 				}
 			}
 		}
@@ -274,8 +274,8 @@ func GetModelsOfAIProjects(project string, limit int) ([]string, int) {
 	return models, 0
 }
 
-func GetPeersOfAIProjects(project, model string, limit int) (map[string]int, int) {
-	ids := make(map[string]int)
+func GetPeersOfAIProjects(project, model string, limit int) (map[string]types.ModelIdle, int) {
+	ids := make(map[string]types.ModelIdle)
 	if peersCollectDB == nil {
 		return ids, int(types.ErrCodeUnsupported)
 	}
@@ -291,15 +291,17 @@ func GetPeersOfAIProjects(project, model string, limit int) (map[string]int, int
 		if time.Unix(info.Timestamp, 0).Before(timestamp) {
 			continue
 		}
+		node := string(iter.Key())
 		for pn, item := range info.AIProjects {
 			if pn == project {
-				if model == "" {
-					ids[string(iter.Key())] = -1
-				} else {
-					for mn, mi := range item {
-						if model == mn {
-							ids[string(iter.Key())] = mi.Idle
-							break
+				for _, mi := range item {
+					if model == mi.Model {
+						if existed, ok := ids[node]; ok {
+							if mi.Idle < existed.Idle {
+								ids[node] = mi
+							}
+						} else {
+							ids[node] = mi
 						}
 					}
 				}

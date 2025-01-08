@@ -70,7 +70,8 @@ message ImageGenerationRequest {
   int32 width = 6;
   int32 height = 7;
   string response_format = 8;
-  reserved 9 to 15;
+  string cid = 9;
+  reserved 10 to 15;
   WalletVerification wallet = 16;
 }
 
@@ -137,7 +138,8 @@ message ChatCompletionRequest {
   string model = 2;
   repeated ChatCompletionMessage messages = 3;
   bool stream = 4;
-  reserved 5 to 15;
+  string cid = 5;
+  reserved 6 to 15;
   WalletVerification wallet = 16;
 }
 
@@ -221,6 +223,7 @@ message AIModelOfProject {
   string api = 2;
   uint32 type = 3;
   uint32 idle = 4;
+  string cid = 5;
 }
 
 message AIProjectOfNode {

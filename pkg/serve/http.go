@@ -635,12 +635,13 @@ func GetPeersOfAIProjectHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, rsp)
 		return
 	}
-	for id, idle := range ids {
+	for id, mi := range ids {
 		rsp.Data = append(rsp.Data, types.AIProjectPeerInfo{
 			NodeID:       id,
 			Connectivity: host.Hio.Connectedness(id),
 			Latency:      host.Hio.Latency(id).Microseconds(),
-			Idle:         idle,
+			Idle:         mi.Idle,
+			CID:          mi.CID,
 		})
 	}
 	c.JSON(http.StatusOK, rsp)

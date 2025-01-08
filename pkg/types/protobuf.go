@@ -80,18 +80,19 @@ func ProtocolMessage2HostInfo(res *protocol.HostInfoResponse) *HostInfo {
 	return hostInfo
 }
 
-func AIProject2ProtocolMessage(projs map[string]map[string]ModelInfo, nt uint32) *protocol.AIProjectResponse {
+func AIProject2ProtocolMessage(projs map[string][]ModelIdle, nt uint32) *protocol.AIProjectResponse {
 	res := &protocol.AIProjectResponse{
 		NodeType: nt,
 	}
 	for proj, mis := range projs {
 		models := make([]*protocol.AIModelOfProject, 0)
-		for mn, mi := range mis {
+		for _, mi := range mis {
 			models = append(models, &protocol.AIModelOfProject{
-				Model: mn,
+				Model: mi.Model,
 				Api:   mi.API,
 				Type:  uint32(mi.Type),
 				Idle:  uint32(mi.Idle),
+				Cid:   mi.CID,
 			})
 		}
 		res.Projects = append(res.Projects, &protocol.AIProjectOfNode{
@@ -102,16 +103,20 @@ func AIProject2ProtocolMessage(projs map[string]map[string]ModelInfo, nt uint32)
 	return res
 }
 
-func ProtocolMessage2AIProject(res *protocol.AIProjectResponse) map[string]map[string]ModelInfo {
-	projects := make(map[string]map[string]ModelInfo)
+func ProtocolMessage2AIProject(res *protocol.AIProjectResponse) map[string][]ModelIdle {
+	projects := make(map[string][]ModelIdle)
 	for _, project := range res.Projects {
-		models := make(map[string]ModelInfo)
+		models := make([]ModelIdle, 0)
 		for _, model := range project.Models {
-			models[model.GetModel()] = ModelInfo{
-				API:  model.GetApi(),
-				Type: int(model.GetType()),
+			models = append(models, ModelIdle{
+				AIModelConfig: AIModelConfig{
+					Model: model.GetModel(),
+					API:   model.GetApi(),
+					Type:  int(model.GetType()),
+					CID:   model.GetCid(),
+				},
 				Idle: int(model.GetIdle()),
-			}
+			})
 		}
 		projects[project.GetProject()] = models
 	}

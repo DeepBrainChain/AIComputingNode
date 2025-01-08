@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"time"
 
-	"AIComputingNode/pkg/config"
 	"AIComputingNode/pkg/log"
 	"AIComputingNode/pkg/model"
 	"AIComputingNode/pkg/timer"
@@ -142,14 +141,15 @@ func (ls *Libp2pStream) ChatProxyStreamHandler(stream network.Stream) {
 	queryValues := req.URL.Query()
 	projectName := queryValues.Get("project")
 	modelName := queryValues.Get("model")
-	modelUrl, modelType := config.GC.GetModelAPI(projectName, modelName)
-	if modelUrl == "" {
+	cid := queryValues.Get("cid")
+	mi, err := model.GetModelInfo(projectName, modelName, cid)
+	if err != nil {
 		stream.Reset()
 		log.Logger.Errorf("Get model api interface failed: %v", err)
 		return
 	}
 
-	req.URL, err = url.Parse(modelUrl)
+	req.URL, err = url.Parse(mi.API)
 	if err != nil {
 		stream.Reset()
 		log.Logger.Errorf("Parse model api interface failed: %v", err)
@@ -157,6 +157,7 @@ func (ls *Libp2pStream) ChatProxyStreamHandler(stream network.Stream) {
 	}
 	queryValues.Del("project")
 	queryValues.Del("model")
+	queryValues.Del("cid")
 	req.URL.RawQuery = queryValues.Encode()
 	req.Host = req.URL.Host
 
@@ -167,7 +168,7 @@ func (ls *Libp2pStream) ChatProxyStreamHandler(stream network.Stream) {
 		ctx = context.Background()
 	}
 	timeout := types.ChatCompletionRequestTimeout
-	if modelType == 1 {
+	if mi.Type == 1 {
 		timeout = types.ImageGenerationRequestTimeout
 	}
 	pctx, cancel := context.WithTimeout(ctx, timeout)
@@ -176,10 +177,10 @@ func (ls *Libp2pStream) ChatProxyStreamHandler(stream network.Stream) {
 
 	stream.SetDeadline(time.Now().Add(timeout))
 
-	model.IncRef(projectName, modelName)
+	model.IncRef(projectName, modelName, mi.CID)
 	timer.SendAIProjects(ls.pcn)
 	defer func() {
-		model.DecRef(projectName, modelName)
+		model.DecRef(projectName, modelName, mi.CID)
 		timer.SendAIProjects(ls.pcn)
 	}()
 

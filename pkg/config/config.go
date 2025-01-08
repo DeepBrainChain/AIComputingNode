@@ -258,21 +258,26 @@ func (config AppPeersCollectConfig) Validate() error {
 	return nil
 }
 
-func (config Config) GetModelAPI(projectName, modelName string) (string, int) {
-	if projectName == "" || modelName == "" {
-		return "", -1
-	}
-	for _, project := range config.AIProjects {
-		if project.Project == projectName {
-			for _, model := range project.Models {
-				if model.Model == modelName {
-					return model.API, model.Type
-				}
-			}
-		}
-	}
-	return "", -1
-}
+// func (config Config) GetModelAPI(projectName, modelName, cid string) (*types.AIModelConfig, error) {
+// 	mi := &types.AIModelConfig{}
+// 	if projectName == "" || modelName == "" {
+// 		return mi, fmt.Errorf("empty project or model")
+// 	}
+// 	for _, project := range config.AIProjects {
+// 		if project.Project == projectName {
+// 			for _, model := range project.Models {
+// 				if model.Model == modelName && (cid == "" || model.CID == cid) {
+// 					*mi = model
+// 					break
+// 				}
+// 			}
+// 		}
+// 	}
+// 	if mi.API == "" {
+// 		return mi, fmt.Errorf("can not find in registered project and model")
+// 	}
+// 	return mi, nil
+// }
 
 func (config Config) SaveConfig(configPath string) error {
 	jsonData, err := json.MarshalIndent(config, "", "  ")
