@@ -130,6 +130,82 @@ func TestSyncMap(t *testing.T) {
 	for pn, models := range GetAIProjects() {
 		t.Log(pn, models)
 	}
+
+	RegisterAIModel(types.AIModelRegister{
+		AIModelConfig: types.AIModelConfig{
+			Model: "P2-M1",
+			API:   "P2-url1",
+			Type:  0,
+			CID:   "P2-M1",
+		},
+		Project: "P2",
+	})
+
+	RegisterAIModel(types.AIModelRegister{
+		AIModelConfig: types.AIModelConfig{
+			Model: "P2-M2",
+			API:   "P2-url2",
+			Type:  0,
+			CID:   "P2-M2",
+		},
+		Project: "P2",
+	})
+
+	t.Log("Register AI Model")
+	for pn, models := range GetAIProjects() {
+		t.Log(pn, models)
+	}
+
+	IncRef("P2", "P2-M1", "P2-M1")
+	IncRef("P2", "P2-M2", "P2-M2")
+
+	t.Log("Increase reference")
+	for pn, models := range GetAIProjects() {
+		t.Log(pn, models)
+	}
+
+	DecRef("P2", "P2-M1", "P2-M1")
+
+	t.Log("Decrease reference")
+	for pn, models := range GetAIProjects() {
+		t.Log(pn, models)
+	}
+
+	RegisterAIModel(types.AIModelRegister{
+		AIModelConfig: types.AIModelConfig{
+			Model: "P2-M2",
+			API:   "P2-url3",
+			Type:  1,
+			CID:   "P2-M2",
+		},
+		Project: "P2",
+	})
+
+	t.Log("Register AI Model again with modify")
+	for pn, models := range GetAIProjects() {
+		t.Log(pn, models)
+	}
+
+	UnregisterAIModel("P2", "P2-M1", "")
+
+	t.Log("Unregister AI Model")
+	for pn, models := range GetAIProjects() {
+		t.Log(pn, models)
+	}
+
+	UnregisterAIModel("P2", "P2-M1", "P2-M1")
+
+	t.Log("Unregister AI Model again")
+	for pn, models := range GetAIProjects() {
+		t.Log(pn, models)
+	}
+
+	UnregisterAIModel("P2", "P2-M2", "P2-M2")
+
+	t.Log("Unregister AI Model again again")
+	for pn, models := range GetAIProjects() {
+		t.Log(pn, models)
+	}
 }
 
 // go test -v -timeout 30s -count=1 -run TestConcurrentMap AIComputingNode/pkg/model

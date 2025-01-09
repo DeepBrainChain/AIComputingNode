@@ -388,15 +388,17 @@ func RegisterAIProjectHandler(c *gin.Context, configPath string, publishChan cha
 	backup := make([]types.AIProjectConfig, len(config.GC.AIProjects))
 	copy(backup, config.GC.AIProjects)
 
-	var find bool = false
+	find := -1
 	for i := range config.GC.AIProjects {
 		if config.GC.AIProjects[i].Project == req.Project {
-			config.GC.AIProjects[i].Models = req.Models
-			find = true
+			find = i
+			break
 		}
 	}
-	if !find {
+	if find == -1 {
 		config.GC.AIProjects = append(config.GC.AIProjects, req)
+	} else {
+		config.GC.AIProjects[find].Models = req.Models
 	}
 
 	if err := config.GC.SaveConfig(configPath); err != nil {
@@ -435,18 +437,19 @@ func UnregisterAIProjectHandler(c *gin.Context, configPath string, publishChan c
 	backup := make([]types.AIProjectConfig, len(config.GC.AIProjects))
 	copy(backup, config.GC.AIProjects)
 
-	var find bool = false
+	find := -1
 	for i := range config.GC.AIProjects {
 		if config.GC.AIProjects[i].Project == req.Project {
-			config.GC.AIProjects = append(config.GC.AIProjects[:i], config.GC.AIProjects[i+1:]...)
-			find = true
+			find = i
+			break
 		}
 	}
-	if !find {
+	if find == -1 {
 		rsp.Message = "not existed"
 		c.JSON(http.StatusOK, rsp)
 		return
 	}
+	config.GC.AIProjects = append(config.GC.AIProjects[:find], config.GC.AIProjects[find+1:]...)
 
 	if err := config.GC.SaveConfig(configPath); err != nil {
 		rsp.Code = int(types.ErrCodeInternal)
@@ -457,6 +460,150 @@ func UnregisterAIProjectHandler(c *gin.Context, configPath string, publishChan c
 	}
 	c.JSON(http.StatusOK, rsp)
 	model.UnregisterAIProject(req.Project)
+	timer.SendAIProjects(publishChan)
+}
+
+func RegisterAIModelHandler(c *gin.Context, configPath string, publishChan chan<- []byte) {
+	rsp := types.BaseHttpResponse{
+		Code:    0,
+		Message: "ok",
+	}
+
+	var req types.AIModelRegister
+	if err := c.ShouldBindJSON(&req); err != nil {
+		rsp.Code = int(types.ErrCodeParse)
+		rsp.Message = types.ErrCodeParse.String()
+		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		rsp.Code = int(types.ErrCodeParam)
+		rsp.Message = err.Error()
+		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
+	backup := make([]types.AIProjectConfig, len(config.GC.AIProjects))
+	copy(backup, config.GC.AIProjects)
+
+	pfind := -1
+	mfind := -1
+	for i, project := range config.GC.AIProjects {
+		if project.Project == req.Project {
+			pfind = i
+			for j, model := range project.Models {
+				if model.Model == req.Model && model.CID == req.CID {
+					mfind = j
+					break
+				}
+			}
+		}
+	}
+	if pfind == -1 {
+		models := make([]types.AIModelConfig, 0)
+		models = append(models, types.AIModelConfig{
+			Model: req.Model,
+			API:   req.API,
+			Type:  req.Type,
+			CID:   req.CID,
+		})
+		config.GC.AIProjects = append(config.GC.AIProjects, types.AIProjectConfig{
+			Project: req.Project,
+			Models:  models,
+		})
+	} else if mfind == -1 {
+		models := config.GC.AIProjects[pfind].Models
+		models = append(models, types.AIModelConfig{
+			Model: req.Model,
+			API:   req.API,
+			Type:  req.Type,
+			CID:   req.CID,
+		})
+		config.GC.AIProjects[pfind].Models = models
+	} else {
+		models := config.GC.AIProjects[pfind].Models
+		models[mfind] = types.AIModelConfig{
+			Model: req.Model,
+			API:   req.API,
+			Type:  req.Type,
+			CID:   req.CID,
+		}
+		config.GC.AIProjects[pfind].Models = models
+	}
+
+	if err := config.GC.SaveConfig(configPath); err != nil {
+		rsp.Code = int(types.ErrCodeInternal)
+		rsp.Message = fmt.Sprintf("config save err %v", err)
+		c.JSON(http.StatusInternalServerError, rsp)
+		config.GC.AIProjects = backup
+		return
+	}
+	c.JSON(http.StatusOK, rsp)
+	model.RegisterAIModel(req)
+	timer.SendAIProjects(publishChan)
+}
+
+func UnregisterAIModelHandler(c *gin.Context, configPath string, publishChan chan<- []byte) {
+	rsp := types.BaseHttpResponse{
+		Code:    0,
+		Message: "ok",
+	}
+
+	var req types.AIModelUnregister
+	if err := c.ShouldBindJSON(&req); err != nil {
+		rsp.Code = int(types.ErrCodeParse)
+		rsp.Message = types.ErrCodeParse.String()
+		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		rsp.Code = int(types.ErrCodeParam)
+		rsp.Message = err.Error()
+		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
+	backup := make([]types.AIProjectConfig, len(config.GC.AIProjects))
+	copy(backup, config.GC.AIProjects)
+
+	pfind := -1
+	mfind := -1
+	for i, project := range config.GC.AIProjects {
+		if project.Project == req.Project {
+			pfind = i
+			for j, model := range project.Models {
+				if model.Model == req.Model && model.CID == req.CID {
+					mfind = j
+					break
+				}
+			}
+		}
+	}
+
+	if mfind == -1 {
+		rsp.Message = "not existed"
+		c.JSON(http.StatusOK, rsp)
+		return
+	}
+
+	models := config.GC.AIProjects[pfind].Models
+	models = append(models[:mfind], models[mfind+1:]...)
+	config.GC.AIProjects[pfind].Models = models
+	if len(models) == 0 {
+		config.GC.AIProjects = append(config.GC.AIProjects[:pfind], config.GC.AIProjects[pfind+1:]...)
+	}
+
+	if err := config.GC.SaveConfig(configPath); err != nil {
+		rsp.Code = int(types.ErrCodeInternal)
+		rsp.Message = fmt.Sprintf("config save err %v", err)
+		c.JSON(http.StatusInternalServerError, rsp)
+		config.GC.AIProjects = backup
+		return
+	}
+	c.JSON(http.StatusOK, rsp)
+	model.UnregisterAIModel(req.Project, req.Model, req.CID)
 	timer.SendAIProjects(publishChan)
 }
 

@@ -469,6 +469,12 @@ func main() {
 		v0.GET("/ai/projects/list", serve.ListAIProjectsHandler)
 		v0.GET("/ai/projects/models", serve.GetModelsOfAIProjectHandler)
 		v0.GET("/ai/projects/peers", serve.GetPeersOfAIProjectHandler)
+		v0.POST("/ai/model/register", func(ctx *gin.Context) {
+			serve.RegisterAIModelHandler(ctx, *configPath, publishChan)
+		})
+		v0.POST("/ai/model/unregister", func(ctx *gin.Context) {
+			serve.UnregisterAIModelHandler(ctx, *configPath, publishChan)
+		})
 
 		v0.GET("/bootstrap/list", serve.ListBootstrapHandler)
 		v0.POST("/bootstrap/add", func(ctx *gin.Context) {

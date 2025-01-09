@@ -116,6 +116,67 @@ func UnregisterAIProject(project string) {
 	delete(projects.elements, project)
 }
 
+func RegisterAIModel(mr types.AIModelRegister) {
+	projects.mutex.Lock()
+	defer projects.mutex.Unlock()
+
+	existed := -1
+	for pn, models := range projects.elements {
+		if pn == mr.Project {
+			for i, model := range models {
+				if model.Model == mr.Model && model.CID == mr.CID {
+					existed = i
+					break
+				}
+			}
+		}
+	}
+
+	if existed == -1 {
+		if models, ok := projects.elements[mr.Project]; ok {
+			models = append(models, types.ModelIdle{
+				AIModelConfig: mr.AIModelConfig,
+				Idle:          0,
+			})
+			projects.elements[mr.Project] = models
+		} else {
+			models := make([]types.ModelIdle, 0)
+			models = append(models, types.ModelIdle{
+				AIModelConfig: mr.AIModelConfig,
+				Idle:          0,
+			})
+			projects.elements[mr.Project] = models
+		}
+	} else {
+		models := projects.elements[mr.Project]
+		models[existed] = types.ModelIdle{
+			AIModelConfig: mr.AIModelConfig,
+			Idle:          models[existed].Idle,
+		}
+		projects.elements[mr.Project] = models
+	}
+}
+
+func UnregisterAIModel(projectName, modelName, cid string) {
+	projects.mutex.Lock()
+	defer projects.mutex.Unlock()
+
+	models, ok := projects.elements[projectName]
+	if ok {
+		for i, model := range models {
+			if model.Model == modelName && model.CID == cid {
+				models = append(models[:i], models[i+1:]...)
+				break
+			}
+		}
+	}
+	if len(models) == 0 {
+		delete(projects.elements, projectName)
+	} else {
+		projects.elements[projectName] = models
+	}
+}
+
 // Increase Reference
 func IncRef(project, model, cid string) {
 	projects.mutex.Lock()

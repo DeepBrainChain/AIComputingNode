@@ -25,6 +25,17 @@ type AIModelConfig struct {
 	CID   string `json:"CID"`
 }
 
+type AIModelRegister struct {
+	Project string `json:"Project"`
+	AIModelConfig
+}
+
+type AIModelUnregister struct {
+	Project string `json:"Project"`
+	Model   string `json:"Model"`
+	CID     string `json:"CID"`
+}
+
 type ModelIdle struct {
 	AIModelConfig
 	Idle int `json:"Idle"`
@@ -44,7 +55,49 @@ func (config AIModelConfig) Validate() error {
 	if config.API == "" {
 		return fmt.Errorf("model api can not be empty")
 	}
-	purl, err := url.Parse(config.API)
+	if err := VerifyUrlAndLocalHost(config.API); err != nil {
+		return err
+	}
+	if config.CID == "" {
+		return fmt.Errorf("cid represents the docker container id, which can not be empty")
+	}
+	return nil
+}
+
+func (config AIModelRegister) Validate() error {
+	if config.Project == "" {
+		return fmt.Errorf("project name can not be empty")
+	}
+	if config.Model == "" {
+		return fmt.Errorf("model name can not be empty")
+	}
+	if config.API == "" {
+		return fmt.Errorf("model api can not be empty")
+	}
+	if err := VerifyUrlAndLocalHost(config.API); err != nil {
+		return err
+	}
+	if config.CID == "" {
+		return fmt.Errorf("cid represents the docker container id, which can not be empty")
+	}
+	return nil
+}
+
+func (config AIModelUnregister) Validate() error {
+	if config.Project == "" {
+		return fmt.Errorf("project name can not be empty")
+	}
+	if config.Model == "" {
+		return fmt.Errorf("model name can not be empty")
+	}
+	// if config.CID == "" {
+	// 	return fmt.Errorf("cid represents the docker container id, which can not be empty")
+	// }
+	return nil
+}
+
+func VerifyUrlAndLocalHost(hurl string) error {
+	purl, err := url.Parse(hurl)
 	if err != nil {
 		return err
 	}
@@ -71,5 +124,5 @@ func (config AIModelConfig) Validate() error {
 			return nil
 		}
 	}
-	return fmt.Errorf("the AI model and the node are not on the same machine")
+	return fmt.Errorf("the url and the node are not on the same machine")
 }
