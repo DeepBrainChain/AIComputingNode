@@ -486,6 +486,173 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 }
 ```
 
+## 模型注册/反注册接口
+
+模型运行起来时需要向分布式网络通信节点注册，只有注册后的模型才能被分布式通信网络中的各个节点知晓和调用，在模型停止运行时，不要忘记反注册。
+
+一个项目可以有多个模型，下面的 AI 模型注册/反注册接口一次只能操作一个模型，而 AI 项目注册/反注册接口一次可以操作多个模型。
+
+假如一台机器有4个 GPU，为一个项目部署了4个相同的模型，每个模型使用1个 GPU，此时4个模型的项目名称和模型名称都一样，就需要 cid (Docker 容器 ID)来区分这个4个模型，因此分布式网络使用 `节点 ID`、`项目名称`、`模型名称` 和 `Docker 容器 ID` 区分和调用不同的模型。
+
+### 注册 AI 模型
+
+此接口用于接受 AI 模型的注册与更新，并将其在分布式网络节点间共享。
+
+> [!NOTE]
+> AI 模型和注册的节点必须在同一台机器上。
+
+- 请求方式: POST
+- 请求 URL: http://127.0.0.1:6000/api/v0/ai/model/register
+- 请求 Body:
+```json
+{
+  // AI 项目名称
+  "project": "DecentralGPT",
+  // AI 模型名称
+  "model": "Llama3-70B",
+  // 执行模型的 HTTP Url
+  "api": "http://127.0.0.1:1042/v1/chat/completions",
+  // 模型类型，默认 0
+  // 0 - 文生文模型
+  // 1 - 文生图模型
+  // 2 - 图生图模型
+  "type": 0,
+  // docker 容器的 ID
+  "cid": "d15c4007271b"
+}
+```
+- 返回示例:
+```json
+{
+  // 错误码，0 表示成功，非 0 表示失败
+  "code": 0,
+  // 错误信息
+  "message": "ok"
+}
+```
+
+### 反注册 AI 模型
+
+此接口用于接受 AI 模型的反注册，并将其在分布式网络节点间共享。
+
+- 请求方式: POST
+- 请求 URL: http://127.0.0.1:6000/api/v0/ai/model/unregister
+- 请求 Body:
+```json
+{
+  // AI 项目名称
+  "project": "DecentralGPT",
+  // AI 模型名称
+  "model": "Llama3-70B",
+  // docker 容器的 ID
+  "cid": "d15c4007271b"
+}
+```
+- 返回示例:
+```json
+{
+  // 错误码，0 表示成功，非 0 表示失败
+  "code": 0,
+  // 错误信息
+  "message": "ok"
+}
+```
+
+### 注册 AI 项目
+
+此接口用于接受 AI 项目(可包含多个模型)的注册与更新，并将其在分布式网络节点间共享。
+
+> [!NOTE]
+> AI 模型和注册的节点必须在同一台机器上。
+
+- 请求方式: POST
+- 请求 URL: http://127.0.0.1:6000/api/v0/ai/project/register
+- 请求 Body:
+```json
+{
+  // AI 项目名称
+  "project": "DecentralGPT",
+  // AI 模型和 HTTP 接口信息列表
+  "models": [
+    {
+      // 模型名称
+      "model": "Llama3-70B",
+      // 执行模型的 HTTP Url
+      "api": "http://127.0.0.1:1042/v1/chat/completions",
+      // 模型类型，默认 0
+      // 0 - 文生文模型
+      // 1 - 文生图模型
+      // 2 - 图生图模型
+      "type": 0,
+      // docker 容器的 ID
+      "cid": "d15c4007271b"
+    }
+  ]
+}
+```
+- 返回示例:
+```json
+{
+  // 错误码，0 表示成功，非 0 表示失败
+  "code": 0,
+  // 错误信息
+  "message": "ok"
+}
+```
+
+### 反注册 AI 项目
+
+此接口用于接受 AI 项目的反注册，会将此项目包含所有模型全都反注册，并将其在分布式网络节点间共享。
+
+- 请求方式: POST
+- 请求 URL: http://127.0.0.1:6000/api/v0/ai/project/unregister
+- 请求 Body:
+```json
+{
+  // AI 项目名称
+  "project": "DecentralGPT"
+}
+```
+- 返回示例:
+```json
+{
+  // 错误码，0 表示成功，非 0 表示失败
+  "code": 0,
+  // 错误信息
+  "message": "ok"
+}
+```
+
+### 查询任意节点注册的 AI 项目模型信息
+
+此接口用于查询分布式通信网络中任意节点上注册的 AI 项目模型信息
+
+- 请求方式: POST
+- 请求 URL: http://127.0.0.1:6000/api/v0/ai/project/peer
+- 请求 Body:
+```json
+{
+  // 要查询的节点
+  "node_id": "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL"
+}
+```
+- 返回示例:
+```json
+{
+  "data": {
+    "DecentralGPT": [
+      {
+        "model": "Llama3-70B",
+        "api": "http://127.0.0.1:1042/v1/chat/completions",
+        "Type": 0,
+        "cid": "d15c4007271b",
+        "idle": 0
+      }
+    ]
+  }
+}
+```
+
 ## 节点控制接口
 
 控制节点连接和注册状态的接口。
@@ -681,93 +848,6 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
   "16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM",
   "16Uiu2HAmDBYxgdKxeCbmn8hYiqwK3xHR9533WDdEYmpEDQ259GTe"
 ]
-```
-
-### 注册 AI 项目
-
-此接口用于接受 AI 项目和模型的注册与更新，并将其在分布式网络节点间共享。
-
-- 请求方式: POST
-- 请求 URL: http://127.0.0.1:6000/api/v0/ai/project/register
-- 请求 Body:
-```json
-{
-  // AI 项目名称
-  "project": "DecentralGPT",
-  // AI 模型和 HTTP 接口信息列表
-  "models": [
-    {
-      // 模型名称
-      "model": "Llama3-70B",
-      // 执行模型的 HTTP Url
-      "api": "http://127.0.0.1:1042/v1/chat/completions",
-      // 模型类型，默认 0
-      // 0 - 文生文模型
-      // 1 - 文生图模型
-      // 2 - 图生图模型
-      "type": 0
-    }
-  ]
-}
-```
-- 返回示例:
-```json
-{
-  // 错误码，0 表示成功，非 0 表示失败
-  "code": 0,
-  // 错误信息
-  "message": "ok"
-}
-```
-
-### 反注册 AI 项目
-
-此接口用于接受 AI 项目和模型的反注册，并将其在分布式网络节点间共享。
-
-- 请求方式: POST
-- 请求 URL: http://127.0.0.1:6000/api/v0/ai/project/unregister
-- 请求 Body:
-```json
-{
-  // AI 项目名称
-  "project": "DecentralGPT"
-}
-```
-- 返回示例:
-```json
-{
-  // 错误码，0 表示成功，非 0 表示失败
-  "code": 0,
-  // 错误信息
-  "message": "ok"
-}
-```
-
-### 查询任意节点的 AI 项目模型注册信息
-
-此接口用于查询分布式通信网络中任意节点的 AI 项目模型注册信息
-
-- 请求方式: POST
-- 请求 URL: http://127.0.0.1:6000/api/v0/ai/project/peer
-- 请求 Body:
-```json
-{
-  // 要查询的节点
-  "node_id": "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL"
-}
-```
-- 返回示例:
-```json
-{
-  "data": [
-    {
-      "project": "DecentralGPT",
-      "models": [
-        "Llama3-70B"
-      ]
-    }
-  ]
-}
 ```
 
 ## 错误码

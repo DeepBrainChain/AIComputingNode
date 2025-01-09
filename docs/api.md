@@ -488,6 +488,173 @@ This interface is used to query the list of nodes running the specified AI proje
 }
 ```
 
+## Model registration/deregistration interface
+
+When the model is running, it needs to be registered with the distributed network communication node. Only the registered model can be known and called by each node in the distributed communication network. When the model stops running, don't forget to deregister.
+
+A project can have multiple models. The following AI model registration/unregistration interface can only operate one model at a time, while the AI ​​project registration/unregistration interface can operate multiple models at a time.
+
+If a machine has 4 GPUs, and 4 identical models are deployed for a project, each model uses 1 GPU. At this time, the project name and model name of the 4 models are the same, and cid (Docker container ID) is needed to distinguish the 4 models. Therefore, the distributed network uses `node ID`, `project name`, `model name` and `Docker container ID` to distinguish and call different models.
+
+### Register AI model
+
+This interface is used to accept the registration and update of AI models and share them among distributed network nodes.
+
+> [!NOTE]
+> The AI ​​model and the registered node must be on the same machine.
+
+- request method: POST
+- request URL: http://127.0.0.1:6000/api/v0/ai/model/register
+- request Body:
+```json
+{
+  // AI project name
+  "project": "DecentralGPT",
+  // AI model name
+  "model": "Llama3-70B",
+  // HTTP Url for executing model
+  "api": "http://127.0.0.1:1042/v1/chat/completions",
+  // Model type, default 0
+  // 0 - Text generation text model
+  // 1 - Text generation image model
+  // 2 - Image editing model
+  "type": 0,
+  // docker container ID
+  "cid": "d15c4007271b"
+}
+```
+- return example:
+```json
+{
+  // Error code, 0 means success, non-0 means failure
+  "code": 0,
+  // Error message
+  "message": "ok"
+}
+```
+
+### Unregister AI model
+
+This interface is used to accept the deregistration of AI models and share them among distributed network nodes.
+
+- request method: POST
+- request URL: http://127.0.0.1:6000/api/v0/ai/model/unregister
+- request Body:
+```json
+{
+  // AI project name
+  "project": "DecentralGPT",
+  // AI model name
+  "model": "Llama3-70B",
+  // docker container ID
+  "cid": "d15c4007271b"
+}
+```
+- return example:
+```json
+{
+  // Error code, 0 means success, non-0 means failure
+  "code": 0,
+  // Error message
+  "message": "ok"
+}
+```
+
+### Register AI project
+
+This interface is used to accept registration and update of AI projects (which can contain multiple models) and share them among distributed network nodes.
+
+> [!NOTE]
+> The AI ​​model and the registered node must be on the same machine.
+
+- request method: POST
+- request URL: http://127.0.0.1:6000/api/v0/ai/project/register
+- request Body:
+```json
+{
+  // AI project name
+  "project": "DecentralGPT",
+  // List of AI model and HTTP interface information
+  "models": [
+    {
+      // Model name
+      "model": "Llama3-70B",
+      // HTTP Url for executing model
+      "api": "http://127.0.0.1:1042/v1/chat/completions",
+      // Model type, default 0
+      // 0 - Text generation text model
+      // 1 - Text generation image model
+      // 2 - Image editing model
+      "type": 0,
+      // Docker container ID
+      "cid": "d15c4007271b"
+    }
+  ]
+}
+```
+- return example:
+```json
+{
+  // Error code, 0 means success, non-0 means failure
+  "code": 0,
+  // Error message
+  "message": "ok"
+}
+```
+
+### Unregister AI project
+
+This interface is used to accept the deregistration of AI projects, which will deregister all models contained in this project and share them among distributed network nodes.
+
+- request method: POST
+- request URL: http://127.0.0.1:6000/api/v0/ai/project/unregister
+- request Body:
+```json
+{
+  // AI project name
+  "project": "DecentralGPT"
+}
+```
+- return example:
+```json
+{
+  // Error code, 0 means success, non-0 means failure
+  "code": 0,
+  // Error message
+  "message": "ok"
+}
+```
+
+### Query the model information of AI projects registered on any node
+
+This interface is used to query the model information of AI projects registered on any node in the distributed communication network.
+
+- request method: POST
+- request URL: http://127.0.0.1:6000/api/v0/ai/project/peer
+- request Body:
+```json
+{
+  // Node to be queried
+  "node_id": "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL"
+}
+```
+- return example:
+```json
+{
+  "data": {
+    "DecentralGPT": [
+      {
+        "model": "Llama3-70B",
+        "api": "http://127.0.0.1:1042/v1/chat/completions",
+        "Type": 0,
+        "cid": "d15c4007271b",
+        "idle": 0
+      }
+    ]
+  }
+}
+```
+
 ## Node control interface
 
 Interface for controlling node connection and registration status.
@@ -683,93 +850,6 @@ This interface is used to query the list of nodes subscribed to the same topic, 
   "16Uiu2HAmRTpigc7jAbsLndB2xDEBMAXLb887SBEFhfdJeEJNtqRM",
   "16Uiu2HAmDBYxgdKxeCbmn8hYiqwK3xHR9533WDdEYmpEDQ259GTe"
 ]
-```
-
-### Register AI project
-
-This interface is used to accept registration and updates of AI projects and models, and share them among distributed network nodes.
-
-- request method: POST
-- request URL: http://127.0.0.1:6000/api/v0/ai/project/register
-- request Body:
-```json
-{
-  // AI project name
-  "project": "DecentralGPT",
-  // List of AI model and HTTP interface information
-  "models": [
-    {
-      // Model name
-      "model": "Llama3-70B",
-      // HTTP Url for executing model
-      "api": "http://127.0.0.1:1042/v1/chat/completions",
-      // Model type, default 0
-      // 0 - Text generation text model
-      // 1 - Text generation image model
-      // 2 - Image editing model
-      "type": 0
-    }
-  ]
-}
-```
-- return example:
-```json
-{
-  // Error code, 0 means success, non-0 means failure
-  "code": 0,
-  // Error message
-  "message": "ok"
-}
-```
-
-### Unregister AI project
-
-This interface is used to accept the unregistration of AI projects and models, and share them among distributed network nodes.
-
-- request method: POST
-- request URL: http://127.0.0.1:6000/api/v0/ai/project/unregister
-- request Body:
-```json
-{
-  // AI project name
-  "project": "DecentralGPT"
-}
-```
-- return example:
-```json
-{
-  // Error code, 0 means success, non-0 means failure
-  "code": 0,
-  // Error message
-  "message": "ok"
-}
-```
-
-### Query the registration information of AI project model of any node
-
-This interface is used to query the AI ​​project model registration information of any node in the distributed communication network.
-
-- request method: POST
-- request URL: http://127.0.0.1:6000/api/v0/ai/project/peer
-- request Body:
-```json
-{
-  // Node to be queried
-  "node_id": "16Uiu2HAm5cygUrKCBxtNSMKKvgdr1saPM6XWcgnPyTvK4sdrARGL"
-}
-```
-- return example:
-```json
-{
-  "data": [
-    {
-      "project": "DecentralGPT",
-      "models": [
-        "Llama3-70B"
-      ]
-    }
-  ]
-}
 ```
 
 ## Error code
