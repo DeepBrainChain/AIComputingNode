@@ -85,7 +85,7 @@ func (pst *PubSub) ReadFromTopic(ctx context.Context) {
 			log.Logger.Infof("Gossip message type %s from %s to %s", pmsg.Type, pmsg.Header.GetNodeId(), pmsg.Header.GetReceiver())
 			continue
 		} else {
-			log.Logger.Infof("Received message type %s from %s", pmsg.Type, pmsg.Header.GetNodeId())
+			log.Logger.Infof("Received message type %s from %s with request_id %s", pmsg.Type, pmsg.Header.GetNodeId(), pmsg.Header.GetId())
 		}
 
 		go pst.handleBroadcastMessage(ctx, pmsg)
@@ -150,38 +150,63 @@ func (pst *PubSub) handleBroadcastMessage(ctx context.Context, msg *protocol.Mes
 				message = MsgNotSupported
 				log.Logger.Warnf("Unknowned message type", msg.Type)
 			}
-			log.Logger.Infof("Handle %s message from %s result {code: %v, message: %v}",
-				msg.Type.String(), msg.Header.GetNodeId(), code, message)
+			log.Logger.Infof("Handle %s message with request_id %s from %s result {code: %v, message: %v}",
+				msg.Type.String(), msg.Header.GetId(), msg.Header.GetNodeId(), code, message)
+		}
+
+		if code == 0 {
+			return
+		}
+		if existed {
+			res := types.BaseHttpResponse{
+				Code:    code,
+				Message: message,
+			}
+			notifyData, err := json.Marshal(res)
+			if err != nil {
+				log.Logger.Errorf("Marshal %s json %v", msg.Type.String(), err)
+				return
+			}
+			serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
+			log.Logger.Warnf("Send %s json response {code: %v, message: %v}", msg.Type.String(), code, message)
+		} else {
+			res := TransformErrorResponse(msg, int32(code), message)
+			resBytes, err := proto.Marshal(res)
+			if err != nil {
+				log.Logger.Errorf("Marshal %s proto %v", msg.Type.String(), err)
+				return
+			}
+			pst.publishChan <- resBytes
+			log.Logger.Warnf("Send %s proto response {code: %v, message: %v}", msg.Type.String(), code, message)
 		}
 	} else {
 		code = int(msg.GetResultCode())
 		message = msg.GetResultMessage()
-	}
 
-	if code == 0 {
-		return
-	}
-	if existed {
-		res := types.BaseHttpResponse{
-			Code:    code,
-			Message: message,
+		if existed {
+			res := types.BaseHttpResponse{
+				Code:    code,
+				Message: message,
+			}
+			notifyData, err := json.Marshal(res)
+			if err != nil {
+				log.Logger.Errorf("Marshal %s json %v", msg.Type.String(), err)
+				return
+			}
+			serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
+			log.Logger.Warnf("Send %s json response {code: %v, message: %v}", msg.Type.String(), code, message)
+		} else {
+			log.Logger.Warnf("Unknown %s message with request_id %s and {result_code: %v, result_message: %v}, cannot be processed",
+				msg.Type.String(), msg.Header.GetId(), code, message)
+			// res := TransformErrorResponse(msg, int32(code), message)
+			// resBytes, err := proto.Marshal(res)
+			// if err != nil {
+			// 	log.Logger.Errorf("Marshal %s proto %v", msg.Type.String(), err)
+			// 	return
+			// }
+			// pst.publishChan <- resBytes
+			// log.Logger.Warnf("Send %s proto response {code: %v, message: %v}", msg.Type.String(), code, message)
 		}
-		notifyData, err := json.Marshal(res)
-		if err != nil {
-			log.Logger.Errorf("Marshal %s json %v", msg.Type.String(), err)
-			return
-		}
-		serve.WriteAndDeleteRequestItem(msg.Header.GetId(), notifyData)
-		log.Logger.Warnf("Send %s json response {code: %v, message: %v}", msg.Type.String(), code, message)
-	} else {
-		res := TransformErrorResponse(msg, int32(code), message)
-		resBytes, err := proto.Marshal(res)
-		if err != nil {
-			log.Logger.Errorf("Marshal %s proto %v", msg.Type.String(), err)
-			return
-		}
-		pst.publishChan <- resBytes
-		log.Logger.Warnf("Send %s proto response {code: %v, message: %v}", msg.Type.String(), code, message)
 	}
 }
 
