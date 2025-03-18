@@ -69,9 +69,11 @@ type ChatCompletionMessage struct {
 }
 
 type ChatModelRequest struct {
-	Model    string                  `json:"model"`
-	Messages []ChatCompletionMessage `json:"messages"`
-	Stream   bool                    `json:"stream"`
+	Model       string                  `json:"model"`
+	Messages    []ChatCompletionMessage `json:"messages"`
+	Stream      bool                    `json:"stream"`
+	Temperature float32                 `json:"temperature,omitempty"`
+	TopP        float32                 `json:"top_p,omitempty"`
 	WalletVerification
 }
 
@@ -138,6 +140,7 @@ type ImageGenModelRequest struct {
 	Size           string `json:"size"`
 	Width          int    `json:"width"`
 	Height         int    `json:"height"`
+	Step           int    `json:"step,omitempty"`
 	ResponseFormat string `json:"response_format"`
 	WalletVerification
 }
