@@ -140,7 +140,7 @@ type ImageGenModelRequest struct {
 	Size           string `json:"size"`
 	Width          int    `json:"width"`
 	Height         int    `json:"height"`
-	Step           int    `json:"step,omitempty"`
+	Step           int32  `json:"step,omitempty"`
 	ResponseFormat string `json:"response_format"`
 	WalletVerification
 }

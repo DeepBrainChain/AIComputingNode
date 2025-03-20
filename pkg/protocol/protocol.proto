@@ -71,7 +71,8 @@ message ImageGenerationRequest {
   int32 height = 7;
   string response_format = 8;
   string cid = 9;
-  reserved 10 to 15;
+  int32 step = 10;
+  reserved 11 to 15;
   WalletVerification wallet = 16;
 }
 
@@ -139,7 +140,9 @@ message ChatCompletionRequest {
   repeated ChatCompletionMessage messages = 3;
   bool stream = 4;
   string cid = 5;
-  reserved 6 to 15;
+  float temperature = 6;
+  float top_p = 7;
+  reserved 8 to 15;
   WalletVerification wallet = 16;
 }
 

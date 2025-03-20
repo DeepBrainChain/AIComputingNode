@@ -616,6 +616,9 @@ func (pst *PubSub) handleChatCompletionRequest(ctx context.Context, req *protoco
 			Signature: req.GetWallet().GetSignature(),
 			Hash:      req.GetWallet().GetHash(),
 		},
+		// temperature/top_p is 0 when field is omitempty
+		// Temperature: req.GetTemperature(),
+		// TopP:        req.GetTopP(),
 	}
 	for _, ccm := range req.Messages {
 		chatReq.Messages = append(chatReq.Messages, types.ChatCompletionMessage{
@@ -693,6 +696,8 @@ func (pst *PubSub) handleImageGenerationRequest(ctx context.Context, req *protoc
 			Signature: req.GetWallet().GetSignature(),
 			Hash:      req.GetWallet().GetHash(),
 		},
+		// step is 0 when field is omitempty
+		// Step: req.GetStep(),
 	}
 
 	model.IncRef(req.GetProject(), req.GetModel(), mi.CID)
