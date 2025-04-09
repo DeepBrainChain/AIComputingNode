@@ -404,6 +404,86 @@ This interface uses the project name to call the text-to-image model. The Input 
 }
 ```
 
+### Image generation image model
+
+This interface is used to call the image-to-image model.
+
+- request method: POST
+- request URL: http://127.0.0.1:6000/api/v0/image/edit?node_id=xxx&cid=xxx&project=SuperImage&model=superImage
+- request Query parameters:
+  - node_id: Node running the model, Required
+  - project: AI project name, Required
+  - model: Model name you want to request, Required
+  - cid: Container ID running the model, Optional
+  - wallet: User’s wallet public key
+  - signature: Wallet signature
+  - hash: Original data hash
+- request multipart/form-data：
+  - image: Image to be edited
+  - prompt: Text description prompt words for the required image
+  - mask: An additional image whose fully transparent areas (e.g. where alpha is zero) indicate where image should be edited. Must be a valid PNG file, optional
+  - model: Model name you want to request
+  - n: The number of images to be generated, at least one
+  - size: The size of the image to be generated, such as 256x256, 512x512 or 1024x1024
+  - response_format: The format in which the generated images are returned. Must be one of url or b64_json
+- return example:
+```json
+{
+  "created": 1589478378,
+  "data": [
+    {
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
+    },
+    {
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
+    }
+  ]
+}
+```
+
+### Image generation image model(Use project name)
+
+This interface uses the project name to call the image-to-image model. The Input node selects some Worker nodes running the specified project and model, sort them according to the strategy (RTT connection latency or GPU idle value, etc.), and send model requests to the Worker nodes in turn until a correct response is obtained. If there are too many failures, an error will be reported.
+
+- request method: POST
+- request URL: http://127.0.0.1:6000/api/v0/image/edit/proxy?project=SuperImage&model=superImage
+- request Query parameters:
+  - project: AI project name, Required
+  - model: Model name you want to request, Required
+  - wallet: User’s wallet public key
+  - signature: Wallet signature
+  - hash: Original data hash
+- request multipart/form-data：
+  - image: Image to be edited
+  - prompt: Text description prompt words for the required image
+  - mask: An additional image whose fully transparent areas (e.g. where alpha is zero) indicate where image should be edited. Must be a valid PNG file, optional
+  - model: Model name you want to request
+  - n: The number of images to be generated, at least one
+  - size: The size of the image to be generated, such as 256x256, 512x512 or 1024x1024
+  - response_format: The format in which the generated images are returned. Must be one of url or b64_json
+- return example:
+```json
+{
+  "created": 1589478378,
+  "data": [
+    {
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
+    },
+    {
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
+    }
+  ]
+}
+```
+
 ### Get AI project list
 
 This interface is used to query the list of AI projects running in the distributed communication network.

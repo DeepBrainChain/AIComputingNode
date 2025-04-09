@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"sort"
 	"time"
@@ -787,4 +788,304 @@ func ImageGenProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 	   rsp.Message = fmt.Sprintf("Failed %d times", failed_count)
 	   c.JSON(http.StatusInternalServerError, rsp)
 	*/
+}
+
+func handleImageEditRequest(ctx context.Context, publishChan chan<- []byte, form *multipart.Form, req types.ImageGenerationRequest, rsp *types.ImageGenerationResponse) (int, int, string) {
+	if req.NodeID == config.GC.Identity.PeerID {
+		mi, err := model.GetModelInfo(req.Project, req.Model, req.CID)
+		if err != nil {
+			return http.StatusInternalServerError, int(types.ErrCodeModel), err.Error()
+		}
+		model.IncRef(req.Project, req.Model, mi.CID)
+		timer.SendAIProjects(publishChan)
+		defer func() {
+			model.DecRef(req.Project, req.Model, mi.CID)
+			timer.SendAIProjects(publishChan)
+		}()
+		*rsp = *model.ImageEditModel(mi.API, form)
+		log.Logger.Infof("Execute model %s result {code:%d, message:%s}", req.Model, rsp.Code, rsp.Message)
+		return http.StatusOK, rsp.Code, rsp.Message
+	}
+
+	if host.Hio.Connectedness(req.NodeID) != 1 {
+		return http.StatusInternalServerError, int(types.ErrCodeStream), "Not available and directly connected node"
+	}
+
+	log.Logger.Info("Received image edit b64_json request")
+	ctx, cancel := context.WithTimeout(ctx, types.ImageGenerationRequestTimeout)
+	defer cancel()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	// copy file field in form
+	for fieldName, files := range form.File {
+		for _, fileHeader := range files {
+			file, err := fileHeader.Open()
+			if err != nil {
+				msg := fmt.Sprintf("Failed to open %v %v", fieldName, err)
+				log.Logger.Errorf(msg)
+				return http.StatusInternalServerError, int(types.ErrCodeStream), msg
+			}
+			defer file.Close()
+
+			part, err := writer.CreateFormFile(fieldName, fileHeader.Filename)
+			if err != nil {
+				msg := fmt.Sprintf("Failed to create form file for %v %v", fieldName, err)
+				return http.StatusInternalServerError, int(types.ErrCodeStream), msg
+			}
+
+			_, err = io.Copy(part, file)
+			if err != nil {
+				msg := fmt.Sprintf("Failed to copy form file for %v %v", fieldName, err)
+				return http.StatusInternalServerError, int(types.ErrCodeStream), msg
+			}
+		}
+	}
+
+	// copy other field in form
+	for fieldName, values := range form.Value {
+		for _, value := range values {
+			if err := writer.WriteField(fieldName, value); err != nil {
+				msg := fmt.Sprintf("Failed to copy %v field %v", fieldName, err)
+				return http.StatusInternalServerError, int(types.ErrCodeStream), msg
+			}
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		msg := fmt.Sprintf("Failed to close multipart writer %v", err)
+		return http.StatusInternalServerError, int(types.ErrCodeStream), msg
+	}
+	hreq, err := http.NewRequestWithContext(ctx, "POST", "http://127.0.0.1:8080/api/v0/image/edit", body)
+	if err != nil {
+		// rsp.Code = int(types.ErrCodeStream)
+		// rsp.Message = "Create http request for stream failed"
+		log.Logger.Errorf("Create http request for stream failed: %v", err)
+		return http.StatusInternalServerError, int(types.ErrCodeStream), "Create http request for stream failed"
+	}
+
+	hreq.Header.Set("Content-Type", writer.FormDataContentType())
+
+	queryValues := hreq.URL.Query()
+	queryValues.Add("project", req.Project)
+	queryValues.Add("model", req.Model)
+	queryValues.Add("cid", req.CID)
+	hreq.URL.RawQuery = queryValues.Encode()
+
+	stream, err := host.Hio.NewStream(ctx, req.NodeID)
+	if err != nil {
+		// rsp.Code = int(types.ErrCodeStream)
+		// rsp.Message = "Open stream with peer node failed"
+		log.Logger.Errorf("Open stream with peer node failed: %v", err)
+		return http.StatusInternalServerError, int(types.ErrCodeStream), "Open stream with peer node failed"
+	}
+	stream.SetDeadline(time.Now().Add(types.ImageGenerationRequestTimeout))
+	defer stream.Close()
+	log.Logger.Infof("Create libp2p stream with %s success", req.NodeID)
+
+	err = hreq.Write(stream)
+	if err != nil {
+		stream.Reset()
+		// rsp.Code = int(types.ErrCodeStream)
+		// rsp.Message = "Write image edit request into libp2p stream failed"
+		log.Logger.Errorf("Write image edit request into libp2p stream failed: %v", err)
+		return http.StatusInternalServerError, int(types.ErrCodeStream), "Write image edit request into libp2p stream failed"
+	}
+	log.Logger.Info("Write image edit request into libp2p stream success")
+
+	reader := bufio.NewReader(stream)
+	responseCh := make(chan *types.ImageGenerationResponse, 1)
+
+	go func() {
+		response := &types.ImageGenerationResponse{}
+		select {
+		case <-ctx.Done():
+			response.Code = int(types.ErrCodeStream)
+			response.Message = fmt.Sprintf("Context canceled or timed out: %v", ctx.Err())
+			log.Logger.Errorf("Context canceled or timed out: %v", ctx.Err())
+			responseCh <- response
+			return
+		default:
+			resp, err := http.ReadResponse(reader, hreq)
+			select {
+			case <-ctx.Done():
+				response.Code = int(types.ErrCodeStream)
+				response.Message = fmt.Sprintf("Context canceled or timed out: %v", ctx.Err())
+				log.Logger.Errorf("Context canceled or timed out: %v", ctx.Err())
+				responseCh <- response
+				return
+			default:
+				if err != nil {
+					stream.Reset()
+					response.Code = int(types.ErrCodeStream)
+					response.Message = "Read image edit response from libp2p stream failed"
+					log.Logger.Errorf("Read image edit response from libp2p stream failed: %v", err)
+					responseCh <- response
+					return
+				}
+				log.Logger.Info("Read image edit response from libp2p stream success")
+
+				defer resp.Body.Close()
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					stream.Reset()
+					response.Code = int(types.ErrCodeStream)
+					response.Message = "Read image response body failed"
+					log.Logger.Errorf("Read image response body failed: %v", err)
+					responseCh <- response
+					return
+				}
+				log.Logger.Info("Read image response body success")
+
+				// response := types.ImageGenModelResponse{}
+				if err := json.Unmarshal(body, &response); err != nil {
+					stream.Reset()
+					response.Code = int(types.ErrCodeStream)
+					response.Message = "Unmarshal image response from stream error"
+					log.Logger.Errorf("Unmarshal image response from stream error: %v", err)
+					responseCh <- response
+					return
+				}
+				responseCh <- response
+			}
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		// rsp.Code = int(types.ErrCodeStream)
+		// rsp.Message = fmt.Sprintf("Context canceled or timed out: %v", ctx.Err())
+		log.Logger.Errorf("Handle image edit stream request time out: %v", ctx.Err())
+		return http.StatusInternalServerError, int(types.ErrCodeStream), fmt.Sprintf("Context canceled or timed out: %v", ctx.Err())
+	case resp := <-responseCh:
+		rsp.Code = resp.Code
+		rsp.Message = resp.Message
+		rsp.Created = resp.Created
+		rsp.Choices = resp.Choices
+		log.Logger.Info("Handle image edit stream request over")
+		return http.StatusOK, rsp.Code, rsp.Message
+	}
+}
+
+func ImageEditHandler(c *gin.Context, publishChan chan<- []byte) {
+	rsp := types.ImageGenerationResponse{}
+
+	var msg types.ImageGenerationRequest
+	if err := c.ShouldBindQuery(&msg); err != nil {
+		rsp.Code = int(types.ErrCodeParse)
+		rsp.Message = types.ErrCodeParse.String()
+		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
+	if err := msg.Validate(); err != nil {
+		rsp.Code = int(types.ErrCodeParam)
+		rsp.Message = err.Error()
+		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
+	form, err := c.MultipartForm()
+	if err != nil {
+		rsp.Code = int(types.ErrCodeParam)
+		rsp.Message = types.ErrCodeParam.String()
+		c.JSON(http.StatusUnprocessableEntity, rsp)
+	}
+	status, code, message := handleImageEditRequest(c.Request.Context(), publishChan, form, msg, &rsp)
+	if code != 0 {
+		c.JSON(status, types.BaseHttpResponse{
+			Code:    code,
+			Message: message,
+		})
+	} else if rsp.Code != 0 {
+		c.JSON(http.StatusInternalServerError, rsp)
+	} else {
+		c.JSON(http.StatusOK, rsp)
+	}
+}
+
+func ImageEditProxyHandler(c *gin.Context, publishChan chan<- []byte) {
+	rsp := types.ImageGenerationResponse{}
+
+	if !config.GC.App.PeersCollect.Enabled {
+		rsp.Code = int(types.ErrCodeUnsupported)
+		rsp.Message = types.ErrCodeUnsupported.String()
+		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
+	var msg types.ImageGenerationProxyRequest
+	if err := c.ShouldBindQuery(&msg); err != nil {
+		rsp.Code = int(types.ErrCodeParse)
+		rsp.Message = types.ErrCodeParse.String()
+		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
+	if err := msg.Validate(); err != nil {
+		rsp.Code = int(types.ErrCodeParam)
+		rsp.Message = err.Error()
+		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
+	form, err := c.MultipartForm()
+	if err != nil {
+		rsp.Code = int(types.ErrCodeParam)
+		rsp.Message = types.ErrCodeParam.String()
+		c.JSON(http.StatusUnprocessableEntity, rsp)
+	}
+
+	ids, code := db.GetPeersOfAIProjects(msg.Project, msg.Model, 20)
+	if code != 0 {
+		rsp.Code = int(types.ErrCodeProxy)
+		rsp.Message = types.ErrorCode(code).String()
+		c.JSON(http.StatusInternalServerError, rsp)
+		return
+	}
+
+	peers := []types.AIProjectPeerInfo{}
+	for id, mi := range ids {
+		conn := host.Hio.Connectedness(id)
+		if /*msg.ResponseFormat == "b64_json" &&*/ conn != 1 {
+			continue
+		}
+		latency := host.Hio.Latency(id).Nanoseconds()
+		if /*msg.ResponseFormat == "b64_json" &&*/ latency == 0 {
+			continue
+		}
+		peers = append(peers, types.AIProjectPeerInfo{
+			NodeID:       id,
+			Connectivity: conn,
+			Latency:      latency,
+			Idle:         mi.Idle,
+			CID:          mi.CID,
+		})
+	}
+	if len(peers) == 0 {
+		rsp.Code = int(types.ErrCodeProxy)
+		rsp.Message = "Not enough available and directly connected nodes"
+		c.JSON(http.StatusInternalServerError, rsp)
+		return
+	}
+
+	sort.Sort(types.AIProjectPeerOrder(peers))
+
+	igReq := types.ImageGenerationRequest{
+		NodeID:               peers[0].NodeID,
+		CID:                  peers[0].CID,
+		Project:              msg.Project,
+		ImageGenModelRequest: msg.ImageGenModelRequest,
+	}
+	status, code, message := handleImageEditRequest(c.Request.Context(), publishChan, form, igReq, &rsp)
+	if code != 0 {
+		c.JSON(status, types.BaseHttpResponse{
+			Code:    code,
+			Message: message,
+		})
+	} else if rsp.Code != 0 {
+		c.JSON(http.StatusInternalServerError, rsp)
+	} else {
+		c.JSON(http.StatusOK, rsp)
+	}
 }

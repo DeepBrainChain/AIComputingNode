@@ -157,25 +157,14 @@ Modify images based on prompt words
 
 - request method: POST
 - request URL: http://127.0.0.1:1088/v1/images/edits
-- request Body:
-```json
-{
-  // Model name you want to request
-  "model": "SuperImage",
-  // Image to be edited
-  "image": "https://...",
-  // Text description prompt words for the required image
-  "prompt": "A cute baby sea otter wearing a beret",
-  // The number of images to be generated, at least one
-  "n": 2,
-  // The size of the image to be generated
-  "size": "1024x1024",
-  "width": 1024,
-  "height": 1024,
-  // The format in which the generated images are returned. Must be one of url or b64_json
-  "response_format": "url"
-}
-```
+- request multipart/form-data:
+  - image: Image to be edited
+  - prompt: Text description prompt words for the required image
+  - mask: An additional image whose fully transparent areas (e.g. where alpha is zero) indicate where image should be edited. Must be a valid PNG file, optional
+  - model: Model name you want to request
+  - n: The number of images to be generated, at least one
+  - size: The size of the image to be generated, such as 256x256, 512x512 or 1024x1024
+  - response_format: The format in which the generated images are returned. Must be one of url or b64_json
 - return example:
 ```json
 {
@@ -202,16 +191,11 @@ Modify images based on prompt words
 
 ```shell
 curl http://127.0.0.1:1088/v1/images/edits \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "SuperImage",
-    "image": "https://...",
-    "prompt": "A cute baby sea otter wearing a beret",
-    "n": 1,
-    "size": "1024x1024",
-    "width": 1024,
-    "height": 1024
-  }'
+  -F image="@otter.png" \
+  -F mask="@mask.png" \
+  -F prompt="A cute baby sea otter wearing a beret" \
+  -F n=2 \
+  -F size="1024x1024"
 ```
 
 ## Model list

@@ -404,6 +404,86 @@ data 包含接口请求的结果信息(当 code = 0 时有效)。
 }
 ```
 
+### 图生图模型
+
+此接口用来调用图生图模型。
+
+- 请求方式: POST
+- 请求 URL: http://127.0.0.1:6000/api/v0/image/edit?node_id=xxx&cid=xxx&project=SuperImage&model=superImage
+- 请求 Query 参数:
+  - node_id: 运行模型的节点，Required
+  - project: AI 项目名称，Required
+  - model: 模型名称，Required
+  - cid: 运行模型的容器 ID，Optional
+  - wallet: 用户的钱包公钥
+  - signature: 钱包签名
+  - hash: 原始数据的 hash
+- 请求 multipart/form-data：
+  - image: 要编辑的 PNG 图片
+  - prompt: 所需图像的文本描述
+  - mask: 透明遮罩的附加 PNG 图片，可选参数
+  - model: 想要请求的模型名称
+  - n: 要生成的图像数量
+  - size: 要生成图像的大小，例如 256x256、512x512 或者 1024x1024
+  - response_format: 生成图像的格式，必须是 url 或 b64_json 之一
+- 返回示例:
+```json
+{
+  "created": 1589478378,
+  "data": [
+    {
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
+    },
+    {
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
+    }
+  ]
+}
+```
+
+### 图生图模型(使用项目名称)
+
+此接口用来调用图生图模型。Input 节点会选择一些运行指定项目和模型的 Worker 节点，根据策略(RTT连接时延或者GPU空闲值等)排序，依次向 Worker 节点发送模型请求直到获得正确的应答，失败次数过多时会报错。
+
+- 请求方式: POST
+- 请求 URL: http://127.0.0.1:6000/api/v0/image/edit/proxy?project=SuperImage&model=superImage
+- 请求 Query 参数:
+  - project: AI 项目名称，Required
+  - model: 模型名称，Required
+  - wallet: 用户的钱包公钥
+  - signature: 钱包签名
+  - hash: 原始数据的 hash
+- 请求 multipart/form-data：
+  - image: 要编辑的 PNG 图片
+  - prompt: 所需图像的文本描述
+  - mask: 透明遮罩的附加 PNG 图片，可选参数
+  - model: 想要请求的模型名称
+  - n: 要生成的图像数量
+  - size: 要生成图像的大小，例如 256x256、512x512 或者 1024x1024
+  - response_format: 生成图像的格式，必须是 url 或 b64_json 之一
+- 返回示例:
+```json
+{
+  "created": 1589478378,
+  "data": [
+    {
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
+    },
+    {
+      "b64_json": "",
+      "url": "https://...",
+      "revised_prompt": "..."
+    }
+  ]
+}
+```
+
 ### 获取 AI 项目列表
 
 此接口用来查询分布式通信网络中运行的 AI 项目列表。

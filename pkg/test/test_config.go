@@ -15,6 +15,7 @@ type Models struct {
 	Llama31    ModelInfo `json:"Llama3.1"`
 	Qwen2      ModelInfo `json:"Qwen2"`
 	SuperImage ModelInfo `json:"SuperImage"`
+	StyleID    ModelInfo `json:"StyleID"`
 }
 
 type Config struct {

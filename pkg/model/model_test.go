@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"os"
 	"sync"
 	"testing"
 
@@ -298,4 +300,76 @@ func TestImageModel(t *testing.T) {
 		t.Fatalf("Execute model %s with %q error {code: %v, message: %s}", config.Models.SuperImage.Name, prompt, res.Code, res.Message)
 	}
 	t.Logf("Execute model %s with %q result %v", config.Models.SuperImage.Name, prompt, res.ImageModelResponse)
+}
+
+// go test -v -timeout 300s -count=1 -run TestImageEdit AIComputingNode/pkg/model
+func TestImageEdit(t *testing.T) {
+	config, err := test.LoadConfig("/Volumes/data/code/AIComputingNode/test.json")
+	if err != nil {
+		t.Fatalf("Error loading test config file: %v", err)
+	}
+
+	var (
+		prompt = "analog film photo of a man. faded film, desaturated, 35mm photo, grainy, vignette, vintage, Kodachrome, Lomography, stained, highly detailed, found footage, masterpiece, best quality"
+		size   = "256x256"
+	)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("face_image", "ai_func2.png")
+	if err != nil {
+		t.Fatalf("Create multipart form file failed: %v", err)
+	}
+	image, err := os.Open("../../ai_func2.png")
+	if err != nil {
+		t.Fatalf("Open image file failed: %v", err)
+	}
+	defer image.Close()
+	_, err = io.Copy(part, image)
+	if err != nil {
+		t.Fatalf("Read image file failed: %v", err)
+	}
+	if err := writer.WriteField("prompt", prompt); err != nil {
+		t.Fatalf("Write prompt failed: %v", err)
+	}
+	if err := writer.WriteField("size", size); err != nil {
+		t.Fatalf("Write prompt failed: %v", err)
+	}
+
+	if err := writer.Close(); err != nil {
+		t.Fatalf("Failed to close multipart writer %v", err)
+	}
+
+	// res := ImageEditModel(config.Models.StyleID.API, writer.)
+	// if res.Code != 0 {
+	// 	t.Fatalf("Execute model %s with %q error {code: %v, message: %s}", config.Models.SuperImage.Name, prompt, res.Code, res.Message)
+	// }
+	// t.Logf("Execute model %s with %q result %v", config.Models.SuperImage.Name, prompt, res.ImageModelResponse)
+
+	client := &http.Client{
+		Timeout: types.ImageGenerationRequestTimeout,
+	}
+	resp, err := client.Post(
+		config.Models.StyleID.API,
+		writer.FormDataContentType(),
+		body,
+	)
+	if err != nil {
+		t.Fatalf("Post HTTP request error, %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		t.Fatalf("Reponse status code: %v", resp.Status)
+	}
+	t.Logf("Response Content-Type: %v", resp.Header.Get("Content-Type"))
+	savefile, err := os.OpenFile("../../image-save.png", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0766)
+	if err != nil {
+		t.Fatalf("Failed to create file for saving: %v", err)
+	}
+	defer savefile.Close()
+	written, err := io.Copy(savefile, resp.Body)
+	if err != nil {
+		t.Fatalf("Failed to save image file: %v", err)
+	}
+	t.Logf("Image %v bytes in reponse", written)
 }

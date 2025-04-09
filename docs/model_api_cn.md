@@ -157,25 +157,14 @@ curl http://127.0.0.1:1088/v1/images/generations \
 
 - 请求方式：POST
 - 请求 URL：http://127.0.0.1:1088/v1/images/edits
-- 请求 Body：
-```json
-{
-  // 想要请求的模型名称
-  "model": "SuperImage",
-  // 要编辑的图片
-  "image": "https://...",
-  // 所需图像的文本描述
-  "prompt": "A cute baby sea otter wearing a beret",
-  // 要生成的图像数量
-  "n": 2,
-  // 要生成图像的大小
-  "size": "1024x1024",
-  "width": 1024,
-  "height": 1024,
-  // 要生成图像的格式，必须是 url 或 b64_json 之一
-  "response_format": "url"
-}
-```
+- 请求 multipart/form-data：
+  - image: 要编辑的 PNG 图片
+  - prompt: 所需图像的文本描述
+  - mask: 透明遮罩的附加 PNG 图片，可选参数
+  - model: 想要请求的模型名称
+  - n: 要生成的图像数量
+  - size: 要生成图像的大小，例如 256x256、512x512 或者 1024x1024
+  - response_format: 生成图像的格式，必须是 url 或 b64_json 之一
 - 返回示例：
 ```json
 {
@@ -202,16 +191,11 @@ curl http://127.0.0.1:1088/v1/images/generations \
 
 ```shell
 curl http://127.0.0.1:1088/v1/images/edits \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "SuperImage",
-    "image": "https://...",
-    "prompt": "A cute baby sea otter wearing a beret",
-    "n": 1,
-    "size": "1024x1024",
-    "width": 1024,
-    "height": 1024
-  }'
+  -F image="@otter.png" \
+  -F mask="@mask.png" \
+  -F prompt="A cute baby sea otter wearing a beret" \
+  -F n=2 \
+  -F size="1024x1024"
 ```
 
 ## 模型列表
