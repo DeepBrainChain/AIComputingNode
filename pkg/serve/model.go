@@ -160,7 +160,7 @@ func handleChatCompletionStreamRequest(ctx context.Context, w http.ResponseWrite
 
 		w.WriteHeader(resp.StatusCode)
 
-		log.Logger.Info("Copy roundtrip response")
+		log.Logger.Info("Copy roundtrip chat completion response")
 		io.Copy(w, resp.Body)
 		// resp.Body.Close()
 		log.Logger.Info("Handle chat completion stream request over from the node itself")
@@ -790,7 +790,7 @@ func ImageGenProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 	*/
 }
 
-func handleImageEditRequest(ctx context.Context, publishChan chan<- []byte, form *multipart.Form, req types.ImageGenerationRequest, rsp *types.ImageGenerationResponse) (int, int, string) {
+func handleImageEditRequest(ctx context.Context, publishChan chan<- []byte, w http.ResponseWriter, form *multipart.Form, req types.ImageGenerationRequest) (int, int, string) {
 	if req.NodeID == config.GC.Identity.PeerID {
 		mi, err := model.GetModelInfo(req.Project, req.Model, req.CID)
 		if err != nil {
@@ -802,9 +802,28 @@ func handleImageEditRequest(ctx context.Context, publishChan chan<- []byte, form
 			model.DecRef(req.Project, req.Model, mi.CID)
 			timer.SendAIProjects(publishChan)
 		}()
-		*rsp = *model.ImageEditModel(mi.API, form)
-		log.Logger.Infof("Execute model %s result {code:%d, message:%s}", req.Model, rsp.Code, rsp.Message)
-		return http.StatusOK, rsp.Code, rsp.Message
+		resp, err := model.ImageEditModel(mi.API, form)
+		if err != nil {
+			log.Logger.Errorf("RoundTrip image edit request failed: %v", err)
+			return http.StatusInternalServerError, int(types.ErrCodeModel), fmt.Sprintf("RoundTrip image edit request failed: %v", err)
+		}
+		defer resp.Body.Close()
+
+		for k, v := range resp.Header {
+			for _, s := range v {
+				w.Header().Set(k, s)
+			}
+		}
+
+		w.WriteHeader(resp.StatusCode)
+
+		log.Logger.Info("Copy roundtrip image edit response")
+		io.Copy(w, resp.Body)
+		// resp.Body.Close()
+		log.Logger.Info("Handle image edit stream request over from the node itself")
+		// rsp.Code = 0
+		// rsp.Message = ""
+		return http.StatusOK, 0, ""
 	}
 
 	if host.Hio.Connectedness(req.NodeID) != 1 {
@@ -824,20 +843,22 @@ func handleImageEditRequest(ctx context.Context, publishChan chan<- []byte, form
 			if err != nil {
 				msg := fmt.Sprintf("Failed to open %v %v", fieldName, err)
 				log.Logger.Errorf(msg)
-				return http.StatusInternalServerError, int(types.ErrCodeStream), msg
+				return http.StatusInternalServerError, int(types.ErrCodeModel), msg
 			}
 			defer file.Close()
 
 			part, err := writer.CreateFormFile(fieldName, fileHeader.Filename)
 			if err != nil {
 				msg := fmt.Sprintf("Failed to create form file for %v %v", fieldName, err)
-				return http.StatusInternalServerError, int(types.ErrCodeStream), msg
+				log.Logger.Errorf(msg)
+				return http.StatusInternalServerError, int(types.ErrCodeModel), msg
 			}
 
 			_, err = io.Copy(part, file)
 			if err != nil {
 				msg := fmt.Sprintf("Failed to copy form file for %v %v", fieldName, err)
-				return http.StatusInternalServerError, int(types.ErrCodeStream), msg
+				log.Logger.Errorf(msg)
+				return http.StatusInternalServerError, int(types.ErrCodeModel), msg
 			}
 		}
 	}
@@ -847,21 +868,23 @@ func handleImageEditRequest(ctx context.Context, publishChan chan<- []byte, form
 		for _, value := range values {
 			if err := writer.WriteField(fieldName, value); err != nil {
 				msg := fmt.Sprintf("Failed to copy %v field %v", fieldName, err)
-				return http.StatusInternalServerError, int(types.ErrCodeStream), msg
+				log.Logger.Errorf(msg)
+				return http.StatusInternalServerError, int(types.ErrCodeModel), msg
 			}
 		}
 	}
 
 	if err := writer.Close(); err != nil {
 		msg := fmt.Sprintf("Failed to close multipart writer %v", err)
-		return http.StatusInternalServerError, int(types.ErrCodeStream), msg
+		log.Logger.Errorf(msg)
+		return http.StatusInternalServerError, int(types.ErrCodeModel), msg
 	}
 	hreq, err := http.NewRequestWithContext(ctx, "POST", "http://127.0.0.1:8080/api/v0/image/edit", body)
 	if err != nil {
-		// rsp.Code = int(types.ErrCodeStream)
+		// rsp.Code = int(types.ErrCodeModel)
 		// rsp.Message = "Create http request for stream failed"
 		log.Logger.Errorf("Create http request for stream failed: %v", err)
-		return http.StatusInternalServerError, int(types.ErrCodeStream), "Create http request for stream failed"
+		return http.StatusInternalServerError, int(types.ErrCodeModel), "Create http request for stream failed"
 	}
 
 	hreq.Header.Set("Content-Type", writer.FormDataContentType())
@@ -926,26 +949,23 @@ func handleImageEditRequest(ctx context.Context, publishChan chan<- []byte, form
 				log.Logger.Info("Read image edit response from libp2p stream success")
 
 				defer resp.Body.Close()
-				body, err := io.ReadAll(resp.Body)
-				if err != nil {
-					stream.Reset()
-					response.Code = int(types.ErrCodeStream)
-					response.Message = "Read image response body failed"
-					log.Logger.Errorf("Read image response body failed: %v", err)
-					responseCh <- response
-					return
-				}
-				log.Logger.Info("Read image response body success")
 
-				// response := types.ImageGenModelResponse{}
-				if err := json.Unmarshal(body, &response); err != nil {
-					stream.Reset()
-					response.Code = int(types.ErrCodeStream)
-					response.Message = "Unmarshal image response from stream error"
-					log.Logger.Errorf("Unmarshal image response from stream error: %v", err)
-					responseCh <- response
-					return
+				for k, v := range resp.Header {
+					for _, s := range v {
+						w.Header().Set(k, s)
+					}
 				}
+
+				w.WriteHeader(resp.StatusCode)
+
+				log.Logger.Info("Copy the body from image edit stream")
+				io.Copy(w, resp.Body)
+				// resp.Body.Close()
+				log.Logger.Info("Handle image edit stream request over")
+				// rsp.Code = 0
+				// rsp.Message = ""
+				response.Code = 0
+				response.Message = ""
 				responseCh <- response
 			}
 		}
@@ -958,12 +978,8 @@ func handleImageEditRequest(ctx context.Context, publishChan chan<- []byte, form
 		log.Logger.Errorf("Handle image edit stream request time out: %v", ctx.Err())
 		return http.StatusInternalServerError, int(types.ErrCodeStream), fmt.Sprintf("Context canceled or timed out: %v", ctx.Err())
 	case resp := <-responseCh:
-		rsp.Code = resp.Code
-		rsp.Message = resp.Message
-		rsp.Created = resp.Created
-		rsp.Choices = resp.Choices
 		log.Logger.Info("Handle image edit stream request over")
-		return http.StatusOK, rsp.Code, rsp.Message
+		return http.StatusOK, resp.Code, resp.Message
 	}
 }
 
@@ -991,16 +1007,12 @@ func ImageEditHandler(c *gin.Context, publishChan chan<- []byte) {
 		rsp.Message = types.ErrCodeParam.String()
 		c.JSON(http.StatusUnprocessableEntity, rsp)
 	}
-	status, code, message := handleImageEditRequest(c.Request.Context(), publishChan, form, msg, &rsp)
+	status, code, message := handleImageEditRequest(c.Request.Context(), publishChan, c.Writer, form, msg)
 	if code != 0 {
 		c.JSON(status, types.BaseHttpResponse{
 			Code:    code,
 			Message: message,
 		})
-	} else if rsp.Code != 0 {
-		c.JSON(http.StatusInternalServerError, rsp)
-	} else {
-		c.JSON(http.StatusOK, rsp)
 	}
 }
 
@@ -1077,15 +1089,11 @@ func ImageEditProxyHandler(c *gin.Context, publishChan chan<- []byte) {
 		Project:              msg.Project,
 		ImageGenModelRequest: msg.ImageGenModelRequest,
 	}
-	status, code, message := handleImageEditRequest(c.Request.Context(), publishChan, form, igReq, &rsp)
+	status, code, message := handleImageEditRequest(c.Request.Context(), publishChan, c.Writer, form, igReq)
 	if code != 0 {
 		c.JSON(status, types.BaseHttpResponse{
 			Code:    code,
 			Message: message,
 		})
-	} else if rsp.Code != 0 {
-		c.JSON(http.StatusInternalServerError, rsp)
-	} else {
-		c.JSON(http.StatusOK, rsp)
 	}
 }

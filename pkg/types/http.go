@@ -134,7 +134,7 @@ type ChatCompletionResponse struct {
 }
 
 type ImageGenModelRequest struct {
-	Model          string `json:"model"`
+	Model          string `json:"model" form:"model"`
 	Prompt         string `json:"prompt"`
 	Number         int    `json:"n"`
 	Size           string `json:"size"`
@@ -146,14 +146,14 @@ type ImageGenModelRequest struct {
 }
 
 type ImageGenerationRequest struct {
-	NodeID  string `json:"node_id"`
-	Project string `json:"project"`
-	CID     string `json:"cid"`
+	NodeID  string `json:"node_id"  form:"node_id"`
+	Project string `json:"project" form:"project"`
+	CID     string `json:"cid" form:"cid"`
 	ImageGenModelRequest
 }
 
 type ImageGenerationProxyRequest struct {
-	Project string `json:"project"`
+	Project string `json:"project" form:"project"`
 	ImageGenModelRequest
 }
 
