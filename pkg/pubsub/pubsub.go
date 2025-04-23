@@ -684,6 +684,7 @@ func (pst *PubSub) handleImageGenerationRequest(ctx context.Context, req *protoc
 	}
 
 	igReq := types.ImageGenModelRequest{
+		File:           req.GetFile(),
 		Model:          req.GetModel(),
 		Prompt:         req.GetPrompt(),
 		Number:         int(req.GetNumber()),

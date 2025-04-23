@@ -168,7 +168,7 @@ func (ls *Libp2pStream) ChatProxyStreamHandler(stream network.Stream) {
 		ctx = context.Background()
 	}
 	timeout := types.ChatCompletionRequestTimeout
-	if mi.Type == 1 {
+	if mi.Type == 1 || mi.Type == 2 {
 		timeout = types.ImageGenerationRequestTimeout
 	}
 	pctx, cancel := context.WithTimeout(ctx, timeout)

@@ -604,6 +604,7 @@ func handleImageGenRequest(ctx context.Context, publishChan chan<- []byte, req t
 		Data: &protocol.ImageGenerationBody_Req{
 			Req: &protocol.ImageGenerationRequest{
 				Project:        req.Project,
+				File:           req.File,
 				Model:          req.Model,
 				Prompt:         req.Prompt,
 				Number:         int32(req.Number),

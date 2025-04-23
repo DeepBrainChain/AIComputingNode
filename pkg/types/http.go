@@ -134,6 +134,7 @@ type ChatCompletionResponse struct {
 }
 
 type ImageGenModelRequest struct {
+	File           string `json:"file,omitempty"`
 	Model          string `json:"model" form:"model"`
 	Prompt         string `json:"prompt"`
 	Number         int    `json:"n"`

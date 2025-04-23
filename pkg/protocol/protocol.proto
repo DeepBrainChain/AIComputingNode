@@ -72,7 +72,8 @@ message ImageGenerationRequest {
   string response_format = 8;
   string cid = 9;
   int32 step = 10;
-  reserved 11 to 15;
+  string file = 11;
+  reserved 12 to 15;
   WalletVerification wallet = 16;
 }
 
