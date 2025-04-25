@@ -2,6 +2,17 @@
 
 This document describes the API interface standard provided by the AI ​​model, which is provided to the distributed communication node for calling.
 
+Common interface conventions:
+1. When an HTTP request is successfully processed and returns the expected result, a status code of 200 OK is given.
+2. When processing HTTP requests, if there are internal server problems such as database errors, logic errors, calculation errors, etc., a 500 Internal Server Error status code is usually returned instead of 200, and the following JSON is included to tell the client what error occurred, helping developers locate the problem.
+```json
+{
+  "code": 1010,
+  "message": "Unsupported function"
+}
+```
+ps: The code returned by the node is 0 for a successful request, and non-zero for a failure. Currently, the node uses error codes in the range of 1000-1099, and other developers can use any value above 2000.
+
 ## Text generation text model
 
 Chat dialogue, text assistant
@@ -102,6 +113,10 @@ Generate pictures based on prompt words
 {
   // Model name you want to request
   "model": "SuperImage",
+  // The PNG image to be edited is empty by default.
+  // When you need to modify and edit the image, you can use this parameter to change
+  // the interface to the model interface of the image generation image
+  "file": "",
   // Text description prompt words for the required image
   "prompt": "A cute baby sea otter",
   // The number of images to be generated, at least one
@@ -165,7 +180,7 @@ Modify images based on prompt words
   - n: The number of images to be generated, at least one
   - size: The size of the image to be generated, such as 256x256, 512x512 or 1024x1024
   - response_format: The format in which the generated images are returned. Must be one of url or b64_json
-- return example:
+- return example: If a distributed node encounters an error, it returns the error message agreed at the beginning of the document, otherwise it forwards the model's response intact.
 ```json
 {
   // Error code, 0 means success, non-0 means failure

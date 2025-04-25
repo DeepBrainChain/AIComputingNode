@@ -13,6 +13,7 @@ Common interface conventions:
   "message": "Unsupported function"
 }
 ```
+ps: The code returned by the node is 0 for a successful request, and non-zero for a failure. Currently, the node uses error codes in the range of 1000-1099, and other developers can use any value above 2000.
 
 ## Common query interfaces
 
@@ -315,6 +316,10 @@ This interface is used to call the text-to-image model.
   "project": "SuperImage",
   // Model name you want to request
   "model": "superImage",
+  // The PNG image to be edited is empty by default.
+  // When you need to modify and edit the image, you can use this parameter to change
+  // the interface to the model interface of the image generation image
+  "file": "",
   // Text description prompt words for the required image
   "prompt": "a bird flying in the sky",
   // The number of images to be generated, at least one
@@ -367,6 +372,10 @@ This interface uses the project name to call the text-to-image model. The Input 
   "project": "SuperImage",
   // Model name you want to request
   "model": "superImage",
+  // The PNG image to be edited is empty by default.
+  // When you need to modify and edit the image, you can use this parameter to change
+  // the interface to the model interface of the image generation image
+  "file": "",
   // Text description prompt words for the required image
   "prompt": "a bird flying in the sky",
   // The number of images to be generated, at least one
@@ -426,7 +435,7 @@ This interface is used to call the image-to-image model.
   - n: The number of images to be generated, at least one
   - size: The size of the image to be generated, such as 256x256, 512x512 or 1024x1024
   - response_format: The format in which the generated images are returned. Must be one of url or b64_json
-- return example:
+- return example: If a distributed node encounters an error, it returns the error message agreed at the beginning of the document, otherwise it forwards the model's response intact.
 ```json
 {
   "created": 1589478378,
@@ -465,7 +474,7 @@ This interface uses the project name to call the image-to-image model. The Input
   - n: The number of images to be generated, at least one
   - size: The size of the image to be generated, such as 256x256, 512x512 or 1024x1024
   - response_format: The format in which the generated images are returned. Must be one of url or b64_json
-- return example:
+- return example: If a distributed node encounters an error, it returns the error message agreed at the beginning of the document, otherwise it forwards the model's response intact.
 ```json
 {
   "created": 1589478378,
